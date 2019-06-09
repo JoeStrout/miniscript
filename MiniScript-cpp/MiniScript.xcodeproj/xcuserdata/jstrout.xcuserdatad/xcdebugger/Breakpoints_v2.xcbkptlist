@@ -1,0 +1,322 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Bucket
+   type = "1"
+   version = "2.0">
+   <Breakpoints>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "MiniScript/MSQA.cpp"
+            timestampString = "542432728.659016"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "29"
+            endingLineNumber = "29"
+            landmarkName = "_Error(const char *msg, const char *filename, int linenum)"
+            landmarkType = "9">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "src/MiniScript/MiniscriptParser.cpp"
+            timestampString = "580045984.968514"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "165"
+            endingLineNumber = "165"
+            landmarkName = "Parser::ParseStatement(Lexer tokens, bool allowExtra)"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "src/MiniScript/MiniscriptParser.cpp"
+            timestampString = "580045984.968514"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "390"
+            endingLineNumber = "390"
+            landmarkName = "Parser::ParseFunction(Lexer tokens, bool asLval, bool statementStart)"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "src/main.cpp"
+            timestampString = "580161972.315379"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "258"
+            endingLineNumber = "258"
+            landmarkName = "main(int argc, const char * argv[])"
+            landmarkType = "9">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "src/MiniScript/SimpleVector.h"
+            timestampString = "573450841.276889"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "193"
+            endingLineNumber = "193"
+            landmarkName = "operator[](const long idx)"
+            landmarkType = "9">
+            <Locations>
+               <Location
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "SimpleVector&lt;int&gt;::operator[](long)"
+                  moduleName = "MiniScript"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/jstrout/Documents/svnrepo/stroutandsons/MiniScript/MiniScript-cpp/src/MiniScript/SimpleVector.h"
+                  timestampString = "581461604.62546"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "193"
+                  endingLineNumber = "193"
+                  offsetFromSymbolStart = "72">
+               </Location>
+               <Location
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "SimpleVector&lt;MiniScript::String&gt;::operator[](long)"
+                  moduleName = "MiniScript"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/jstrout/Documents/svnrepo/stroutandsons/MiniScript/MiniScript-cpp/src/MiniScript/SimpleVector.h"
+                  timestampString = "581461604.627781"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "193"
+                  endingLineNumber = "193"
+                  offsetFromSymbolStart = "72">
+               </Location>
+               <Location
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "SimpleVector&lt;MiniScript::Context*&gt;::operator[](long)"
+                  moduleName = "MiniScript"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/jstrout/Documents/svnrepo/stroutandsons/MiniScript/MiniScript-cpp/src/MiniScript/SimpleVector.h"
+                  timestampString = "581461604.629953"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "193"
+                  endingLineNumber = "193"
+                  offsetFromSymbolStart = "72">
+               </Location>
+               <Location
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "SimpleVector&lt;MiniScript::TACLine&gt;::operator[](long)"
+                  moduleName = "MiniScript"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/jstrout/Documents/svnrepo/stroutandsons/MiniScript/MiniScript-cpp/src/MiniScript/SimpleVector.h"
+                  timestampString = "581461604.6318949"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "193"
+                  endingLineNumber = "193"
+                  offsetFromSymbolStart = "72">
+               </Location>
+               <Location
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "SimpleVector&lt;MiniScript::Intrinsic*&gt;::operator[](long)"
+                  moduleName = "MiniScript"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/jstrout/Documents/svnrepo/stroutandsons/MiniScript/MiniScript-cpp/src/MiniScript/SimpleVector.h"
+                  timestampString = "581461604.633387"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "193"
+                  endingLineNumber = "193"
+                  offsetFromSymbolStart = "72">
+               </Location>
+               <Location
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "SimpleVector&lt;MiniScript::Value&gt;::operator[](long)"
+                  moduleName = "MiniScript"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/jstrout/Documents/svnrepo/stroutandsons/MiniScript/MiniScript-cpp/src/MiniScript/SimpleVector.h"
+                  timestampString = "581461604.634895"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "193"
+                  endingLineNumber = "193"
+                  offsetFromSymbolStart = "72">
+               </Location>
+               <Location
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "SimpleVector&lt;MiniScript::FuncParam&gt;::operator[](long)"
+                  moduleName = "MiniScript"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/jstrout/Documents/svnrepo/stroutandsons/MiniScript/MiniScript-cpp/src/MiniScript/SimpleVector.h"
+                  timestampString = "581461604.6364321"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "193"
+                  endingLineNumber = "193"
+                  offsetFromSymbolStart = "72">
+               </Location>
+               <Location
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "SimpleVector&lt;MiniScript::Token&gt;::operator[](long)"
+                  moduleName = "MiniScript"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/jstrout/Documents/svnrepo/stroutandsons/MiniScript/MiniScript-cpp/src/MiniScript/SimpleVector.h"
+                  timestampString = "581461604.637979"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "193"
+                  endingLineNumber = "193"
+                  offsetFromSymbolStart = "72">
+               </Location>
+               <Location
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "SimpleVector&lt;MiniScript::ParseState&gt;::operator[](long)"
+                  moduleName = "MiniScript"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/jstrout/Documents/svnrepo/stroutandsons/MiniScript/MiniScript-cpp/src/MiniScript/SimpleVector.h"
+                  timestampString = "581461604.640102"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "193"
+                  endingLineNumber = "193"
+                  offsetFromSymbolStart = "72">
+               </Location>
+               <Location
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "SimpleVector&lt;MiniScript::JumpPoint&gt;::operator[](long)"
+                  moduleName = "MiniScript"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/jstrout/Documents/svnrepo/stroutandsons/MiniScript/MiniScript-cpp/src/MiniScript/SimpleVector.h"
+                  timestampString = "581461604.642485"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "193"
+                  endingLineNumber = "193"
+                  offsetFromSymbolStart = "72">
+               </Location>
+               <Location
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "SimpleVector&lt;MiniScript::BackPatch&gt;::operator[](long)"
+                  moduleName = "MiniScript"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/jstrout/Documents/svnrepo/stroutandsons/MiniScript/MiniScript-cpp/src/MiniScript/SimpleVector.h"
+                  timestampString = "581461604.644118"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "193"
+                  endingLineNumber = "193"
+                  offsetFromSymbolStart = "72">
+               </Location>
+               <Location
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "SimpleVector&lt;long&gt;::operator[](long)"
+                  moduleName = "MiniScript"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/jstrout/Documents/svnrepo/stroutandsons/MiniScript/MiniScript-cpp/src/MiniScript/SimpleVector.h"
+                  timestampString = "581461604.6455491"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "193"
+                  endingLineNumber = "193"
+                  offsetFromSymbolStart = "72">
+               </Location>
+            </Locations>
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.SymbolicBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            symbolName = "malloc_error_break"
+            moduleName = "">
+            <Locations>
+               <Location
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "malloc_error_break"
+                  moduleName = "libsystem_malloc.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  offsetFromSymbolStart = "0">
+               </Location>
+            </Locations>
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "src/main.cpp"
+            timestampString = "579884339.70103"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "120"
+            endingLineNumber = "120"
+            landmarkName = "DoCommand(String cmd)"
+            landmarkType = "9">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "src/MiniScript/QA.cpp"
+            timestampString = "579886694.251671"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "29"
+            endingLineNumber = "29"
+            landmarkName = "_Error(const char *msg, const char *filename, int linenum)"
+            landmarkType = "9">
+         </BreakpointContent>
+      </BreakpointProxy>
+   </Breakpoints>
+</Bucket>

@@ -1,0 +1,1260 @@
+======================================================================
+==== Testing print.  Important since all the other tests rely on it!
+==== And we'll test comments while we're at it.
+print "Hello world!"
+print "You can ""quote"" me on that."
+print(42) // Works both with and without parentheses
+----------------------------------------------------------------------
+Hello world!
+You can "quote" me on that.
+42
+======================================================================
+==== Basic math and operator precedence.
+print 2 * 3 + 4
+print 2 + 3 * .5
+print -2 * -3 - 4
+print -2 - 3 * -4
+print -2^3
+----------------------------------------------------------------------
+10
+3.5
+2
+10
+-8
+======================================================================
+==== Logical operators (basics).
+print 1 and 1 and 1
+print 1 and 0 and 1
+print 0 and 1 and 1
+print 0 and 0.5
+print(0.5 and 1)		// combines intermediate values by rules of probability!
+print 0.6 and 0.5
+print 1 or 1 or 1
+print 1 or 0 or 1
+print 0 or 1 or 1
+print 0 or 0.5
+print 0.6 or 0.3
+print 0.5 or 1
+print 1 and null
+print 1 or null
+----------------------------------------------------------------------
+1
+0
+0
+0
+0.5
+0.3
+1
+1
+1
+0.5
+0.72
+1
+0
+1
+======================================================================
+==== Logical operators, short-circuit evaluation.
+reset = function(); globals.r = []; end function
+ftrue = function(x); globals.r = r + [x]; return 1; end function
+ffalse = function(x); globals.r = r + [x]; return 0; end function
+fmaybe = function(x); globals.r = r + [x]; return 0.5; end function
+reset; print (ftrue(1) and ftrue(2) and ftrue(3)) + "; " + r
+reset; print (ftrue(1) and ftrue(2) and ffalse(3)) + "; " + r
+reset; print (ftrue(1) and ffalse(2) and ftrue(3)) + "; " + r
+reset; print (ffalse(1) and ftrue(2) and ftrue(3)) + "; " + r
+reset; print((fmaybe(1) and ftrue(2) and ftrue(3)) + "; " + r);
+reset; print((ffalse(1) or ffalse(2) or ffalse(3)) + "; " + r);
+reset; print((ffalse(1) or ffalse(2) or ftrue(3)) + "; " + r);
+reset; print((ffalse(1) or ftrue(2) or ffalse(3)) + "; " + r);
+reset; print((ftrue(1) or ffalse(2) or ffalse(3)) + "; " + r);
+reset; print((fmaybe(1) or ffalse(2) or ffalse(3)) + "; " + r);
+----------------------------------------------------------------------
+1; [1, 2, 3]
+0; [1, 2, 3]
+0; [1, 2]
+0; [1]
+0.5; [1, 2, 3]
+0; [1, 2, 3]
+1; [1, 2, 3]
+1; [1, 2]
+1; [1]
+0.5; [1, 2, 3]
+======================================================================
+==== Check the new 'true' and 'false' keywords introduced in v1.1.
+print true
+print false
+----------------------------------------------------------------------
+1
+0
+======================================================================
+==== Testing conventional 'if', and what values count as true.
+if 1 then
+	print 10
+end if
+if -1 then; print(11); end if
+if 0 then; print(20); end if
+if 0.001 then; print(30); end if
+if -0.001 then; print(31); end if
+if [1] then; print(40); end if
+if [] then; print(50); end if
+if null then; print(60); else; print("OK!"); end if
+----------------------------------------------------------------------
+10
+11
+30
+31
+40
+OK!
+======================================================================
+==== Testing the single-line 'if' statement introduced in v1.1.
+if true then print "Yep"
+if 1 then print "yay" else print"nay"
+if false then print "yo" else print "no"
+if true then x=1 else x=2
+print x
+for i in range(1,10)
+	if i == 3 then continue
+	if i == 6 then break
+	print i
+end for
+----------------------------------------------------------------------
+Yep
+yay
+no
+1
+1
+2
+4
+5
+======================================================================
+===== More complex 'if' structures.
+if 1 then
+	print 10
+else if 1 then
+	print 15
+else
+	print 20
+end if
+print 30
+if 0 then
+	print 40
+else if 1 then
+	print 45
+else
+	print 50
+end if
+print 60
+if 0 then
+	print 70
+else if 0 then
+	print 80
+else if 1 then
+	print 90
+else
+	print 100
+end if
+if 0 then
+	print 110
+else if 0 then
+	print 120
+else if 0 then
+	print 130
+else
+	print 140
+end if
+print 150
+----------------------------------------------------------------------
+10
+30
+45
+60
+90
+140
+150
+======================================================================
+===== Nested 'if' structures.
+if 1 then
+	if 1 then; print(101); else; print(102); end if
+else
+	if 1 then; print(201); else; print(202); end if
+end if
+print 300
+if 0 then
+	if 1 then; print(401); else; print(402); end if
+else
+	if 0 then; print(501); else; print(502); end if
+end if
+print 999
+----------------------------------------------------------------------
+101
+300
+502
+999
+======================================================================
+==== Variables.
+x = 6*7
+print x
+y = x == 42
+print y
+----------------------------------------------------------------------
+42
+1
+======================================================================
+==== List operations.
+list1 = [0, 10, 20, 30, 40]
+list2 = [100, -200, 300]
+print list1[1]
+print list1[:3]
+print list1[3:]
+print list1[-2]
+print list1[1:-1]
+print list1 + list2
+print [10,20,30,40,50][2:4]
+print list2 * 2.5
+print list1 * 0.4
+print list1 * -5
+list1[2] = 22
+print list1
+print "Equality 1: " + (list1 == list2)
+listA = list2
+print "Equality A: " + (listA == list2)
+listB = [100, -200] + [300]
+print "Equality B: " + (listB == list2)
+----------------------------------------------------------------------
+10
+[0, 10, 20]
+[30, 40]
+30
+[10, 20, 30]
+[0, 10, 20, 30, 40, 100, -200, 300]
+[30, 40]
+[100, -200, 300, 100, -200, 300, 100]
+[0, 10]
+[]
+[0, 10, 22, 30, 40]
+Equality 1: 0
+Equality A: 1
+Equality B: 1
+======================================================================
+==== String operations.
+str1 = "apple"
+str2 = "banana"
+print str1[0]
+print str1[-2]
+print str1 + str2
+print str1 * 3
+print str1 * 0.6
+print str2 * 0.5 + str1
+print str2[1:-1]
+print str1[2:4] + str2[-3:5]
+print str1 * 0 == ""
+print "banana.txt" - ".txt"
+print "banana" - "na" * 2
+----------------------------------------------------------------------
+a
+l
+applebanana
+appleappleapple
+app
+banapple
+anan
+plan
+1
+banana
+ba
+======================================================================
+==== Basic map functionality.
+sortedStr = function(d)
+	result = "{"
+	for k in d.indexes.sort
+		result = result + k + ": " + d[k] + ", "
+	end for
+	return result[:-2] + "}"
+end function
+a = {1:1, 2:4}
+print sortedStr(a)
+print a[2]
+print sortedStr(a + {3:9})
+print sortedStr(a + {1:-1})
+a[2] = 44
+print a[2]
+b = a
+c = {1:1} + {2:44}
+print "Equality B: " + (b == a)
+print "Equality C: " + (c == a)
+c[1] = "one"
+print "Equality C2: " + (c == a)
+d = {"empty":null}
+print d
+----------------------------------------------------------------------
+{1: 1, 2: 4}
+4
+{1: 1, 2: 4, 3: 9}
+{1: -1, 2: 4}
+44
+Equality B: 1
+Equality C: 1
+Equality C2: 0
+{"empty": null}
+======================================================================
+==== Test map equality in the trickier case of recursive references.
+a = {}
+b = {}
+c = {}
+a.b = b
+b.a = a
+c = a
+print "a == b: " + (a == b)
+print "a == c: " + (a == c)
+print "b == c: " + (b == c)
+----------------------------------------------------------------------
+a == b: 0
+a == c: 1
+b == c: 0
+======================================================================
+==== Simple intrinsic functions.
+==== (Including a range check on rnd, which is about the best we can do.)
+print str(4) + str(2)
+print slice([0,10,20,30], 1, -1)
+print rnd >= 0
+print rnd < 1
+print str(42.0)
+print val("40.2")
+t1 = time; wait(0.1); e = time - t1
+if e >= 0.1 then print "wait OK" else print "wait broken"
+print len("hello")
+print len([1,2,3,4])
+print len({1:"one", 2:"two"})
+----------------------------------------------------------------------
+42
+[10, 20]
+1
+1
+42
+40.2
+wait OK
+5
+4
+2
+======================================================================
+==== hasIndex and indexOf on strings, lists, and maps.
+s = "abcde"
+print s.hasIndex(4)		// 1 (true)
+print(s.hasIndex(5))	// 0
+print s.hasIndex(-5)	// 1 (5 elements from the end)
+print(s.hasIndex(-6))	// 0
+print(s.indexOf("cd"))	// 2
+print(s.indexOf("xy"))	// null
+l = [2,4,6,8]
+print l.hasIndex(3)		// 1 (true)
+print(l.hasIndex(4))	// 0
+print(l.hasIndex(-4))	// 1
+print(l.indexOf(6))		// 2
+print(l.indexOf(5))		// null
+d = {1:"one", 2:"two", "foo":42}
+print d.hasIndex(1)		// 1 (true)
+print(d.hasIndex("x"))	// 0
+print(d.indexOf("two"))	// 2
+print(d.indexOf(42))	// foo
+print(d.indexOf(999))	// null
+// and now with the optional "after" parameter...
+s = "hello world"
+print(s.indexOf("h",-1))	// 0
+print(s.indexOf("o"))		// 4
+print(s.indexOf("o",4))		// 7
+print(s.indexOf("o",7))		// null
+print(s.indexOf("l",-3))	// 9
+l = [2,4,6,4,2]
+print(l.indexOf(2,-1))		// 0
+print(l.indexOf(2,0))		// 4
+print(l.indexOf(2,-2))		// 4
+print(l.indexOf(2,4))		// null
+d["bar"] = 42
+a = d.indexOf(42)			// "foo" (or "bar"; order undefined)
+b = d.indexOf(42, a)		// "bar" (or "foo")
+print(d.indexOf(42, b))		// null
+l = [a,b]
+l.sort
+print(l)					// ["bar", "foo"]
+----------------------------------------------------------------------
+1
+0
+1
+0
+2
+null
+1
+0
+1
+2
+null
+1
+0
+2
+foo
+null
+0
+4
+7
+null
+9
+0
+4
+4
+null
+null
+["bar", "foo"]
+======================================================================
+==== truth testing (including with and, or, and not)
+emptyList = []
+fullList = [1,2,3]
+emptyMap = {}
+fullMap = {1:"one", 2:"two"}
+emptyString = ""
+fullString = "foo"
+if emptyList then print "A"
+if not emptyList then print "B"
+if fullList then print "C"
+if not fullList then print "D"
+if fullString then print "E"
+if not fullString then print "F"
+if emptyList and fullList then print "G"
+if emptyList or fullList then print "H"
+if emptyMap and fullMap then print "I"
+if emptyMap or fullMap then print "J"
+if emptyString and fullString then print "K"
+if emptyString or fullString then print "L"
+----------------------------------------------------------------------
+B
+C
+E
+H
+J
+L
+======================================================================
+==== hashing and dictionary key uniqueness
+==== (Note that hash(a) should == hash(b) wherever a == b)
+a = [1, 2, 3]
+b = [1, 2] + [3]
+print hash(a) == hash(b)
+d = {}
+d[a] = 1
+d[b] = 2
+print d.len + ": " + d[a] + ", " + d[b]
+d1 = {1:"one", 2:"two"}
+d2 = {1:"one"}
+d2[2] = "two"
+print hash(d1) == hash(d2)
+----------------------------------------------------------------------
+1
+1: 2, 2
+1
+======================================================================
+==== Equality checking in the edge case of a list or dictionary
+==== that contains itself.  In this case, if two such lists are
+==== equal but not the same object, we stop recursing (after delving
+==== 16 levels deep) and return 0.5 for "maybe".
+====a = [1, 2, 3]
+====a[1] = a
+====b = [1, 2, 3]
+====b[1] = b
+====print hash(a) == hash(b)
+====print(a == a)	// prints 1, as they're the same object
+====print(a == b)	// prints 0.5, because it's too hard to tell
+====b[2] = 42		// but they're now truly different
+====print(a == b)	// so this prints 0
+====d1 = {1:"foo"}
+====d1["recurse"] = d1
+====d2 = {1:"foo"}
+====d2["recurse"] = d2
+====print(d1 == d1)	// prints 1, as they're the same object
+====print(d1 == d2)	// prints 0.5, because it's too hard to tell
+====d2[1] = "bar"	// but they're now truly different
+====print(d2 == d2)	// so this prints 0
+====----------------------------------------------------------------------
+====1
+====0.5
+====0
+====1
+====0.5
+====0
+======================================================================
+==== Trigonometry.
+print "Pi: " + round(pi, 2)
+print "acos(0.5): " + round(acos(0.5), 3)
+print "asin(0.5): " + round(asin(0.5), 3)
+print "atan(0.5): " + round(atan(0.5), 3)
+print "cos(-pi/4): " + round(cos(-pi/4), 3)
+print "sin(-pi/4): " + round(sin(-pi/4), 3)
+print "tan(1): " + round(tan(1), 3)
+----------------------------------------------------------------------
+Pi: 3.14
+acos(0.5): 1.047
+asin(0.5): 0.524
+atan(0.5): 0.464
+cos(-pi/4): 0.707
+sin(-pi/4): -0.707
+tan(1): 1.557
+======================================================================
+==== User-defined functions (including params, with and without default values).
+ultimateAnswer = function()
+	return 2 + 4*10
+end function
+print ultimateAnswer
+f = function(x, y)
+	return x*2 + y
+end function
+print f(5,2)
+g = function(x=10, y=20)
+	return x*2 + y
+end function
+h = function(x)
+	if x == 42 then; return; end if
+	print "Hooray!"
+end function
+print g
+print g()
+print g(5)
+print g(5, 6)
+h(42)
+----------------------------------------------------------------------
+42
+12
+40
+40
+30
+16
+======================================================================
+==== Variable scoping tests.
+f = function(x)
+	print x
+	print y
+	x = 10
+	y = 20
+end function
+x = 1
+y = 2
+f(5)
+print x
+print y
+----------------------------------------------------------------------
+5
+2
+1
+2
+======================================================================
+==== Explicit access to globals and locals.
+count = 0
+foo = "bar"
+f = function(x)
+	globals.count = globals.count + 1
+	locals.foo = "baz"
+	print globals.count + ", " + foo
+end function
+f
+f
+print foo
+----------------------------------------------------------------------
+1, baz
+2, baz
+bar
+======================================================================
+==== Test precedence between [] and . (a bug in MiniScript version 1).
+d = {}
+d.items = {}
+d.items[42] = "foo!"
+print d.items[42]
+----------------------------------------------------------------------
+foo!
+======================================================================
+==== Function invocation via dot vs. lookup by name
+d = {}
+d.func = function(x=0)
+	print "Running func with " + x
+end function
+d.func(1)
+f = d["func"]
+f(2)
+g = @d.func
+g(3)
+----------------------------------------------------------------------
+Running func with 1
+Running func with 2
+Running func with 3
+======================================================================
+==== Testing spam generation.  (Not that we condone spam.)
+==== (aka string replication)
+spam = function(n)
+	if n == 1 then
+		return "Spam."
+	else
+		return "Spam, " + "spam, " * (n-2) + "spam."
+	end if
+end function
+print spam(1)
+print spam(2)
+print spam(3)
+print spam(7)
+print spam(0)
+print spam(-4)
+----------------------------------------------------------------------
+Spam.
+Spam, spam.
+Spam, spam, spam.
+Spam, spam, spam, spam, spam, spam, spam.
+Spam, spam.
+Spam, spam.
+======================================================================
+==== Simple recursion test.
+recursiveFactorial = function(n)
+	if n == 1 then; return 1; end if
+	return n * recursiveFactorial(n-1)
+end function
+print recursiveFactorial(1)
+print recursiveFactorial(5)
+----------------------------------------------------------------------
+1
+120
+======================================================================
+==== Function invocation & referencing.
+triple = function(n)
+	return n*3
+end function
+print(triple)	// NULL, since we didn't supply an argument
+print triple(5)
+print @triple
+f = @triple
+print f(6)
+----------------------------------------------------------------------
+null
+15
+FUNCTION(n)
+18
+======================================================================
+==== While loop, with break and continue.
+i = 0
+while i < 20
+	i = i + 1
+	if i > 10 then; break; end if
+	if i % 3 == 0 then; continue; end if
+	print i
+end while
+----------------------------------------------------------------------
+1
+2
+4
+5
+7
+8
+10
+======================================================================
+==== Test the range() intrinsic.
+print range(1,10)
+print range(10,1)
+print range(0, 10, 3)
+print range(10, 0, -3)
+----------------------------------------------------------------------
+[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+[10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
+[0, 3, 6, 9]
+[10, 7, 4, 1]
+======================================================================
+==== Test the remove() intrinsic.
+s = "Hello Bob!"
+print s.remove("ell")
+print remove(s, " Bob")
+l = [1,2,3,4,5]
+l.remove(-2)  // (second from the end)
+print l
+d = {1:"one", "foo":"bar"}
+print d.remove("no such key")
+print d.remove(1)
+print d
+----------------------------------------------------------------------
+Ho Bob!
+Hello!
+[1, 2, 3, 5]
+0
+1
+{"foo": "bar"}
+======================================================================
+==== Test the replace() intrinsic.
+s = "Hello Bob!"
+print s.replace("o", "oo")
+print replace(s, "Bob", "Frank")
+s = "Mello Yellow"
+print replace(s, "ell", "ipp")
+print s.replace("ell", "ipp", 1)
+l = [1, 2, 5, 2, "foo", 2, "bar"]
+l.replace(2, 22)
+print l
+print l.replace("foo", "foible")
+print l.replace(22, 3, 2)
+d = {1:"one", 2:"two", "foo":"bar"}
+d.replace("two", "ni")
+print d[1] + ", " + d[2] + ", " + d.foo
+d.replace("bar", "ni")
+print d[1] + ", " + d[2] + ", " + d.foo
+d.replace("ni", "two")
+print d[1] + ", " + d[2] + ", " + d.foo
+d.replace("two", "deux", 1)  // order not defined here, so:
+s = d[1] + ", " + d[2] + ", " + d.foo
+if s == "one, deux, two" or s == "one, two, deux" then
+	print "OK"
+else
+	print "map replace failed"
+end if
+----------------------------------------------------------------------
+Helloo Boob!
+Hello Frank!
+Mippo Yippow
+Mippo Yellow
+[1, 22, 5, 22, "foo", 22, "bar"]
+[1, 22, 5, 22, "foible", 22, "bar"]
+[1, 3, 5, 3, "foible", 22, "bar"]
+one, ni, bar
+one, ni, ni
+one, two, two
+OK
+======================================================================
+==== For loop, with break and continue.
+for i in range(0, 100, 7)
+	if i > 50 then; break; end if
+	if i % 3 == 0 then; continue; end if
+	print i
+end for
+----------------------------------------------------------------------
+7
+14
+28
+35
+49
+======================================================================
+==== For loop iteration over a map (getting key/value pairs).
+==== (Note that order is not really defined, so we have to gather
+==== up the results and sort them to get a well-defined result.)
+d = {"one":1, "two":2, "three":3}
+results = []
+for i in d
+	results = results + [i.key + " maps to " + i.value]
+end for
+results.sort
+print results.len
+print results[0]
+print results[1]
+print results[2]
+----------------------------------------------------------------------
+3
+one maps to 1
+three maps to 3
+two maps to 2
+======================================================================
+==== Function references.
+f = rnd			// here, f is just a single random number
+a1 = f
+a2 = f
+print a1==a2	// should be true (1)
+f = @rnd		// but now, f is a reference to the rnd function
+a1 = f
+a2 = f
+print a1==a2 	// should be false (0)
+print @f==@rnd	// should be true (1)
+----------------------------------------------------------------------
+1
+0
+1
+======================================================================
+==== Advanced function references.
+module = {}
+module.func1 = function(x)
+	return x * 42
+end function
+f = @module.func1
+print @f == @module.func1
+print @module.func1 == @f
+docs = {}
+docs[@module.func1] = "Multiplies by 42."
+print docs[@module.func1]
+print docs[@f]
+----------------------------------------------------------------------
+1
+1
+Multiplies by 42.
+Multiplies by 42.
+======================================================================
+==== Compile-time error reporting test.
+x = 1
+x = 5$&@*!
+x = 3
+----------------------------------------------------------------------
+Compiler Error: got Unknown($) where EOL is required [line 2]
+======================================================================
+==== Run-time error reporting test.
+x = 1
+x = noSuchThingy
+x = 3
+----------------------------------------------------------------------
+Runtime Error: Undefined Identifier: 'noSuchThingy' is unknown in this context [line 2]
+======================================================================
+==== Error reporting of unexpected end-of-file.
+for i in range(0,10)
+	print i
+----------------------------------------------------------------------
+Compiler Error: 'for' without matching 'end for' [line 3]
+======================================================================
+==== Testing that objects are distinct, even when new'd in a function.
+==== (This was a bug in an early version of MiniScript.)
+Vec = {"x":0, "y":0}
+Vec.New = function()
+	return new Vec
+end function
+v1 = new Vec
+v2 = Vec.New
+v3 = Vec.New
+v1.x = 1
+v2.x = 2
+v3.x = 3
+print v1.x
+print v2.x
+print v3.x
+----------------------------------------------------------------------
+1
+2
+3
+======================================================================
+==== Similar test, for lists.
+f = function()
+	return [1,2,3]
+end function
+a = f
+b = f
+a[1] = 22
+print a
+print b
+----------------------------------------------------------------------
+[1, 22, 3]
+[1, 2, 3]
+======================================================================
+==== Reassigning elements of a list in a loop.
+lst = [1,2,3,4,5]
+for i in range(0, lst.len-1)
+	lst[i] = lst[i] * 2
+end for
+print lst
+----------------------------------------------------------------------
+[2, 4, 6, 8, 10]
+======================================================================
+==== Test handling of nulls in lists.
+n = null
+l = [1,n,3]
+print l
+l = [4,null,6]
+print l
+----------------------------------------------------------------------
+[1, null, 3]
+[4, null, 6]
+======================================================================
+==== Nested lists (can be used like a jagged 2D array).
+m = [[0,1,2], [3,4,5]]
+for i in range(0,1)
+	for j in range(0,2)
+		print i + ", " + j + ": " + m[i][j]
+	end for
+end for
+----------------------------------------------------------------------
+0, 0: 0
+0, 1: 1
+0, 2: 2
+1, 0: 3
+1, 1: 4
+1, 2: 5
+======================================================================
+==== Testing chaining of calls.
+Vec = {"x":0, "y":0}
+Vec.New = function(x=0, y=0)
+	result = new Vec
+	result.x = x
+	result.y = y
+	return result
+end function
+Vec.Print = function()
+	print "x:" + self.x + " y:" + self.y
+end function
+Vec.New.Print
+Vec.New(40,2).Print
+s = "Hello world!"
+print(s.upper.indexOf("R"))			// 8
+print(s.upper().indexOf("R"))		// 8
+print(s.remove("l").indexOf("r"))	// 7
+d = {}
+d.foo = ["a", "b", "c"]
+print(d.foo.len)				// 3
+print(d.foo.indexOf("b"))		// 1
+f = function()
+	return d
+end function
+print(f.foo.len)				// 3
+print(f.foo.indexOf("b"))		// 1
+----------------------------------------------------------------------
+x:0 y:0
+x:40 y:2
+8
+8
+7
+3
+1
+3
+1
+======================================================================
+==== Testing that a function without an explicit return statement returns null.
+f = function(x)
+	print x
+end function
+y = f(42)
+if y == null then print "Good" else print "Bad"
+----------------------------------------------------------------------
+42
+Good
+======================================================================
+==== List push, pop (like a stack), and pull (like a queue).
+lst = []
+lst.push(1)
+lst.push(2)
+lst.push(3)
+print lst
+print lst.pop + " -> " + lst
+print lst.pull + " -> " + lst
+print lst.pull + " -> " + lst
+----------------------------------------------------------------------
+[1, 2, 3]
+3 -> [1, 2]
+1 -> [2]
+2 -> []
+======================================================================
+==== Map push, pop (like a set)
+==== Note that this is a bit hard to test because of arbitrary order issues.
+sortedStr = function(d)
+	result = "{"
+	for k in d.indexes.sort
+		result = result + k + ": " + d[k] + ", "
+	end for
+	return result[:-2] + "}"
+end function
+d = {}
+d.push(1)
+d.push(2)
+d.push(3)
+print sortedStr(d)
+results = [d.pop, d.pop, d.pop]
+results.sort
+print results
+print d
+----------------------------------------------------------------------
+{1: 1, 2: 1, 3: 1}
+[1, 2, 3]
+{}
+======================================================================
+==== indexes and values intrinsics
+d = {1:"one", 2:"two", 3:"three"}
+print d.indexes.sort
+print d.values.sort
+s = "Howdy"
+print s.indexes
+print s.values
+----------------------------------------------------------------------
+[1, 2, 3]
+["one", "three", "two"]
+[0, 1, 2, 3, 4]
+["H", "o", "w", "d", "y"]
+======================================================================
+==== list sorting (both direct, and by a given key)
+lst = [42, 6, -3, 10, -1, 13]
+lst.sort
+print lst
+lst = []
+lst.push({"name":"three", "val":3})
+lst.push({"name":"one", "val":1})
+lst.push({"name":"four", "val":4})
+lst.push({"name":"two", "val":2})
+lst.sort("name")
+print lst
+lst.sort("val")
+print lst
+----------------------------------------------------------------------
+[-3, -1, 6, 10, 13, 42]
+[{"name": "four", "val": 4}, {"name": "one", "val": 1}, {"name": "three", "val": 3}, {"name": "two", "val": 2}]
+[{"name": "one", "val": 1}, {"name": "two", "val": 2}, {"name": "three", "val": 3}, {"name": "four", "val": 4}]
+======================================================================
+==== Test the super pseudo-keyword
+A = {}
+A.name = "Ay"
+A.func = function()
+	return self.name + "1"
+end function
+B = new A
+B.name = "Bee"
+C = new B
+C.name = "Sea"
+C.func = function()
+	return super.func + "." + self.name + "3"
+end function
+c = new C
+print c.func
+----------------------------------------------------------------------
+Sea1.Sea3
+======================================================================
+==== Test the join intrinsic
+print range(1,5).join
+print ["a","b","c"].join("<>")
+print [].join("<>")
+----------------------------------------------------------------------
+1 2 3 4 5
+a<>b<>c
+
+======================================================================
+==== Test log.
+print log(100)
+print log(2048, 2)
+print log(50, 5)
+----------------------------------------------------------------------
+2
+11
+2.430677
+======================================================================
+==== Test isa.
+print 42 isa number
+print 42 isa string
+print "foo" isa string
+print "foo" isa number
+print {} isa map
+d = {}
+e = new d
+print e isa d
+print d isa d
+----------------------------------------------------------------------
+1
+0
+1
+0
+1
+1
+0
+======================================================================
+==== Test adding new extension methods to built-in types.
+string.cap = function()
+	return self[0].upper + self[1:]
+end function
+print "foo!".cap
+number.squared = function()
+	return self * self
+end function
+
+// Known issue: you can't use dot syntax with numeric literals.
+n = 9
+print n.squared
+
+list.zap = function(x)
+	for i in range(self.len-1, 0)
+		if self[i] == x then self.remove i
+	end for
+end function
+l = ["a","b","c","b","a"]
+l.zap("b")
+print l
+----------------------------------------------------------------------
+Foo!
+81
+["a", "c", "a"]
+======================================================================
+==== Test the split intrinsic
+print split("Eat, pray, love", ", ")
+print split("...foo...bar...", "...")
+print "Eat, pray, love".split(", ", 2)
+print "foo=bar=baz=bamf".split("=", 3)
+----------------------------------------------------------------------
+["Eat", "pray", "love"]
+["", "foo", "bar", ""]
+["Eat", "pray, love"]
+["foo", "bar", "baz=bamf"]
+======================================================================
+==== Example: Summing an array (http://c2.com/cgi/wiki?ArraySum)
+==== (trivial thanks to the built-in sum function)
+print sum([10,15,20])
+list = [100,15,20]
+print list.sum
+----------------------------------------------------------------------
+45
+135
+======================================================================
+==== Example: Counter (http://c2.com/cgi/wiki?CounterInManyProgrammingLanguages)
+==== (Overflows when a signed int is exceeded.)
+======================================================================
+Counter = {"value":0}
+Counter.next = function()
+	self.value = self.value + 1
+	return self.value
+end function
+c = new Counter
+print c.next
+print c.next
+print c.next
+----------------------------------------------------------------------
+1
+2
+3
+======================================================================
+==== Example: Dot Product (http://c2.com/cgi/wiki?DotProductInManyProgrammingLanguages)
+dotProduct = function(a, b)
+	sum = 0
+	for i in range(0, a.len - 1)
+		sum = sum + a[i] * b[i]
+	end for
+	return sum
+end function
+print dotProduct([1, 2, 3], [10, 100, 1000])
+----------------------------------------------------------------------
+3210
+======================================================================
+==== Example: FizzBuzz (http://rosettacode.org/wiki/FizzBuzz)
+fizzBuzz = function(n)
+	for i in range(1, n)
+	    s = "Fizz" * (i%3==0) + "Buzz" * (i%5==0)
+		if s == "" then s = str(i)
+		print s
+	end for
+end function
+fizzBuzz(15)
+----------------------------------------------------------------------
+1
+2
+Fizz
+4
+Buzz
+Fizz
+7
+8
+Fizz
+Buzz
+11
+Fizz
+13
+14
+FizzBuzz
+======================================================================
+==== Example: Map (http://rosettacode.org/wiki/Apply_a_callback_to_an_array)
+map = function(f, seq)
+	result = []
+	for i in seq
+		result = result + [f(i)]
+	end for
+	return result
+end function
+square = function(x)
+	return x*x
+end function
+list = [2,3,5]
+print map(@square, list)
+----------------------------------------------------------------------
+[4, 9, 25]
+======================================================================
+==== Example: Filter (http://rosettacode.org/wiki/Filter)
+filter = function(f, seq)
+	result = []
+	for i in seq
+		if f(i) then result = result + [i]
+	end for
+	return result
+end function
+isEven = function(x)
+	return x % 2 == 0
+end function
+list = [2,3,5,6,8,9]
+print filter(@isEven, list)
+----------------------------------------------------------------------
+[2, 6, 8]
+======================================================================
+==== Sum and Product of an array
+==== (http://rosettacode.org/wiki/Sum_and_product_of_an_array)
+==== We have a built-in function for the sum, but not the product.
+product = function(seq)
+	prod = 1
+	for i in seq
+		prod = prod * i
+	end for
+	return prod
+end function
+list = [2, 4, 6]
+print list.sum
+print(product(list))	// pity we can't add this to the built-in list type!
+----------------------------------------------------------------------
+12
+48
+======================================================================
+==== Greatest Common Denominator (http://rosettacode.org/wiki/Greatest_common_divisor)
+gcd = function(a, b)
+	if a == 0 then return b
+	while b != 0
+		newA = b
+		b = a % b
+		a = newA
+	end while
+	return abs(a)
+end function
+print gcd(-21, 35)
+----------------------------------------------------------------------
+7
+======================================================================
+==== Max element of a list (http://rosettacode.org/wiki/Greatest_element_of_a_list)
+max = function(seq)
+	if seq.len == 0 then return null
+	max = seq[0]
+	for item in seq
+		if item > max then max = item
+	end for
+	return max
+end function
+print max([5, -2, 12, 7, 0])
+----------------------------------------------------------------------
+12
+======================================================================
+==== Split a string into a list by some delimiter
+==== (without using the .split function added in 1.4!)
+oldSplit = function(s, delim)
+	result = []
+	wordStart = 0
+	sLen = s.len
+	delimLen = delim.len
+	i = 0
+	while i < sLen
+		if s[i:i+delimLen] == delim then
+			result = result + [ s[wordStart:i] ]
+			wordStart = i + delimLen
+			i = wordStart
+		else
+			i = i + 1
+		end if
+	end while
+	result = result + [ s[wordStart:i] ]
+	return result
+end function
+print oldSplit("Eat, pray, love", ", ")
+print oldSplit("...foo...bar...", "...")
+----------------------------------------------------------------------
+["Eat", "pray", "love"]
+["", "foo", "bar", ""]
+======================================================================
+==== Titlecase function
+titlecase = function(s)
+	result = ""
+	for i in s.indexes
+		if i == 0 or s[i-1] == " " then
+			result = result + s[i].upper
+		else
+			result = result + s[i].lower
+		end if
+	end for
+	return result
+end function
+print titlecase("AND NOW for something completely different")
+----------------------------------------------------------------------
+And Now For Something Completely Different

@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<VariablesViewState
+   version = "1.0">
+   <ContextStates>
+      <ContextState
+         contextName = "MiniScript::Value::Value(MiniScript::Value const&amp;):MiniscriptTypes.h">
+      </ContextState>
+      <ContextState
+         contextName = "MiniScript::String::release():String.h">
+      </ContextState>
+      <ContextState
+         contextName = "GLOBAL">
+         <PersistentStrings>
+            <PersistentString
+               value = "(MiniScript::StringStorage*)this-&gt;ss">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "MiniScript::Machine::DoOneLine(MiniScript::TACLine&amp;, MiniScript::Context*):MiniscriptTAC.cpp">
+         <PersistentStrings>
+            <PersistentString
+               value = "(MiniScript::StringStorage *)line.rhsA.data.ref">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "MiniScript::Value::Val(MiniScript::Context*) const:MiniscriptTypes.cpp">
+      </ContextState>
+      <ContextState
+         contextName = "MiniScript::Value::CodeForm(int):MiniscriptTypes.cpp">
+      </ContextState>
+      <ContextState
+         contextName = "MiniScript::DictIterator&lt;MiniScript::Value, MiniScript::Value&gt;::Next():Dictionary.h">
+      </ContextState>
+      <ContextState
+         contextName = "MiniScript::intrinsic_push(MiniScript::Context*, MiniScript::IntrinsicResult):MiniscriptIntrinsics.cpp">
+      </ContextState>
+      <ContextState
+         contextName = "MiniScript::Dictionary&lt;MiniScript::Value, MiniScript::Value, &amp;(MiniScript::HashValue(MiniScript::Value const&amp;))&gt;::Get(MiniScript::Value const&amp;, MiniScript::Value*) const:Dictionary.h">
+      </ContextState>
+      <ContextState
+         contextName = "MiniScript::Value::retain():MiniscriptTypes.h">
+      </ContextState>
+      <ContextState
+         contextName = "MiniScript::intrinsic_abs(MiniScript::Context*, MiniScript::IntrinsicResult):MiniscriptIntrinsics.cpp">
+      </ContextState>
+      <ContextState
+         contextName = "MiniScript::Parser::RequireToken(MiniScript::Lexer, MiniScript::Token::Type, MiniScript::String):MiniscriptParser.cpp">
+      </ContextState>
+      <ContextState
+         contextName = "MiniScript::intrinsic_asin(MiniScript::Context*, MiniScript::IntrinsicResult):MiniscriptIntrinsics.cpp">
+      </ContextState>
+      <ContextState
+         contextName = "MiniScript::RefCountedStorage::retain():RefCountedStorage.h">
+      </ContextState>
+      <ContextState
+         contextName = "MiniScript::Value::operator==(MiniScript::Value const&amp;):MiniscriptTypes.h">
+      </ContextState>
+      <ContextState
+         contextName = "MiniScript::DictIterator&lt;MiniScript::Value, MiniScript::Value&gt;::Key() const:Dictionary.h">
+      </ContextState>
+      <ContextState
+         contextName = "MiniScript::Value::Val(MiniScript::Context*):MiniscriptTypes.cpp">
+      </ContextState>
+      <ContextState
+         contextName = "MiniScript::Machine::DoOneLine(MiniScript::TACLine, MiniScript::Context*):MiniscriptTAC.cpp">
+      </ContextState>
+   </ContextStates>
+</VariablesViewState>

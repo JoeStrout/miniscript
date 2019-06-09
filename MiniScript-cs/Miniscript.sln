@@ -1,0 +1,40 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Miniscript", "Miniscript.csproj", "{C3806B8F-9702-4B39-B6D9-9ECBC298565F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x86 = Debug|x86
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C3806B8F-9702-4B39-B6D9-9ECBC298565F}.Debug|x86.ActiveCfg = Debug|x86
+		{C3806B8F-9702-4B39-B6D9-9ECBC298565F}.Debug|x86.Build.0 = Debug|x86
+		{C3806B8F-9702-4B39-B6D9-9ECBC298565F}.Release|x86.ActiveCfg = Release|x86
+		{C3806B8F-9702-4B39-B6D9-9ECBC298565F}.Release|x86.Build.0 = Release|x86
+	EndGlobalSection
+	GlobalSection(MonoDevelopProperties) = preSolution
+		Policies = $0
+		$0.DotNetNamingPolicy = $1
+		$1.DirectoryNamespaceAssociation = PrefixedHierarchical
+		$0.TextStylePolicy = $2
+		$2.inheritsSet = null
+		$2.scope = text/x-csharp
+		$0.CSharpFormattingPolicy = $3
+		$3.NewLinesForBracesInProperties = False
+		$3.NewLinesForBracesInAccessors = False
+		$3.NewLinesForBracesInAnonymousMethods = False
+		$3.NewLinesForBracesInControlBlocks = False
+		$3.NewLinesForBracesInAnonymousTypes = False
+		$3.NewLinesForBracesInObjectCollectionArrayInitializers = False
+		$3.NewLinesForBracesInLambdaExpressionBody = False
+		$3.NewLineForElse = False
+		$3.NewLineForCatch = False
+		$3.NewLineForFinally = False
+		$3.scope = text/x-csharp
+		$0.TextStylePolicy = $4
+		$4.FileWidth = 80
+		$4.scope = text/plain
+	EndGlobalSection
+EndGlobal
