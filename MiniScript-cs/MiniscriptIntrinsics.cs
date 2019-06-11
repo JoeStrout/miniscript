@@ -871,11 +871,12 @@ namespace Miniscript {
 				while (pos < self.Length) {
 					int nextPos;
 					if (maxCount >= 0 && result.values.Count == maxCount - 1) nextPos = self.Length;
+					else if (delim.Length == 0) nextPos = pos+1;
 					else nextPos = self.IndexOf(delim, pos, StringComparison.InvariantCulture);
 					if (nextPos < 0) nextPos = self.Length;
 					result.values.Add(new ValString(self.Substring(pos, nextPos - pos)));
 					pos = nextPos + delim.Length;
-					if (pos == self.Length) result.values.Add(ValString.empty);
+					if (pos == self.Length && delim.Length > 0) result.values.Add(ValString.empty);
 				}
 				return new Intrinsic.Result(result);
 			};

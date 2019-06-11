@@ -621,11 +621,12 @@ namespace MiniScript {
 		while (posB < self.LengthB()) {
 			long nextPos;
 			if (maxCount >= 0 and result.Count() == maxCount - 1) nextPos = self.LengthB();
+			else if (delim.empty()) nextPos = posB + 1;
 			else nextPos = self.IndexOfB(delim, posB);
 			if (nextPos < 0) nextPos = self.LengthB();
 			result.Add(self.SubstringB(posB, nextPos - posB));
 			posB = nextPos + delim.LengthB();
-			if (posB == self.LengthB()) result.Add(Value::emptyString);
+			if (posB == self.LengthB() && !delim.empty()) result.Add(Value::emptyString);
 		}
 		return IntrinsicResult(result);
 	}
