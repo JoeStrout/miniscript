@@ -701,7 +701,7 @@ namespace MiniScript {
 			
 			// Convert from e.g. "Jan 14 2012" to sortable (SQL) format, "2012-01-14".
 			String mmm_dd_yyyy(__DATE__);
-			String dd = mmm_dd_yyyy.SubstringB(4, 2);
+			String dd = mmm_dd_yyyy.SubstringB(4, 2).Replace(" ", "0");
 			String yyyy = mmm_dd_yyyy.SubstringB(7, 4);
 			String mmm = mmm_dd_yyyy.Substring(0, 3);
 			String mm;

@@ -30,3 +30,7 @@
 *.exe
 *.out
 *.app
+
+# XCode junk
+DerivedData
+
