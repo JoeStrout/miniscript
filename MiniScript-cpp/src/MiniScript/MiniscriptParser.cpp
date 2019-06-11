@@ -37,24 +37,27 @@ namespace MiniScript {
 		return result;
 	}
 
-	void ParseState::Patch(String keywordFound, String alsoPatch, long reservingLines) {
-		// Start by finding the matching backpatch.
-		long idx;
-		for (idx = backpatches.Count() - 1; idx >= 0; idx--) {
-			if (backpatches[idx].waitingFor == keywordFound) break;
-			if (alsoPatch.empty() or backpatches[idx].waitingFor != alsoPatch) {
+	void ParseState::Patch(String keywordFound, bool alsoBreak, long reservingLines) {
+		Value target = code.Count() + reservingLines;
+		bool done = false;
+		for (long idx = backpatches.Count() - 1; idx >= 0 and not done; idx--) {
+			bool patchIt = false;
+			if (backpatches[idx].waitingFor == keywordFound) patchIt = done = true;
+			else if (backpatches[idx].waitingFor == "break") {
+				// Not the expected keyword, but "break"; this is always OK,
+				// but we may or may not patch it depending on the call.
+				patchIt = alsoBreak;
+			} else {
+				// Not the expected patch, and not "break"; we have a mismatched block start/end.
 				throw new CompilerException("'" + keywordFound + "' skips expected '" + backpatches[idx].waitingFor + "'");
+			}
+			if (patchIt) {
+				code[backpatches[idx].lineNum].rhsA = target;
+				backpatches.RemoveAt(idx);
 			}
 		}
 		// Make sure we found one...
-		if (idx < 0) throw new CompilerException("'" + keywordFound + "' without matching block starter");
-		
-		// Now, patch all from there to the end.
-		Value target = code.Count() + reservingLines;
-		for (long i = backpatches.Count() - 1; i >= idx; i--) {
-			code[backpatches[i].lineNum].rhsA = target;
-		}
-		backpatches.RemoveRange(idx, backpatches.Count() - idx);
+		if (!done) throw new CompilerException("'" + keywordFound + "' without matching block starter");
 	}
 
 	/// <summary>

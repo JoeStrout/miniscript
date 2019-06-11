@@ -100,3 +100,7 @@ Version 1.4: Jun 09, 2019
 
 - Host apps can now set an "assignment override function" on any ValMap, allowing a bit of native code to run when user code assigns a value in that map.
 
+
+Version 1.4.1 (not yet released)
+=============
+- Fixed a bug that would cause the `break` keyword to throw a compiler error when used before an `else` block {GitHub issue #2}.

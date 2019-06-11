@@ -80,7 +80,7 @@ namespace MiniScript {
 		/// <param name="keywordFound">Keyword found.</param>
 		/// <param name="reservingLines">Extra lines (after the current position) to patch to.</param>
 		void Patch(String keywordFound, long reservingLines=0) {
-			Patch(keywordFound, String(), reservingLines);
+			Patch(keywordFound, false, reservingLines);
 		}
 		
 		/// <summary>
@@ -89,9 +89,9 @@ namespace MiniScript {
 		/// matching backpatch (and any after it) to the current code end.
 		/// </summary>
 		/// <param name="keywordFound">Keyword found.</param>
-		/// <param name="alsoPatch">Keyword to also patch, if we see it before keywordFound.</param>
+		/// <param name="alsoBreak">If true, also patch "break"; otherwise skip it.</param>
 		/// <param name="reservingLines">Extra lines (after the current position) to patch to.</param>
-		void Patch(String keywordFound, String alsoPatch, long reservingLines=0);
+		void Patch(String keywordFound, bool alsoBreak, long reservingLines=0);
 
 		/// <summary>
 		/// Patches up all the branches for a single open if block.  That includes

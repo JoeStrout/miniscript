@@ -72,7 +72,7 @@ namespace Miniscript {
 			/// <param name="keywordFound">Keyword found.</param>
 			/// <param name="reservingLines">Extra lines (after the current position) to patch to.</param> 
 			public void Patch(string keywordFound, int reservingLines=0) {
-				Patch(keywordFound, null, reservingLines);
+				Patch(keywordFound, false, reservingLines);
 			}
 
 			/// <summary>
@@ -81,26 +81,29 @@ namespace Miniscript {
 			/// matching backpatch (and any after it) to the current code end.
 			/// </summary>
 			/// <param name="keywordFound">Keyword found.</param>
-			/// <param name="alsoPatch">Keyword to also patch, if we see it before keywordFound.</param> 
+			/// <param name="alsoBreak">If true, also patch "break"; otherwise skip it.</param> 
 			/// <param name="reservingLines">Extra lines (after the current position) to patch to.</param> 
-			public void Patch(string keywordFound, string alsoPatch, int reservingLines=0) {
-				// Start by finding the matching backpatch.
-				int idx;
-				for (idx = backpatches.Count - 1; idx >= 0; idx--) {
-					if (backpatches[idx].waitingFor == keywordFound) break;
-					if (alsoPatch == null || backpatches[idx].waitingFor != alsoPatch) {
+			public void Patch(string keywordFound, bool alsoBreak, int reservingLines=0) {
+				Value target = TAC.Num(code.Count + reservingLines);
+				bool done = false;
+				for (int idx = backpatches.Count - 1; idx >= 0 && !done; idx--) {
+					bool patchIt = false;
+					if (backpatches[idx].waitingFor == keywordFound) patchIt = done = true;
+					else if (backpatches[idx].waitingFor == "break") {
+						// Not the expected keyword, but "break"; this is always OK,
+						// but we may or may not patch it depending on the call.
+						patchIt = alsoBreak;
+					} else {
+						// Not the expected patch, and not "break"; we have a mismatched block start/end.
 						throw new CompilerException("'" + keywordFound + "' skips expected '" + backpatches[idx].waitingFor + "'");
+					}
+					if (patchIt) {
+						code[backpatches[idx].lineNum].rhsA = target;
+						backpatches.RemoveAt(idx);
 					}
 				}
 				// Make sure we found one...
-				if (idx < 0) throw new CompilerException("'" + keywordFound + "' without matching block starter");
-
-				// Now, patch all from there to the end.
-				Value target = TAC.Num(code.Count + reservingLines);
-				for (int i = backpatches.Count - 1; i >= idx; i--) {
-					code[backpatches[i].lineNum].rhsA = target;
-				}
-				backpatches.RemoveRange(idx, backpatches.Count - idx);
+				if (!done) throw new CompilerException("'" + keywordFound + "' without matching block starter");
 			}
 
 			/// <summary>
@@ -352,7 +355,7 @@ namespace Miniscript {
 						output.Add(new TAC.Line(null, TAC.Line.Op.GotoA, TAC.Num(jump.lineNum)));
 						// Then, backpatch the open "while" branch to here, right after the loop.
 						// And also patch any "break" branches emitted after that point.
-						output.Patch(keyword, "break");
+						output.Patch(keyword, true);
 					}
 					break;
 				case "for":
@@ -396,7 +399,7 @@ namespace Miniscript {
 						output.Add(new TAC.Line(null, TAC.Line.Op.GotoA, TAC.Num(jump.lineNum)));
 						// Then, backpatch the open "for" branch to here, right after the loop.
 						// And also patch any "break" branches emitted after that point.
-						output.Patch(keyword, "break");
+						output.Patch(keyword, true);
 					}
 					break;
 				case "break":
@@ -1068,6 +1071,7 @@ namespace Miniscript {
 			TestValidParse("print true");
 			TestValidParse("f = function(x)\nprint x\nend function\nf 42");
 			TestValidParse("myList = [1, null, 3]");
+			TestValidParse("while true; if true then; break; else; print 1; end if; end while");
 		}
 	}
 }
