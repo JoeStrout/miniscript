@@ -348,6 +348,7 @@ namespace Miniscript {
 				Value self = context.GetVar("self");
 				Value index = context.GetVar("index");
 				if (self is ValList) {
+					if (!(index is ValNumber)) return Intrinsic.Result.False;	// #3
 					List<Value> list = ((ValList)self).values;
 					int i = index.IntValue();
 					return new Intrinsic.Result(ValNumber.Truth(i >= -list.Count && i < list.Count));

@@ -1,10 +1,10 @@
 ﻿<Properties StartupConfiguration="{C3806B8F-9702-4B39-B6D9-9ECBC298565F}|Default">
   <MonoDevelop.Ide.Workbench ActiveDocument="MiniscriptIntrinsics.cs">
     <Files>
-      <File FileName="MiniscriptIntrinsics.cs" Line="689" Column="23" />
+      <File FileName="MiniscriptIntrinsics.cs" Line="351" Column="69" />
       <File FileName="MiniscriptTypes.cs" Line="869" Column="1" />
       <File FileName="Program.cs" Line="140" Column="1" />
-      <File FileName="MiniscriptParser.cs" Line="1029" Column="1" />
+      <File FileName="MiniscriptParser.cs" Line="84" Column="79" />
       <File FileName="MiniscriptTAC.cs" Line="803" Column="1" />
       <File FileName="MiniscriptKeywords.cs" Line="23" Column="8" />
     </Files>

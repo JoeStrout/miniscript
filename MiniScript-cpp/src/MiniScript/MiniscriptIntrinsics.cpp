@@ -114,6 +114,7 @@ namespace MiniScript {
 		Value self = context->GetVar("self");
 		Value index = context->GetVar("index");
 		if (self.type == ValueType::List) {
+			if (index.type != ValueType::Number) return IntrinsicResult(Value::zero);		// #3
 			ValueList list = self.GetList();
 			long i = index.IntValue();
 			return IntrinsicResult(Value::Truth(i >= -list.Count() and i < list.Count()));

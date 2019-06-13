@@ -106,3 +106,5 @@ Version 1.4.1 (not yet released)
 - Fixed a bug that would cause the `break` keyword to throw a compiler error when used before an `else` block.  {GitHub issue #2}
 
 - The split(delim, maxCount) intrinsic now works with a delimiter of empty string; it splits on individual characters, up to the specified count.  (Note that if you don't specify maxCount, then using .values would be equivalent and slightly more efficient.)  {GitHub issue #1}
+
+- Fixed a bug where hasIndex on a list would return true for any string argument {#3}.
