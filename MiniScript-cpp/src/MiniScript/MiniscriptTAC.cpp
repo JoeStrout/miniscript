@@ -503,12 +503,12 @@ namespace MiniScript {
 		if (identifier == "globals") return Root()->variables;
 		
 		// check for a local variable
-		if (variables.ContainsKey(identifier)) return variables[identifier];
+		Value result;
+		if (variables.Get(identifier, &result)) return result;
 		
 		// OK, we don't have a local variable with that name.
 		// Check higher scopes.
 		Context* c = parent;
-		Value result;
 		while (c != nullptr) {
 			if (c->variables.Get(identifier, &result)) return result;
 			c = c->parent;

@@ -546,7 +546,21 @@ namespace Miniscript {
 			}
 			set { map[new ValString(identifier)] = value; }
 		}
-				
+		
+		/// <summary>
+		/// Look up the given identifier as quickly as possible, without
+		/// walking the __isa chain or doing anything fancy.  (This is used
+		/// when looking up local variables.)
+		/// </summary>
+		/// <param name="identifier">identifier to look up</param>
+		/// <returns>true if found, false if not</returns>
+		public bool TryGetValue(string identifier, out Value value) {
+			var idVal = TempValString.Get(identifier);
+			bool result = map.TryGetValue(idVal, out value);
+			TempValString.Release(idVal);
+			return result;
+		}
+		
 		/// <summary>
 		/// Look up a value in this dictionary, walking the __isa chain to find
 		/// it in a parent object if necessary.

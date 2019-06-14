@@ -607,8 +607,9 @@ namespace Miniscript {
 				}
 				
 				// check for a local variable
-				if (variables != null && variables.ContainsKey(identifier)) {
-					return variables[identifier];
+				Value result;
+				if (variables != null && variables.TryGetValue(identifier, out result)) {
+					return result;
 				}
 
 				// OK, we don't have a local variable with that name.
