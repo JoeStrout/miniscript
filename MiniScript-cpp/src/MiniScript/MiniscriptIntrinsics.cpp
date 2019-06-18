@@ -162,8 +162,8 @@ namespace MiniScript {
 			long count = list.Count();
 			long afterIdx = -1;
 			if (!after.IsNull()) afterIdx = after.IntValue();
-			if (afterIdx < -1) afterIdx += list.Count();
-			if (afterIdx < -1 || afterIdx > list.Count()-1) return IntrinsicResult::Null;
+			if (afterIdx < -1) afterIdx += count;
+			if (afterIdx < -1 || afterIdx > count-1) return IntrinsicResult::Null;
 			for (long i=afterIdx+1; i<count; i++) {
 				if (Value::Equality(list[i], value) == 1) return IntrinsicResult(i);
 			}
@@ -188,6 +188,31 @@ namespace MiniScript {
 		}
 		return IntrinsicResult::Null;
 	}
+
+	static IntrinsicResult intrinsic_insert(Context *context, IntrinsicResult partialResult) {
+		Value self = context->GetVar("self");
+		Value index = context->GetVar("index");
+		Value value = context->GetVar("value");
+		if (index.IsNull()) throw RuntimeException("insert: index argument required");
+		if (index.type != ValueType::Number) throw new RuntimeException("insert: number required for index argument");
+		long idx = index.IntValue();
+		if (self.type == ValueType::List) {
+			ValueList list = self.GetList();
+			long count = list.Count();
+			if (idx < 0) idx += count + 1;	// +1 because we are inserting AND counting from the end.
+			CheckRange(idx, 0, count);		// and allowing all the way up to .Count here, because insert.
+			list.Insert(value, idx);
+			return IntrinsicResult(self);
+		} else if (self.type == ValueType::String) {
+			String s = self.ToString();
+			if (idx < 0) idx += s.Length() + 1;
+			CheckRange(idx, 0, s.Length());
+			s = s.Substring(0, idx) + value.ToString() + s.Substring(idx);
+			return IntrinsicResult(s);
+		} else {
+			throw new RuntimeException("insert called on invalid type");
+		}
+	};
 
 	static IntrinsicResult intrinsic_join(Context *context, IntrinsicResult partialResult) {
 		Value val = context->GetVar("self");
@@ -853,6 +878,12 @@ namespace MiniScript {
 		f->AddParam("after", Value::null);
 		f->code = &intrinsic_indexOf;
 		
+		f = Intrinsic::Create("insert");
+		f->AddParam("self");
+		f->AddParam("index");
+		f->AddParam("value");
+		f->code = &intrinsic_insert;
+		
 		f = Intrinsic::Create("join");
 		f->AddParam("self");
 		f->AddParam("delimiter", " ");
@@ -1026,6 +1057,7 @@ namespace MiniScript {
 			d.SetValue("hasIndex", Intrinsic::GetByName("hasIndex")->GetFunc());
 			d.SetValue("indexes", Intrinsic::GetByName("indexes")->GetFunc());
 			d.SetValue("indexOf",  Intrinsic::GetByName("indexOf")->GetFunc());
+			d.SetValue("insert",  Intrinsic::GetByName("insert")->GetFunc());
 			d.SetValue("join",  Intrinsic::GetByName("join")->GetFunc());
 			d.SetValue("len",  Intrinsic::GetByName("len")->GetFunc());
 			d.SetValue("pop",  Intrinsic::GetByName("pop")->GetFunc());
@@ -1075,6 +1107,7 @@ namespace MiniScript {
 			d.SetValue("hasIndex",  Intrinsic::GetByName("hasIndex")->GetFunc());
 			d.SetValue("indexes",  Intrinsic::GetByName("indexes")->GetFunc());
 			d.SetValue("indexOf",  Intrinsic::GetByName("indexOf")->GetFunc());
+			d.SetValue("insert",  Intrinsic::GetByName("insert")->GetFunc());
 			d.SetValue("code",  Intrinsic::GetByName("code")->GetFunc());
 			d.SetValue("len",  Intrinsic::GetByName("len")->GetFunc());
 			d.SetValue("lower",  Intrinsic::GetByName("lower")->GetFunc());

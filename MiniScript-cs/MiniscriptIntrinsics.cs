@@ -441,6 +441,36 @@ namespace Miniscript {
 				return Intrinsic.Result.Null;
 			};
 
+			// insert
+			f = Intrinsic.Create("insert");
+			f.AddParam("self");
+			f.AddParam("index");
+			f.AddParam("value");
+			f.code = (context, partialResult) => {
+				Value self = context.GetVar("self");
+				Value index = context.GetVar("index");
+				Value value = context.GetVar("value");
+				if (index == null) throw new RuntimeException("insert: index argument required");
+				if (!(index is ValNumber)) throw new RuntimeException("insert: number required for index argument");
+				int idx = index.IntValue();
+				if (self is ValList) {
+					List<Value> list = ((ValList)self).values;
+					if (idx < 0) idx += list.Count + 1;	// +1 because we are inserting AND counting from the end.
+					Check.Range(idx, 0, list.Count);	// and allowing all the way up to .Count here, because insert.
+					list.Insert(idx, value);
+					return new Intrinsic.Result(self);
+				} else if (self is ValString) {
+					string s = self.ToString();
+					if (idx < 0) idx += s.Length + 1;
+					Check.Range(idx, 0, s.Length);
+					s = s.Substring(0, idx) + value.ToString() + s.Substring(idx);
+					return new Intrinsic.Result(s);
+				} else {
+					throw new RuntimeException("insert called on invalid type");
+				}
+			};
+
+
 			// self.join
 			f = Intrinsic.Create("join");
 			f.AddParam("self");
@@ -1103,6 +1133,7 @@ namespace Miniscript {
 				_listType["hasIndex"] = Intrinsic.GetByName("hasIndex").GetFunc();
 				_listType["indexes"] = Intrinsic.GetByName("indexes").GetFunc();
 				_listType["indexOf"] = Intrinsic.GetByName("indexOf").GetFunc();
+				_listType["insert"] = Intrinsic.GetByName("insert").GetFunc();
 				_listType["join"] = Intrinsic.GetByName("join").GetFunc();
 				_listType["len"] = Intrinsic.GetByName("len").GetFunc();
 				_listType["pop"] = Intrinsic.GetByName("pop").GetFunc();
@@ -1114,7 +1145,6 @@ namespace Miniscript {
                 _listType["remove"] = Intrinsic.GetByName("remove").GetFunc();
                 _listType["replace"] = Intrinsic.GetByName("replace").GetFunc();
                 _listType["values"] = Intrinsic.GetByName("values").GetFunc();
-
 			}
 			return _listType;
 		}
@@ -1130,6 +1160,7 @@ namespace Miniscript {
 				_stringType["hasIndex"] = Intrinsic.GetByName("hasIndex").GetFunc();
 				_stringType["indexes"] = Intrinsic.GetByName("indexes").GetFunc();
 				_stringType["indexOf"] = Intrinsic.GetByName("indexOf").GetFunc();
+				_stringType["insert"] = Intrinsic.GetByName("insert").GetFunc();
 				_stringType["code"] = Intrinsic.GetByName("code").GetFunc();
 				_stringType["len"] = Intrinsic.GetByName("len").GetFunc();
 				_stringType["lower"] = Intrinsic.GetByName("lower").GetFunc();

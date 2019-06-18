@@ -208,9 +208,29 @@ namespace Miniscript {
 			}
 		}
 
+		/// <summary>
+		/// Create a virtual machine loaded with the code we have parsed.
+		/// </summary>
+		/// <param name="standardOutput"></param>
+		/// <returns></returns>
 		public TAC.Machine CreateVM(TextOutputMethod standardOutput) {
 			TAC.Context root = new TAC.Context(output.code);
 			return new TAC.Machine(root, standardOutput);
+		}
+		
+		/// <summary>
+		/// Create a Function with the code we have parsed, for use as
+		/// an import.  That means, it runs all that code, then at the
+		/// end it returns `locals` so that the caller can get its symbols.
+		/// </summary>
+		/// <returns></returns>
+		public Function CreateImport() {
+			// Add one additional line to return `locals` as the function return value.
+			ValVar locals = new ValVar("locals");
+			output.Add(new TAC.Line(TAC.LTemp(0), TAC.Line.Op.ReturnA, locals));
+			// Then wrap the whole thing in a Function.
+			var result = new Function(output.code);
+			return result;
 		}
 
 		public void REPL(string line) {

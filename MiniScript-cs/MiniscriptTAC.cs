@@ -811,11 +811,13 @@ namespace Miniscript {
 			/// been registered with the host app via intrinsics.
 			/// </summary>
 			/// <param name="func">Miniscript function to invoke</param>
-			public void ManuallyPushCall(ValFunction func) {
+			/// <param name="resultStorage">where to store result of the call, in the calling context</param>
+			public void ManuallyPushCall(ValFunction func, Value resultStorage=null) {
 				int argCount = 0;
-				Value self = null;
+				Value self = null;	// "self" is always null for a manually pushed call
 				Context nextContext = stack.Peek().NextCallContext(func.function, argCount, self != null, null);
 				if (self != null) nextContext.SetVar("self", self);
+				nextContext.resultStorage = resultStorage;
 				stack.Push(nextContext);				
 			}
 			
