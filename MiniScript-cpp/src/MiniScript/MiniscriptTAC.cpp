@@ -303,7 +303,7 @@ namespace MiniScript {
 					String extraStr = sA.Substring(0, extraChars);
 					size_t totalBytes = lenB * repeats + extraStr.LengthB();
 					if (totalBytes > Value::maxStringSize) throw LimitExceededException("string too large");
-					char *buf = new char[totalBytes + 1];
+					char *buf = new char[totalBytes];
 					if (buf == NULL) return Value::null;
 					char *ptr = buf;
 					for (int i = 0; i < repeats; i++) {
@@ -661,6 +661,17 @@ namespace MiniScript {
 		context->StoreValue(storage, result);
 	}
 
+	String Machine::FindShortName(const Value& val) {
+		String nullStr;
+		if (stack.Count() < 1) return nullStr;
+		Context *globalContext = stack[0];
+		if (globalContext == NULL) return nullStr;
+		for (ValueDictIterator kv = globalContext->variables.GetIterator(); !kv.Done(); kv.Next()) {
+			if (kv.Value() == val && kv.Key() != val) return kv.Key().ToString();
+		}
+		return nullStr;
+	}
+	
 	double Machine::CurrentWallClockTime() {
 		struct timeval timecheck;
 		gettimeofday(&timecheck, NULL);

@@ -713,7 +713,7 @@ namespace Miniscript {
 				} else {
 					foreach (Value v in variables.Keys) {
 						string id = v.ToString();
-						Console.WriteLine(string.Format("{0}: {1}", id, variables[id]));
+						Console.WriteLine(string.Format("{0}: {1}", id, variables[id].ToString()));
 					}
 				}
 
@@ -722,7 +722,7 @@ namespace Miniscript {
 					Console.WriteLine(" NONE");
 				} else {
 					for (int i = 0; i < temps.Count; i++) {
-						Console.WriteLine(string.Format("_{0}: {1}", i, temps[i]));
+						Console.WriteLine(string.Format("_{0}: {1}", i, temps[i]).ToString());
 					}
 				}
 			}
@@ -883,6 +883,14 @@ namespace Miniscript {
 
 			public void DumpTopContext() {
 				stack.Peek().Dump();
+			}
+			
+			public string FindShortName(Value val) {
+				if (globalContext == null || globalContext.variables == null) return null;
+				foreach (var kv in globalContext.variables.map) {
+					if (kv.Value == val && kv.Key != val) return kv.Key.ToString(this);
+				}
+				return null;
 			}
 		}
 

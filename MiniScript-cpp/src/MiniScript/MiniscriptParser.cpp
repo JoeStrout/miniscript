@@ -326,29 +326,21 @@ namespace MiniScript {
 			lhs = expr;
 			rhs = ParseExpr(tokens);
 		} else {
-			if (allowExtra && false) {
-				// We're allowing extra stuff after the expression or statement,
-				// because we're in the middle of a single-line if.  So, do
-				// the implicit assignment as if we hit an EOL.
-				rhs = FullyEvaluate(expr);
-				output->Add(TACLine(TACLine::Op::AssignImplicit, rhs));
-			} else {
-				// This looks like a command statement. Parse the rest
-				// of the line as arguments to a function call.
-				Value funcRef = expr;
-				int argCount = 0;
-				while (true) {
-					Value arg = ParseExpr(tokens);
-					output->Add(TACLine(TACLine::Op::PushParam, arg));
-					argCount++;
-					if (tokens.Peek().type == Token::Type::EOL) break;
-					if (tokens.Peek().type == Token::Type::Keyword || tokens.Peek().text == "else") break;
-					if (RequireEitherToken(tokens, Token::Type::Comma, Token::Type::EOL).type == Token::Type::EOL) break;
-				}
-				Value result = Value::Temp(output->nextTempNum++);
-				output->Add(TACLine(result, TACLine::Op::CallFunctionA, funcRef, Value(argCount)));
-				output->Add(TACLine(TACLine::Op::AssignImplicit, result));
+			// This looks like a command statement. Parse the rest
+			// of the line as arguments to a function call.
+			Value funcRef = expr;
+			int argCount = 0;
+			while (true) {
+				Value arg = ParseExpr(tokens);
+				output->Add(TACLine(TACLine::Op::PushParam, arg));
+				argCount++;
+				if (tokens.Peek().type == Token::Type::EOL) break;
+				if (tokens.Peek().type == Token::Type::Keyword || tokens.Peek().text == "else") break;
+				if (RequireEitherToken(tokens, Token::Type::Comma, Token::Type::EOL).type == Token::Type::EOL) break;
 			}
+			Value result = Value::Temp(output->nextTempNum++);
+			output->Add(TACLine(result, TACLine::Op::CallFunctionA, funcRef, Value(argCount)));
+			output->Add(TACLine(TACLine::Op::AssignImplicit, result));
 			return;
 		}
 
@@ -539,7 +531,7 @@ namespace MiniScript {
 		bool firstComparison = true;
 		while (opcode != TACLine::Op::Noop) {
 			tokens.Dequeue();	// discard the operator (we have the opcode)
-			//opA = FullyEvaluate(opA);
+			opA = FullyEvaluate(opA);
 			
 			Value opB = (*this.*nextLevel)(tokens, false, false);
 			int tempNum = output->nextTempNum++;
@@ -643,6 +635,7 @@ namespace MiniScript {
 		if (tokens.Peek().type != Token::Type::AddressOf) return (*this.*nextLevel)(tokens, asLval, statementStart);
 		tokens.Dequeue();
 		Value val = (*this.*nextLevel)(tokens, true, statementStart);
+		val.noInvoke = true;
 		return val;
 	}
 
@@ -721,7 +714,7 @@ namespace MiniScript {
 				}
 				
 				RequireToken(tokens, Token::Type::RSquare);
-			} else if (val.type == ValueType::Var or val.type == ValueType::SeqElem) {
+			} else if ((val.type == ValueType::Var or val.type == ValueType::SeqElem) && !val.noInvoke) {
 				// Got a variable... it might refer to a function!
 				if (not asLval or (tokens.Peek().type == Token::Type::LParen && !tokens.Peek().afterSpace)) {
 					// If followed by parens, definitely a function call, possibly with arguments!
@@ -885,6 +878,8 @@ namespace MiniScript {
 	}
 
 	Value Parser::FullyEvaluate(Value val) {
+		// If var was protected with @, then return it as-is; don't attempt to call it.
+		if (val.noInvoke) return val;
 		if (val.type == ValueType::Var) {
 			// Don't invoke super; leave as-is so we can do special handling
 			// of it at runtime.  Also, as an optimization, same for "self".
@@ -973,6 +968,8 @@ namespace MiniScript {
 		ErrorIf(list[0].nextTempNum != 12);
 		ErrorIf(&foo != &bar);
 		
+		TestValidParse("pi < 4");
+		TestValidParse("(pi < 4)");
 		TestValidParse("if true then 20 else 30");
 		TestValidParse("f = function(x)\nreturn x*3\nend function\nf(14)");
 		TestValidParse("foo=\"bar\"\nindexes(foo*2)\nfoo.indexes");

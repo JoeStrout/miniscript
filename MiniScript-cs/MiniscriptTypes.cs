@@ -28,6 +28,12 @@ namespace Miniscript {
 			return this;		// most types evaluate to themselves
 		}
 		
+		public override string ToString() {
+			return ToString(null);
+		}
+		
+		public abstract string ToString(TAC.Machine vm);
+		
 		/// <summary>
 		/// This version of Val is like the one above, but also returns
 		/// (via the output parameter) the ValMap the value was found in,
@@ -98,8 +104,8 @@ namespace Miniscript {
 		/// </summary>
 		/// <param name="recursionLimit">how deeply we can recurse, or -1 for no limit</param>
 		/// <returns></returns>
-		public virtual string CodeForm(int recursionLimit=-1) {
-			return ToString();
+		public virtual string CodeForm(TAC.Machine vm, int recursionLimit=-1) {
+			return ToString(vm);
 		}
 		
 		/// <summary>
@@ -175,7 +181,7 @@ namespace Miniscript {
 			this.value = value;
 		}
 
-		public override string ToString() {
+		public override string ToString(TAC.Machine vm) {
 			// Convert to a string in the standard MiniScript way.
 			if (value % 1.0 == 0.0) {
 				// integer values as integers
@@ -265,11 +271,11 @@ namespace Miniscript {
 			this.value = (value == null ? _empty.value : value);
 		}
 
-		public override string ToString() {
+		public override string ToString(TAC.Machine vm) {
 			return value;
 		}
 
-		public override string CodeForm(int recursionLimit=-1) {
+		public override string CodeForm(TAC.Machine vm, int recursionLimit=-1) {
 			return "\"" + value.Replace("\"", "\"\"") + "\"";
 		}
 
@@ -401,18 +407,22 @@ namespace Miniscript {
 			return result;
 		}
 
-		public override string CodeForm(int recursionLimit=-1) {
+		public override string CodeForm(TAC.Machine vm, int recursionLimit=-1) {
 			if (recursionLimit == 0) return "[...]";
+			if (recursionLimit > 0 && recursionLimit < 3) {
+				string shortName = vm.FindShortName(this);
+				if (shortName != null) return shortName;
+			}
 			string[] strs = new string[values.Count];
 			for (int i = 0; i < values.Count; i++) {
 				if (values[i] == null) strs[i] = "null";
-				else strs[i] = values[i].CodeForm(recursionLimit - 1);
+				else strs[i] = values[i].CodeForm(vm, recursionLimit - 1);
 			}
 			return "[" + String.Join(", ", strs) + "]";
 		}
 
-		public override string ToString() {
-			return CodeForm(3);
+		public override string ToString(TAC.Machine vm) {
+			return CodeForm(vm, 3);
 		}
 
 		public override bool BoolValue() {
@@ -636,19 +646,25 @@ namespace Miniscript {
 			return result;
 		}
 
-		public override string CodeForm(int recursionLimit=-1) {
+		public override string CodeForm(TAC.Machine vm, int recursionLimit=-1) {
 			if (recursionLimit == 0) return "{...}";
+			if (recursionLimit > 0 && recursionLimit < 3 && vm != null) {
+				string shortName = vm.FindShortName(this);
+				if (shortName != null) return shortName;
+			}
 			string[] strs = new string[map.Count];
 			int i = 0;
 			foreach (KeyValuePair<Value, Value> kv in map) {
-				strs[i++] = string.Format("{0}: {1}", kv.Key.CodeForm(recursionLimit-1), 
-					kv.Value == null ? "null" : kv.Value.CodeForm(recursionLimit-1));
+				int nextRecurLimit = recursionLimit - 1;
+				if (kv.Key == ValString.magicIsA) nextRecurLimit = 1;
+				strs[i++] = string.Format("{0}: {1}", kv.Key.CodeForm(vm, nextRecurLimit), 
+					kv.Value == null ? "null" : kv.Value.CodeForm(vm, nextRecurLimit));
 			}
 			return "{" + String.Join(", ", strs) + "}";
 		}
 
-		public override string ToString() {
-			return CodeForm(3);
+		public override string ToString(TAC.Machine vm) {
+			return CodeForm(vm, 3);
 		}
 
 		public override bool IsA(Value type, TAC.Machine vm) {
@@ -714,7 +730,7 @@ namespace Miniscript {
 		public ValMap GetKeyValuePair(int index) {
 			Dictionary<Value, Value>.KeyCollection keys = map.Keys;
 			if (index < 0 || index >= keys.Count) {
-				throw new IndexException("index " + index.ToString() + " out of range for map");
+				throw new IndexException("index " + index + " out of range for map");
 			}
 			Value key = keys.ElementAt<Value>(index);	// (TODO: consider more efficient methods here)
 			ValMap result = new ValMap();
@@ -758,9 +774,16 @@ namespace Miniscript {
 			parameters = new List<Param>();
 		}
 
-		public override string ToString() {
-			return string.Format("FUNCTION({0})", string.Join(", ", 
-				parameters.Select(p => p.name).ToArray()));
+		public string ToString(TAC.Machine vm) {
+			var s = new System.Text.StringBuilder();
+			s.Append("FUNCTION(");			
+			for (int i=0; i < parameters.Count(); i++) {
+				if (i > 0) s.Append(", ");
+				s.Append(parameters[i].name);
+				if (parameters[i].defaultValue != null) s.Append("=" + parameters[i].defaultValue.CodeForm(vm));
+			}
+			s.Append(")");
+			return s.ToString();
 		}
 	}
 	
@@ -774,8 +797,8 @@ namespace Miniscript {
 			this.function = function;
 		}
 
-		public override string ToString() {
-			return function.ToString();
+		public override string ToString(TAC.Machine vm) {
+			return function.ToString(vm);
 		}
 
 		public override bool BoolValue() {
@@ -816,7 +839,7 @@ namespace Miniscript {
 			return context.GetTemp(tempNum);
 		}
 
-		public override string ToString() {
+		public override string ToString(TAC.Machine vm) {
 			return "_" + tempNum;
 		}
 
@@ -832,6 +855,7 @@ namespace Miniscript {
 
 	public class ValVar : Value {
 		public string identifier;
+		public bool noInvoke;	// reflects use of "@" (address-of) operator
 
 		public ValVar(string identifier) {
 			this.identifier = identifier;
@@ -846,7 +870,8 @@ namespace Miniscript {
 			return context.GetVar(identifier);
 		}
 
-		public override string ToString() {
+		public override string ToString(TAC.Machine vm) {
+			if (noInvoke) return "@" + identifier;
 			return identifier;
 		}
 
@@ -865,6 +890,7 @@ namespace Miniscript {
 	public class ValSeqElem : Value {
 		public Value sequence;
 		public Value index;
+		public bool noInvoke;	// reflects use of "@" (address-of) operator
 
 		public ValSeqElem(Value sequence, Value index) {
 			this.sequence = sequence;
@@ -938,7 +964,7 @@ namespace Miniscript {
 			Value baseVal = sequence.Val(context);
 			if (baseVal is ValMap) {
 				Value result = ((ValMap)baseVal).Lookup(idxVal, out valueFoundIn);
-				if (valueFoundIn == null) throw new KeyException(idxVal.ToString());
+				if (valueFoundIn == null) throw new KeyException(idxVal.CodeForm(context.vm, 1));
 				return result;
 			} else if (baseVal is ValList && idxVal is ValNumber) {
 				return ((ValList)baseVal).GetElem(idxVal);
@@ -949,8 +975,8 @@ namespace Miniscript {
 			throw new TypeException("Type Exception: can't index into this type");
 		}
 
-		public override string ToString() {
-			return string.Format("{0}[{1}]", sequence, index);
+		public override string ToString(TAC.Machine vm) {
+			return string.Format("{0}{1}[{2}]", noInvoke ? "@" : "", sequence, index);
 		}
 
 		public override int Hash(int recursionDepth=16) {

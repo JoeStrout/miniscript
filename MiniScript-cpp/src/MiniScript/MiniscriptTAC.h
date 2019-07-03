@@ -146,7 +146,8 @@ namespace MiniScript {
 		
 		Context* GetGlobalContext() { return stack[0]; }
 		Context* GetTopContext() { return stack.Last(); }
-
+		String FindShortName(const Value& val);
+		
 		double RunTime() { return startTime  == 0 ? 0 : CurrentWallClockTime() - startTime; }
 		
 		TextOutputMethod standardOutput;

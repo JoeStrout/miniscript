@@ -165,7 +165,7 @@ namespace Miniscript {
 		public void PartialReset() {
 			if (outputStack == null) outputStack = new Stack<ParseState>();
 			while (outputStack.Count > 1) outputStack.Pop();
-			var output = outputStack.Peek();
+			output = outputStack.Peek();
 			output.backpatches.Clear();
 			output.jumpPoints.Clear();
 		}
@@ -489,29 +489,21 @@ namespace Miniscript {
 				lhs = expr;
 				rhs = ParseExpr(tokens);
 			} else {
-				if (allowExtra && false) {
-					// We're allowing extra stuff after the expression or statement,
-					// because we're in the middle of a single-line if.  So, do
-					// the implicit assignment as if we hit an EOL.
-					rhs = FullyEvaluate(expr);
-					output.Add(new TAC.Line(null, TAC.Line.Op.AssignImplicit, rhs));
-				} else {
-					// This looks like a command statement.  Parse the rest
-					// of the line as arguments to a function call.
-					Value funcRef = expr;
-					int argCount = 0;
-					while (true) {
-						Value arg = ParseExpr(tokens);
-						output.Add(new TAC.Line(null, TAC.Line.Op.PushParam, arg));
-						argCount++;
-						if (tokens.Peek().type == Token.Type.EOL) break;
-						if (tokens.Peek().type == Token.Type.Keyword || tokens.Peek().text == "else") break;
-						if (RequireEitherToken(tokens, Token.Type.Comma, Token.Type.EOL).type == Token.Type.EOL) break;
-					}
-					ValTemp result = new ValTemp(output.nextTempNum++);
-					output.Add(new TAC.Line(result, TAC.Line.Op.CallFunctionA, funcRef, TAC.Num(argCount)));					
-					output.Add(new TAC.Line(null, TAC.Line.Op.AssignImplicit, result));
+				// This looks like a command statement.  Parse the rest
+				// of the line as arguments to a function call.
+				Value funcRef = expr;
+				int argCount = 0;
+				while (true) {
+					Value arg = ParseExpr(tokens);
+					output.Add(new TAC.Line(null, TAC.Line.Op.PushParam, arg));
+					argCount++;
+					if (tokens.Peek().type == Token.Type.EOL) break;
+					if (tokens.Peek().type == Token.Type.Keyword || tokens.Peek().text == "else") break;
+					if (RequireEitherToken(tokens, Token.Type.Comma, Token.Type.EOL).type == Token.Type.EOL) break;
 				}
+				ValTemp result = new ValTemp(output.nextTempNum++);
+				output.Add(new TAC.Line(result, TAC.Line.Op.CallFunctionA, funcRef, TAC.Num(argCount)));					
+				output.Add(new TAC.Line(null, TAC.Line.Op.AssignImplicit, result));
 				return;
 			}
 
@@ -699,7 +691,7 @@ namespace Miniscript {
 			bool firstComparison = true;
 			while (opcode != TAC.Line.Op.Noop) {
 				tokens.Dequeue();	// discard the operator (we have the opcode)
-				//opA = FullyEvaluate(opA);
+				opA = FullyEvaluate(opA);
 
 				Value opB = nextLevel(tokens);
 				int tempNum = output.nextTempNum++;
@@ -819,6 +811,11 @@ namespace Miniscript {
 			if (tokens.Peek().type != Token.Type.AddressOf) return nextLevel(tokens, asLval, statementStart);
 			tokens.Dequeue();
 			Value val = nextLevel(tokens, true, statementStart);
+			if (val is ValVar) {
+				((ValVar)val).noInvoke = true;
+			} else if (val is ValSeqElem) {
+				((ValSeqElem)val).noInvoke = true;
+			}
 			return val;
 		}
 
@@ -843,6 +840,8 @@ namespace Miniscript {
 		Value FullyEvaluate(Value val) {
 			if (val is ValVar) {
 				ValVar var = (ValVar)val;
+				// If var was protected with @, then return it as-is; don't attempt to call it.
+				if (var.noInvoke) return val;
 				// Don't invoke super; leave as-is so we can do special handling
 				// of it at runtime.  Also, as an optimization, same for "self".
 				if (var.identifier == "super" || var.identifier == "self") return val;
@@ -850,7 +849,10 @@ namespace Miniscript {
 				ValTemp temp = new ValTemp(output.nextTempNum++);
 				output.Add(new TAC.Line(temp, TAC.Line.Op.CallFunctionA, val, ValNumber.zero));
 				return temp;
-			} else if (val is ValSeqElem ) {
+			} else if (val is ValSeqElem) {
+				ValSeqElem elem = ((ValSeqElem)val);
+				// If sequence element was protected with @, then return it as-is; don't attempt to call it.
+				if (elem.noInvoke) return val;
 				// Evaluate a sequence lookup (which might be a function we need to call).				
 				ValTemp temp = new ValTemp(output.nextTempNum++);
 				output.Add(new TAC.Line(temp, TAC.Line.Op.CallFunctionA, val, ValNumber.zero));
@@ -918,7 +920,7 @@ namespace Miniscript {
 					}
 	
 					RequireToken(tokens, Token.Type.RSquare);
-				} else if (val is ValVar || val is ValSeqElem) {
+				} else if ((val is ValVar && !((ValVar)val).noInvoke) || val is ValSeqElem) {
 					// Got a variable... it might refer to a function!
 					if (!asLval || (tokens.Peek().type == Token.Type.LParen && !tokens.Peek().afterSpace)) {
 						// If followed by parens, definitely a function call, possibly with arguments!
@@ -1081,6 +1083,8 @@ namespace Miniscript {
 		}
 
 		public static void RunUnitTests() {
+			TestValidParse("pi < 4");
+			TestValidParse("(pi < 4)");
 			TestValidParse("if true then 20 else 30");
 			TestValidParse("f = function(x)\nreturn x*3\nend function\nf(14)");
 			TestValidParse("foo=\"bar\"\nindexes(foo*2)\nfoo.indexes");

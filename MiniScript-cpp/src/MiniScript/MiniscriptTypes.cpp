@@ -45,7 +45,7 @@ namespace MiniScript {
 		return "Unknown";
 	}
 
-	String Value::ToString() {
+	String Value::ToString(Machine *vm) {
 		if (type == ValueType::Number) {
 			// Convert number to string in the standard Miniscript way.
 			double value = data.number;
@@ -64,9 +64,14 @@ namespace MiniScript {
 			}
 		}
 		if (type == ValueType::String) { retain(); return String((StringStorage*)data.ref); }
-		if (type == ValueType::List) return CodeForm(3);
-		if (type == ValueType::Map) return CodeForm(3);
-		if (type == ValueType::Var) { retain(); return String((StringStorage*)data.ref); }
+		if (type == ValueType::List) return CodeForm(vm, 3);
+		if (type == ValueType::Map) return CodeForm(vm, 3);
+		if (type == ValueType::Var) {
+			retain();
+			String ident((StringStorage*)data.ref);
+			if (noInvoke) return String("@") + ident;
+			return ident;
+		}
 		if (type == ValueType::Temp) return String("_") + String::Format((int)data.tempNum);
 		if (type == ValueType::Function) {
 			String s("FUNCTION(");
@@ -74,25 +79,27 @@ namespace MiniScript {
 			for (long i=0; i < fs->parameters.Count(); i++) {
 				if (i > 0) s += ", ";
 				s += fs->parameters[i].name;
-				if (not fs->parameters[i].defaultValue.IsNull()) s += fs->parameters[i].defaultValue.ToString();
+				if (not fs->parameters[i].defaultValue.IsNull()) s += String("=") + fs->parameters[i].defaultValue.CodeForm(vm);
 			}
 			return s + ")";
 		}
 		if (type == ValueType::SeqElem) {
 			SeqElemStorage *se = (SeqElemStorage*)data.ref;
-			return se->sequence.ToString() + "[" + se->index.ToString() + "]";
+			String s = se->sequence.ToString(vm) + "[" + se->index.ToString(vm) + "]";
+			if (noInvoke) s = String("@") + s;
+			return s;
 		}
 		return String();
 	}
 
-	String Value::CodeForm(int recursionLimit) {
+	String Value::CodeForm(Machine *vm, int recursionLimit) {
 		switch (type) {
 
 			case ValueType::Null:
 				return "null";
 				
 			case ValueType::Number:
-				return ToString();
+				return ToString(vm);
 
 			case ValueType::String:
 			{
@@ -112,7 +119,7 @@ namespace MiniScript {
 					 return "[]";
 				}
 				List<String> strs(count);
-				for (long i=0; i<count; i++) strs.Add(list[i].CodeForm(recursionLimit-1));
+				for (long i=0; i<count; i++) strs.Add(list[i].CodeForm(vm, recursionLimit-1));
 				String result = String("[") + Join(", ", strs) + "]";
 //				list.forget();
 				return result;
@@ -121,10 +128,14 @@ namespace MiniScript {
 			case ValueType::Map:
 			{
 				if (recursionLimit == 0) return "{...}";
+				if (recursionLimit > 0 && recursionLimit < 3 && vm != NULL) {
+					String shortName = vm->FindShortName(*this);
+					if (!shortName.empty()) return shortName;
+				}
 				ValueDict map((ValueDictStorage*)data.ref);
 				List<String> strs = List<String>(map.Count());
 				for (ValueDictIterator kv = map.GetIterator(); not kv.Done(); kv.Next()) {
-					strs.Add(kv.Key().CodeForm(recursionLimit-1) + ": " + kv.Value().CodeForm(recursionLimit-1));
+					strs.Add(kv.Key().CodeForm(vm, recursionLimit-1) + ": " + kv.Value().CodeForm(vm, recursionLimit-1));
 				}
 //				map.forget();
 				return String("{") + Join(", ", strs) + String("}");
@@ -132,7 +143,7 @@ namespace MiniScript {
 				
 			case ValueType::Var:
 			case ValueType::Temp:
-				return ToString();
+				return ToString(vm);
 
 			default:
 				return String();
@@ -180,7 +191,7 @@ namespace MiniScript {
 						}
 						if (not baseDict.Get(Value::magicIsA, &baseVal)) {
 //							baseDict.forget();
-							throw KeyException(idxVal.ToString());
+							throw KeyException(idxVal.ToString(context->vm));
 						}
 //						baseDict.forget();
 						baseVal = baseVal.Val(context);	// ToDo: is this really needed?
@@ -368,7 +379,7 @@ namespace MiniScript {
 			if (i < 0) i += list.Count();
 			if (i < 0 or i >= list.Count()) {
 //				list.forget();
-				throw IndexException(String("Index Error (list index " + index.ToString() + " out of range)"));
+				throw IndexException(String("Index Error (list index " + String::Format(i) + " out of range)"));
 			}
 			list[i] = value;
 //			list.forget();
@@ -715,12 +726,12 @@ void TestValue::TestBasics()
 	Assert(c.type == ValueType::Number and c.data.number == 42);
 	
 	a = "Foo!";
-	Assert(a.type == ValueType::String and a.ToString() == "Foo!");
+	Assert(a.type == ValueType::String and a.ToString(NULL) == "Foo!");
 	b = a;
-	Assert(b.type == ValueType::String and b.ToString() == "Foo!");
+	Assert(b.type == ValueType::String and b.ToString(NULL) == "Foo!");
 	Assert(c.type == ValueType::Number and c.data.number == 42);
 	b = 0.0;
-	Assert(a.type == ValueType::String and a.ToString() == "Foo!");
+	Assert(a.type == ValueType::String and a.ToString(NULL) == "Foo!");
 
 	{
 		List<Value> lst;
@@ -730,7 +741,7 @@ void TestValue::TestBasics()
 		a = lst;
 	}
 	Assert(a.type == ValueType::List);
-	String s = a.ToString();
+	String s = a.ToString(NULL);
 	Assert(s == "[1, \"two\", 3.14157]");
 }
 

@@ -228,8 +228,11 @@ namespace Miniscript {
 						vm.Step();
 					}
 					if (implicitOutput != null && vm.globalContext.implicitResultCounter > startImpResultCount) {
+
 						Value result = vm.globalContext.GetVar(ValVar.implicitResult.identifier);
-						if (result != null) implicitOutput.Invoke(result.ToString());
+						if (result != null) {
+							implicitOutput.Invoke(result.ToString(vm));
+						}
 					}
 				}
 

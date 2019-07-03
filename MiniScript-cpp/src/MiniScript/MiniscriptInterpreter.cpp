@@ -126,7 +126,7 @@ namespace MiniScript {
 				}
 				if (implicitOutput and globalContext->implicitResultCounter > startImpResultCount) {
 					Value result = globalContext->GetVar("_");
-					if (!result.IsNull()) (*implicitOutput)(result.ToString());
+					if (!result.IsNull()) (*implicitOutput)(result.ToString(vm));
 				}
 			}
 			
