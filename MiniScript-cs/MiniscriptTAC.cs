@@ -890,7 +890,9 @@ namespace Miniscript {
 				foreach (var kv in globalContext.variables.map) {
 					if (kv.Value == val && kv.Key != val) return kv.Key.ToString(this);
 				}
-				return null;
+				string result = null;
+				Intrinsic.shortNames.TryGetValue(val, out result);
+				return result;
 			}
 		}
 

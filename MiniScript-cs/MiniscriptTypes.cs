@@ -907,6 +907,7 @@ namespace Miniscript {
 		public static Value Resolve(Value sequence, string identifier, TAC.Context context, out ValMap valueFoundIn) {
 			bool includeMapType = true;
 			valueFoundIn = null;
+			int loopsLeft = 1000;		// (max __isa chain depth)
 			while (sequence != null) {
 				if (sequence is ValTemp || sequence is ValVar) sequence = sequence.Val(context);
 				if (sequence is ValMap) {
@@ -920,8 +921,9 @@ namespace Miniscript {
 						return result;
 					}
 					
-					// Otherwise, if we have an __isa, try that next
-					if (!((ValMap)sequence).map.TryGetValue(ValString.magicIsA, out sequence)) {
+					// Otherwise, if we have an __isa, try that next.
+					// (Watch out for loops an the __isa chain.)
+					if (loopsLeft < 0 || !((ValMap)sequence).map.TryGetValue(ValString.magicIsA, out sequence)) {
 						// ...and if we don't have an __isa, try the generic map type if allowed
 						if (!includeMapType) throw new KeyException(identifier);
 						sequence = Intrinsics.MapType();
@@ -946,6 +948,7 @@ namespace Miniscript {
 				} else {
 					throw new TypeException("Type Error (while attempting to look up " + identifier + ")");
 				}
+				loopsLeft--;
 			}
 			return null;
 		}

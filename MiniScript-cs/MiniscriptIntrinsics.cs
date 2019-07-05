@@ -51,6 +51,11 @@ namespace Miniscript {
 		// a numeric ID (used internally -- don't worry about this)
 		public int id { get { return numericID; } }
 
+		// static map from Values to short names, used when displaying lists/maps;
+		// feel free to add to this any values (especially lists/maps) provided
+		// by your own intrinsics.
+		public static Dictionary<Value, string> shortNames = new Dictionary<Value, string>();
+
 		private Function function;
 		private ValFunction valFunction;	// (cached wrapper for function)
 		int numericID;		// also its index in the 'all' list

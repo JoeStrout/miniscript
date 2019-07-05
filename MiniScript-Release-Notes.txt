@@ -115,4 +115,6 @@ Version 1.4.1 (not yet released)
 
 - When you convert a list or map to a sting, and it contains a reference to some other list or map that is also referred to by a global variable, you now see it as the global variable rather than its contents.  This makes it much easier to examine such objects, particularly in object-oriented programming where the __isa chain can otherwise be hard to wade through.
 
+- Fixed an infinite loop that could occur if you constructed an __isa chain containing a loop.
+
 

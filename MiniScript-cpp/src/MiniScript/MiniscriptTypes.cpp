@@ -401,6 +401,7 @@ namespace MiniScript {
 	/// <param name="outFoundInMap">Output parameter: map the value was found in.</param>
 	Value Value::Resolve(Value sequence, String identifier, Context *context, ValueDict *outFoundInMap) {
 		bool includeMapType = true;
+		int loopsLeft = 1000;		// (max __isa chain depth)
 		while (not sequence.IsNull()) {
 			if (sequence.type == ValueType::Temp or sequence.type == ValueType::Var) sequence = sequence.Val(context);
 			if (sequence.type == ValueType::Map) {
@@ -413,7 +414,7 @@ namespace MiniScript {
 					return result;
 				}
 				// Otherwise, if we have an __isa, try that next
-				if (not d.Get(Value::magicIsA, &sequence)) {
+				if (loopsLeft < 0 or not d.Get(Value::magicIsA, &sequence)) {
 					// ...and if we don't have an __isa, try the generic map type if allowed
 					if (!includeMapType) throw KeyException(identifier);
 					sequence = Intrinsics::MapType();
@@ -442,6 +443,7 @@ namespace MiniScript {
 			} else {
 				throw TypeException("Type Error (while attempting to look up " + identifier + ")");
 			}
+			loopsLeft--;
 		}
 		return null;
 
