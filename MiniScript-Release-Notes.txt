@@ -101,15 +101,15 @@ Version 1.4: Jun 09, 2019
 - Host apps can now set an "assignment override function" on any ValMap, allowing a bit of native code to run when user code assigns a value in that map.
 
 
-Version 1.4.1 (not yet released)
-=============
+Version 1.4.1: Jul 06, 2019
+===========================
 - Fixed a bug that would cause the `break` keyword to throw a compiler error when used before an `else` block.  {GitHub issue #2}
 
 - The split(delim, maxCount) intrinsic now works with a delimiter of empty string; it splits on individual characters, up to the specified count.  (Note that if you don't specify maxCount, then using .values would be equivalent and slightly more efficient.)  {GitHub issue #1}
 
 - Fixed a bug where hasIndex on a list would return true for any string argument {#3}.
 
-- New list.insert(index, value) intrinsic inserts a new value into an exist in place.  Also works for strings, though in that case a new string is returned (since strings are immutable).  {#4}
+- New list.insert(index, value) intrinsic inserts a new value into a list in place.  Also works for strings, though in that case a new string is returned (since strings are immutable).  {#4}
 
 - Fixed inconsistent handling of @ (the address-of operator) on the first token of a statement.  Especially seen in a REPL, for example: entering `@rnd` should (and now does) display the function summary rather than actually invoking the function. {#5}
 
