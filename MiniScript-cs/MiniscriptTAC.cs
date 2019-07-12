@@ -330,14 +330,14 @@ namespace Miniscript {
 					case Op.APlusB:
 						{
 							if (opB == null) return opA;
-							String sB = opB.ToString();
+							String sB = opB.ToString(context.vm);
 							if (sA.Length + sB.Length > ValString.maxSize) throw new LimitExceededException("string too large");
 							return new ValString(sA + sB);
 						}
 					case Op.AMinusB:
 						{
 							if (opB == null) return opA;
-							string sB = opB.ToString();
+							string sB = opB.ToString(context.vm);
 							if (sA.EndsWith(sB)) sA = sA.Substring(0, sA.Length - sB.Length);
 							return new ValString(sA);
 						}
@@ -362,17 +362,17 @@ namespace Miniscript {
 							return new ValString(result.ToString());
 						}
 					case Op.AEqualB:
-						return ValNumber.Truth(string.Compare(sA, opB.ToString()) == 0);
+						return ValNumber.Truth(string.Compare(sA, opB.ToString(context.vm)) == 0);
 					case Op.ANotEqualB:
-						return ValNumber.Truth(string.Compare(sA, opB.ToString()) != 0);
+						return ValNumber.Truth(string.Compare(sA, opB.ToString(context.vm)) != 0);
 					case Op.AGreaterThanB:
-						return ValNumber.Truth(string.Compare(sA, opB.ToString()) > 0);
+						return ValNumber.Truth(string.Compare(sA, opB.ToString(context.vm)) > 0);
 					case Op.AGreatOrEqualB:
-						return ValNumber.Truth(string.Compare(sA, opB.ToString()) >= 0);
+						return ValNumber.Truth(string.Compare(sA, opB.ToString(context.vm)) >= 0);
 					case Op.ALessThanB:
-						return ValNumber.Truth(string.Compare(sA, opB.ToString()) < 0);
+						return ValNumber.Truth(string.Compare(sA, opB.ToString(context.vm)) < 0);
 					case Op.ALessOrEqualB:
-						return ValNumber.Truth(string.Compare(sA, opB.ToString()) <= 0);
+						return ValNumber.Truth(string.Compare(sA, opB.ToString(context.vm)) <= 0);
 					case Op.ElemBofA:
 					case Op.ElemBofIterA:
 						{
@@ -712,8 +712,8 @@ namespace Miniscript {
 					Console.WriteLine(" NONE");
 				} else {
 					foreach (Value v in variables.Keys) {
-						string id = v.ToString();
-						Console.WriteLine(string.Format("{0}: {1}", id, variables[id].ToString()));
+						string id = v.ToString(vm);
+						Console.WriteLine(string.Format("{0}: {1}", id, variables[id].ToString(vm)));
 					}
 				}
 
@@ -722,7 +722,7 @@ namespace Miniscript {
 					Console.WriteLine(" NONE");
 				} else {
 					for (int i = 0; i < temps.Count; i++) {
-						Console.WriteLine(string.Format("_{0}: {1}", i, temps[i]).ToString());
+						Console.WriteLine(string.Format("_{0}: {1}", i, temps[i]));
 					}
 				}
 			}

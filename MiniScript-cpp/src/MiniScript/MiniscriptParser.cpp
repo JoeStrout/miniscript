@@ -36,6 +36,21 @@ namespace MiniScript {
 		jumpPoints.RemoveAt(idx);
 		return result;
 	}
+	
+	// Return whether the given line is a jump target.
+	bool ParseState::IsJumpTarget(long lineNum) {
+		for (int i=0; i < code.Count(); i++) {
+			TACLine::Op op = code[i].op;
+			if ((op == TACLine::Op::GotoA || op == TACLine::Op::GotoAifB
+				 || op == TACLine::Op::GotoAifNotB || op == TACLine::Op::GotoAifTrulyB)
+				&& code[i].rhsA.type == ValueType::Number && code[i].rhsA.IntValue() == lineNum) return true;
+		}
+		for (int i=0; i<jumpPoints.Count(); i++) {
+			if (jumpPoints[i].lineNum == lineNum) return true;
+		}
+		return false;
+	}
+
 
 	void ParseState::Patch(String keywordFound, bool alsoBreak, long reservingLines) {
 		Value target = code.Count() + reservingLines;
@@ -344,11 +359,11 @@ namespace MiniScript {
 			return;
 		}
 
-		// OK, now, in many cases our last TAC line at this point
-		// is an assignment to our rhs temp.  In that case, as
-		// a simple (but very useful) optimization, we can simply
-		// patch that to assign to our lhs instead.
-		if (rhs.type == ValueType::Temp and output->code.Count() > 0) {
+		// OK, now, in many cases our last TAC line at this point is an assignment to our RHS temp.
+		// In that case, as a simple (but very useful) optimization, we can simply patch that to
+		// assign to our lhs instead.  BUT, we must not do this if there are any jumps to the next
+		// line, as may happen due to short-cut evaluation (issue #6).
+		if (rhs.type == ValueType::Temp and output->code.Count() > 0 and !output->IsJumpTarget(output->code.Count())) {
 			TACLine& line = output->code[output->code.Count() - 1];
 			if (line.lhs == rhs) {
 				// Yep, that's the case.  Patch it up.

@@ -72,6 +72,8 @@ namespace MiniScript {
 		
 		JumpPoint CloseJumpPoint(String keyword);
 		
+		bool IsJumpTarget(long lineNum);
+		
 		/// <summary>
 		/// Call this method when we've found an 'end' keyword, and want
 		/// to patch up any jumps that were waiting for that.  Patch the

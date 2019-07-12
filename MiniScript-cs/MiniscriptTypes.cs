@@ -409,7 +409,7 @@ namespace Miniscript {
 
 		public override string CodeForm(TAC.Machine vm, int recursionLimit=-1) {
 			if (recursionLimit == 0) return "[...]";
-			if (recursionLimit > 0 && recursionLimit < 3) {
+			if (recursionLimit > 0 && recursionLimit < 3 && vm != null) {
 				string shortName = vm.FindShortName(this);
 				if (shortName != null) return shortName;
 			}

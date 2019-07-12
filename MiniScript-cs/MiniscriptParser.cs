@@ -64,6 +64,20 @@ namespace Miniscript {
 				return result;
 			}
 
+			// Return whether the given line is a jump target.
+			public bool IsJumpTarget(int lineNum) {
+				for (int i=0; i < code.Count; i++) {
+					var op = code[i].op;
+					if ((op == TAC.Line.Op.GotoA || op == TAC.Line.Op.GotoAifB 
+					 || op == TAC.Line.Op.GotoAifNotB || op == TAC.Line.Op.GotoAifTrulyB)
+					 && code[i].rhsA is ValNumber && code[i].rhsA.IntValue() == lineNum) return true;
+				}
+				for (int i=0; i<jumpPoints.Count(); i++) {
+					if (jumpPoints[i].lineNum == lineNum) return true;
+				}
+				return false;
+			}
+
 			/// <summary>
 			/// Call this method when we've found an 'end' keyword, and want
 			/// to patch up any jumps that were waiting for that.  Patch the
@@ -507,11 +521,11 @@ namespace Miniscript {
 				return;
 			}
 
-			// OK, now, in many cases our last TAC line at this point
-			// is an assignment to our rhs temp.  In that case, as
-			// a simple (but very useful) optimization, we can simply
-			// patch that to assign to our lhs instead.
-			if (rhs is ValTemp && output.code.Count > 0) {
+			// OK, now, in many cases our last TAC line at this point is an assignment to our RHS temp.
+			// In that case, as a simple (but very useful) optimization, we can simply patch that to 
+			// assign to our lhs instead.  BUT, we must not do this if there are any jumps to the next
+			// line, as may happen due to short-cut evaluation (issue #6).
+			if (rhs is ValTemp && output.code.Count > 0 && !output.IsJumpTarget(output.code.Count)) {			
 				TAC.Line line = output.code[output.code.Count - 1];
 				if (line.lhs.Equals(rhs)) {
 					// Yep, that's the case.  Patch it up.

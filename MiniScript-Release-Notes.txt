@@ -118,3 +118,7 @@ Version 1.4.1: Jul 06, 2019
 - Fixed an infinite loop that could occur if you constructed an __isa chain containing a loop.
 
 
+Version 1.4.2: (not yet released)
+=============
+- Fixed a bug that would cause assignments of `and` and `or` expressions to fail under certain circumstances.  {#6}
+
