@@ -122,3 +122,6 @@ Version 1.4.2: (not yet released)
 =============
 - Fixed a bug that would cause assignments of `and` and `or` expressions to fail under certain circumstances.  {#6}
 
+- Changed the way scoping works.  Previously, if an identifier was not found in the local scope, each calling scope would be searched in turn, all the way back to the global scope.  Now those intermediate scopes are skipped; identifiers are located in the local scope or in the global scope only.  {#7}
+
+

@@ -507,11 +507,10 @@ namespace MiniScript {
 		if (variables.Get(identifier, &result)) return result;
 		
 		// OK, we don't have a local variable with that name.
-		// Check higher scopes.
-		Context* c = parent;
-		while (c != nullptr) {
-			if (c->variables.Get(identifier, &result)) return result;
-			c = c->parent;
+		// Check the global scope (if that's not us already).
+		if (parent != NULL) {
+			Context* globals = Root();
+			if (globals->variables.Get(identifier, &result)) return result;
 		}
 		
 		// Finally, check intrinsics.

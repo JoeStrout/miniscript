@@ -613,13 +613,12 @@ namespace Miniscript {
 				}
 
 				// OK, we don't have a local variable with that name.
-				// Check higher scopes.
-				Context c = parent;
-				while (c != null) {
-					if (c.variables != null && c.variables.ContainsKey(identifier)) {
-						return c.variables[identifier];
+				// Check the global scope (if that's not us already).
+				if (parent != null) {
+					Context globals = root;
+					if (globals.variables != null && globals.variables.ContainsKey(identifier)) {
+						return globals.variables[identifier];
 					}
-					c = c.parent;
 				}
 
 				// Finally, check intrinsics.
