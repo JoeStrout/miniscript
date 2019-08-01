@@ -124,4 +124,8 @@ Version 1.4.2: (not yet released)
 
 - Changed the way scoping works.  Previously, if an identifier was not found in the local scope, each calling scope would be searched in turn, all the way back to the global scope.  Now those intermediate scopes are skipped; identifiers are located in the local scope or in the global scope only.  {#7}
 
+- Added a line continuation feature: if you end a line in an open parenthesis, bracket,
+or brace; or a comma; or any binary operator, then you can continue the statement on
+the next line.  Works in both REPL and script mode.  {#8}
+
 
