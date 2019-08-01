@@ -111,6 +111,9 @@ namespace MiniScript {
 		// off when we reach the end of the function).
 		List<ParseState> outputStack;
 		
+		// Partial input, in the case where line continuation has been used.
+		String partialInput;
+		
 		// Handy reference to the top of outputStack.
 		ParseState* output;
 		
@@ -130,7 +133,7 @@ namespace MiniScript {
 		}
 		
 		bool NeedMoreInput() {
-			return (outputStack.Count() > 1 or output->backpatches.Count() > 0);
+			return (not partialInput.empty() or outputStack.Count() > 1 or output->backpatches.Count() > 0);
 		}
 
 		void Parse(String sourceCode, bool replMode=false);

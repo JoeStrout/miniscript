@@ -238,6 +238,72 @@ namespace MiniScript {
 		}
 	}
 	
+	bool Lexer::IsInStringLiteral(long charPosB, String source, long startPosB) {
+		bool inString = false;
+		for (long i=startPosB; i<charPosB; i++) {
+			if (source[i] == '"') inString = !inString;
+		}
+		return inString;
+	}
+	
+	long Lexer::CommentStartPosB(String source, long startPosB) {
+		// Find the first occurrence of "//" in this line that
+		// is not within a string literal.
+		long commentStartB = startPosB-2;
+		while (true) {
+			commentStartB = source.IndexOfB("//", commentStartB + 2);
+			if (commentStartB < 0) break;	// no comment found
+			if (!IsInStringLiteral(commentStartB, source, startPosB)) break;	// valid comment
+		}
+		return commentStartB;
+	}
+	
+	String Lexer::TrimComment(String source) {
+		long startPosB = source.LastIndexOfB('\n') + 1;
+		long commentStartB = CommentStartPosB(source, startPosB);
+		if (commentStartB >= 0) return source.Substring(startPosB, commentStartB - startPosB);
+		return source;
+	}
+	
+	// Find the last token in the given source, ignoring any whitespace
+	// or comment at the end of that line.
+	Token Lexer::LastToken(String source) {
+		// Start by finding the start and logical  end of the last line.
+		long startPosB = source.LastIndexOfB('\n') + 1;
+		long commentStartB = CommentStartPosB(source, startPosB);
+		
+		// Walk back from end of string or start of comment, skipping whitespace.
+		long endPos = (commentStartB >= 0 ? commentStartB-1 : source.LengthB() - 1);
+		while (endPos >= 0 and IsWhitespace(source[endPos])) endPos--;
+		if (endPos < 0) return Token::EOL;
+		
+		// Find the start of that last token.
+		// There are several cases to consider here.
+		long tokStartB = endPos;
+		char c = source[endPos];
+		if (IsIdentifier(c)) {
+			while (tokStartB > startPosB && IsIdentifier(source[tokStartB-1])) tokStartB--;
+		} else if (c == '"') {
+			bool inQuote = true;
+			while (tokStartB > startPosB) {
+				tokStartB--;
+				if (source[tokStartB] == '"') {
+					inQuote = !inQuote;
+					if (!inQuote && tokStartB > startPosB && source[tokStartB-1] != '"') break;
+				}
+			}
+		} else if (c == '=' && tokStartB > startPosB) {
+			char c2 = source[tokStartB-1];
+			if (c2 == '>' || c2 == '<' || c2 == '=' || c2 == '!') tokStartB--;
+		}
+		
+		// Now use the standard lexer to grab just that bit.
+		Lexer lex(source);
+		lex.ls->positionB = tokStartB;
+		return lex.Dequeue();
+	}
+
+	
 	//--------------------------------------------------------------------------------
 	class TestLexer : public UnitTest
 	{
@@ -305,7 +371,14 @@ namespace MiniScript {
 		Assert(lex.lineNum() == 4);
 		check(lex.Dequeue(), Token::Type::EOL);
 		Assert(lex.atEnd());
-
+		
+		check(Lexer::LastToken("x=42 // foo"), Token::Type::Number, "42");
+		check(Lexer::LastToken("x = [1, 2, // foo"), Token::Type::Comma);
+		check(Lexer::LastToken("x = [1, 2 // foo"), Token::Type::Number, "2");
+		check(Lexer::LastToken("x = [1, 2 // foo // and \"more\" foo"), Token::Type::Number, "2");
+		check(Lexer::LastToken("x = [\"foo\", \"//bar\"]"), Token::Type::RSquare);
+		check(Lexer::LastToken("print 1 // line 1\nprint 2"), Token::Type::Number, "2");
+		check(Lexer::LastToken("print \"Hi\"\"Quote\" // foo bar"), Token::Type::String, "Hi\"Quote");
 	}
 	
 	RegisterUnitTest(TestLexer);

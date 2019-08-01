@@ -99,6 +99,8 @@ namespace MiniScript {
 		inline long IndexOfB(const String &s, long posB=0) const;
 		inline long LastIndexOfB(const char *c, long posB=-1) const;
 		inline long LastIndexOfB(const String &s, long posB=-1) const;
+		inline long LastIndexOf(const char *c, long posB=-1) const;
+		inline long LastIndexOf(const String &s, long posB=-1) const;
 		inline String SubstringB(long posB, long LengthB=-1) const;
 		inline bool Contains(const String &other) const;
 		
@@ -284,9 +286,9 @@ namespace MiniScript {
 	long String::IndexOfB(const char *c, long posB) const {
 		if (!ss) return -1;
 		if (!c) return posB;
-		size_t clen = strlen(c);
-		size_t maxi = ss->dataSize - 1 - clen;
-		for (size_t i = posB; i <= maxi; i++) {
+		long clen = strlen(c);
+		long maxi = ss->dataSize - 1 - clen;
+		for (long i = posB; i <= maxi; i++) {
 			if (strncmp(ss->data+i, c, clen) == 0) return i;
 		}
 		return -1;
@@ -336,6 +338,17 @@ namespace MiniScript {
 		}
 		return -1;
 	}
+
+	long String::LastIndexOf(const char *c, long pos) const {
+		long result = LastIndexOfB(c, bytePosOfCharPos(pos));
+		return result > 0 ? charPosOfBytePos(result) : result;
+	}
+	
+	long String::LastIndexOf(const String &s, long pos) const {
+		long result = LastIndexOfB(s, bytePosOfCharPos(pos));
+		return result > 0 ? charPosOfBytePos(result) : result;
+	}
+	
 
 	String String::SubstringB(long posB, long LengthB) const {
 		if (!ss) return *this;

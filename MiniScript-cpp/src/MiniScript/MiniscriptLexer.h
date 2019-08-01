@@ -112,6 +112,10 @@ namespace MiniScript {
 		static bool IsNumeric(char c);
 		static bool IsIdentifier(char c);
 		static bool IsWhitespace(char c);
+		static bool IsInStringLiteral(long charPosB, String source, long startPosB);
+		static long CommentStartPosB(String source, long startPosB);
+		static String TrimComment(String source);
+		static Token LastToken(String source);
 		
 	private:
 		Lexer(LexerStorage* storage) : ls(storage) {}  // (assumes we grab an existing reference)

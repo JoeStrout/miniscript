@@ -265,6 +265,71 @@ namespace Miniscript {
 			return AtEnd || IsWhitespace(input[position]);
 		}
 
+		public static bool IsInStringLiteral(int charPos, string source, int startPos=0) {
+			bool inString = false;
+			for (int i=startPos; i<charPos; i++) {
+				if (source[i] == '"') inString = !inString;
+			}
+			return inString;
+		}
+
+		public static int CommentStartPos(string source, int startPos) {
+			// Find the first occurrence of "//" in this line that
+			// is not within a string literal.
+			int commentStart = startPos-2;
+			while (true) {
+				commentStart = source.IndexOf("//", commentStart + 2);
+				if (commentStart < 0) break;	// no comment found
+				if (!IsInStringLiteral(commentStart, source, startPos)) break;	// valid comment
+			}
+			return commentStart;
+		}
+		
+		public static string TrimComment(string source) {
+			int startPos = source.LastIndexOf('\n') + 1;
+			int commentStart = CommentStartPos(source, startPos);
+			if (commentStart >= 0) return source.Substring(startPos, commentStart - startPos);
+			return source;
+		}
+
+		// Find the last token in the given source, ignoring any whitespace
+		// or comment at the end of that line.
+		public static Token LastToken(string source) {
+			// Start by finding the start and logical  end of the last line.
+			int startPos = source.LastIndexOf('\n') + 1;
+			int commentStart = CommentStartPos(source, startPos);
+			
+			// Walk back from end of string or start of comment, skipping whitespace.
+			int endPos = (commentStart >= 0 ? commentStart-1 : source.Length - 1);
+			while (endPos >= 0 && IsWhitespace(source[endPos])) endPos--;
+			if (endPos < 0) return Token.EOL;
+			
+			// Find the start of that last token.
+			// There are several cases to consider here.
+			int tokStart = endPos;
+			char c = source[endPos];
+			if (IsIdentifier(c)) {
+				while (tokStart > startPos && IsIdentifier(source[tokStart-1])) tokStart--;
+			} else if (c == '"') {
+				bool inQuote = true;
+				while (tokStart > startPos) {
+					tokStart--;
+					if (source[tokStart] == '"') {
+						inQuote = !inQuote;
+						if (!inQuote && tokStart > startPos && source[tokStart-1] != '"') break;
+					}
+				}
+			} else if (c == '=' && tokStart > startPos) {
+				char c2 = source[tokStart-1];
+				if (c2 == '>' || c2 == '<' || c2 == '=' || c2 == '!') tokStart--;
+			}
+			
+			// Now use the standard lexer to grab just that bit.
+			Lexer lex = new Lexer(source);
+			lex.position = tokStart;
+			return lex.Dequeue();
+		}
+
 		public static void Check(Token tok, Token.Type type, string text=null, int lineNum=0) {
 			UnitTest.ErrorIfNull(tok);
 			if (tok == null) return;
@@ -325,7 +390,15 @@ namespace Miniscript {
 			Check(lex.Dequeue(), Token.Type.Identifier, "bamf");
 			CheckLineNum(lex.lineNum, 4);
 			Check(lex.Dequeue(), Token.Type.EOL);
-			UnitTest.ErrorIf(!lex.AtEnd, "AtEnd not set when it should be");			
+			UnitTest.ErrorIf(!lex.AtEnd, "AtEnd not set when it should be");
+			
+			Check(LastToken("x=42 // foo"), Token.Type.Number, "42");
+			Check(LastToken("x = [1, 2, // foo"), Token.Type.Comma);
+			Check(LastToken("x = [1, 2 // foo"), Token.Type.Number, "2");
+			Check(LastToken("x = [1, 2 // foo // and \"more\" foo"), Token.Type.Number, "2");
+			Check(LastToken("x = [\"foo\", \"//bar\"]"), Token.Type.RSquare);
+			Check(LastToken("print 1 // line 1\nprint 2"), Token.Type.Number, "2");			
+			Check(LastToken("print \"Hi\"\"Quote\" // foo bar"), Token.Type.String, "Hi\"Quote");			
 		}
 	}
 }

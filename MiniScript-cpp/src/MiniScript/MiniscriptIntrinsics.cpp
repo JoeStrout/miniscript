@@ -465,7 +465,7 @@ namespace MiniScript {
 	static IntrinsicResult intrinsic_rnd(Context *context, IntrinsicResult partialResult) {
 		Value seed = context->GetVar("seed");
 		if (seed.IsNull()) InitRand();
-		else InitRand(seed.IntValue());
+		else InitRand((unsigned int)seed.IntValue());
 		double d = (double)rand() / (RAND_MAX + 1.0);
 		return IntrinsicResult(d);
 	};

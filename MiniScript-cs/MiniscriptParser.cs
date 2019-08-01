@@ -143,6 +143,9 @@ namespace Miniscript {
 				}
 			}
 		}
+		
+		// Partial input, in the case where line continuation has been used.
+		string partialInput;
 
 		// List of open code blocks we're working on (while compiling a function,
 		// we push a new one onto this stack, compile to that, and then pop it
@@ -185,13 +188,41 @@ namespace Miniscript {
 		}
 
 		public bool NeedMoreInput() {
+			if (!string.IsNullOrEmpty(partialInput)) return true;
 			if (outputStack.Count > 1) return true;
 			if (output.backpatches.Count > 0) return true;
 			return false;
 		}
 
 		public void Parse(string sourceCode, bool replMode=false) {
-			Lexer tokens = new Lexer(sourceCode);
+			if (replMode) {
+				// Check for an incomplete final line by finding the last (non-comment) token.
+				bool isPartial;
+				Token lastTok = Lexer.LastToken(sourceCode);
+				// Almost any token at the end will signify line continuation, except:
+				switch (lastTok.type) {
+				case Token.Type.EOL:
+				case Token.Type.Identifier:
+				case Token.Type.Keyword:
+				case Token.Type.Number:
+				case Token.Type.RCurly:
+				case Token.Type.RParen:
+				case Token.Type.RSquare:
+				case Token.Type.String:
+				case Token.Type.Unknown:
+					isPartial = false;
+					break;
+				default:
+					isPartial = true;
+					break;
+				}				
+				if (isPartial) {
+					partialInput += Lexer.TrimComment(sourceCode);
+					return;
+				}
+			}
+			Lexer tokens = new Lexer(partialInput + sourceCode);
+			partialInput = null;
 			ParseMultipleLines(tokens);
 
 			if (!replMode && NeedMoreInput()) {
@@ -253,6 +284,10 @@ namespace Miniscript {
 
 			TAC.Machine vm = CreateVM(null);
 			while (!vm.done) vm.Step();
+		}
+
+		void AllowLineBreak(Lexer tokens) {
+			while (tokens.Peek().type == Token.Type.EOL && !tokens.AtEnd) tokens.Dequeue();
 		}
 
 		delegate Value ExpressionParsingMethod(Lexer tokens, bool asLval=false, bool statementStart=false);
@@ -595,6 +630,8 @@ namespace Miniscript {
 				tokens.Dequeue();		// discard "or"
 				val = FullyEvaluate(val);
 
+				AllowLineBreak(tokens); // allow a line break after a binary operator
+
 				// Set up a short-circuit jump based on the current value; 
 				// we'll fill in the jump destination later.  Note that the
 				// usual GotoAifB opcode won't work here, without breaking
@@ -636,6 +673,8 @@ namespace Miniscript {
 				tokens.Dequeue();		// discard "and"
 				val = FullyEvaluate(val);
 
+				AllowLineBreak(tokens); // allow a line break after a binary operator
+
 				// Set up a short-circuit jump based on the current value; 
 				// we'll fill in the jump destination later.
 				TAC.Line jump = new TAC.Line(null, TAC.Line.Op.GotoAifNotB, null, val);
@@ -671,6 +710,9 @@ namespace Miniscript {
 			Value val;
 			if (tok.type == Token.Type.Keyword && tok.text == "not") {
 				tokens.Dequeue();		// discard "not"
+
+				AllowLineBreak(tokens); // allow a line break after a unary operator
+
 				val = nextLevel(tokens);
 				int tempNum = output.nextTempNum++;
 				output.Add(new TAC.Line(TAC.LTemp(tempNum), TAC.Line.Op.NotA, val));
@@ -687,6 +729,7 @@ namespace Miniscript {
 			Value val = nextLevel(tokens, asLval, statementStart);
 			if (tokens.Peek().type == Token.Type.Keyword && tokens.Peek().text == "isa") {
 				tokens.Dequeue();		// discard the isa operator
+				AllowLineBreak(tokens); // allow a line break after a binary operator
 				Value opB = nextLevel(tokens);
 				int tempNum = output.nextTempNum++;
 				output.Add(new TAC.Line(TAC.LTemp(tempNum), TAC.Line.Op.AisaB, val, opB));
@@ -706,6 +749,8 @@ namespace Miniscript {
 			while (opcode != TAC.Line.Op.Noop) {
 				tokens.Dequeue();	// discard the operator (we have the opcode)
 				opA = FullyEvaluate(opA);
+
+				AllowLineBreak(tokens); // allow a line break after a binary operator
 
 				Value opB = nextLevel(tokens);
 				int tempNum = output.nextTempNum++;
@@ -745,6 +790,9 @@ namespace Miniscript {
 					(tok.type == Token.Type.OpMinus
 					&& (!statementStart || !tok.afterSpace  || tokens.IsAtWhitespace()))) {
 				tokens.Dequeue();
+
+				AllowLineBreak(tokens); // allow a line break after a binary operator
+
 				val = FullyEvaluate(val);
 				Value opB = nextLevel(tokens);
 				int tempNum = output.nextTempNum++;
@@ -764,6 +812,9 @@ namespace Miniscript {
 			Token tok = tokens.Peek();
 			while (tok.type == Token.Type.OpTimes || tok.type == Token.Type.OpDivide || tok.type == Token.Type.OpMod) {
 				tokens.Dequeue();
+
+				AllowLineBreak(tokens); // allow a line break after a binary operator
+
 				val = FullyEvaluate(val);
 				Value opB = nextLevel(tokens);
 				int tempNum = output.nextTempNum++;
@@ -789,6 +840,9 @@ namespace Miniscript {
 			ExpressionParsingMethod nextLevel = ParseNew;
 			if (tokens.Peek().type != Token.Type.OpMinus) return nextLevel(tokens, asLval, statementStart);
 			tokens.Dequeue();		// skip '-'
+
+			AllowLineBreak(tokens); // allow a line break after a unary operator
+
 			Value val = nextLevel(tokens);
 			if (val is ValNumber) {
 				// If what follows is a numeric literal, just invert it and be done!
@@ -807,6 +861,9 @@ namespace Miniscript {
 			ExpressionParsingMethod nextLevel = ParseAddressOf;
 			if (tokens.Peek().type != Token.Type.Keyword || tokens.Peek().text != "new") return nextLevel(tokens, asLval, statementStart);
 			tokens.Dequeue();		// skip 'new'
+
+			AllowLineBreak(tokens); // allow a line break after a unary operator
+
 			// Grab a reference to our __isa value
 			Value isa = nextLevel(tokens);
 			// Now, create a new map, and set __isa on it to that.
@@ -824,6 +881,7 @@ namespace Miniscript {
 			ExpressionParsingMethod nextLevel = ParsePower;
 			if (tokens.Peek().type != Token.Type.AddressOf) return nextLevel(tokens, asLval, statementStart);
 			tokens.Dequeue();
+			AllowLineBreak(tokens); // allow a line break after a unary operator
 			Value val = nextLevel(tokens, true, statementStart);
 			if (val is ValVar) {
 				((ValVar)val).noInvoke = true;
@@ -839,6 +897,9 @@ namespace Miniscript {
 			Token tok = tokens.Peek();
 			while (tok.type == Token.Type.OpPower) {
 				tokens.Dequeue();
+
+				AllowLineBreak(tokens); // allow a line break after a binary operator
+
 				val = FullyEvaluate(val);
 				Value opB = nextLevel(tokens);
 				int tempNum = output.nextTempNum++;
@@ -881,6 +942,7 @@ namespace Miniscript {
 			while (true) {
 				if (tokens.Peek().type == Token.Type.Dot) {
 					tokens.Dequeue();	// discard '.'
+					AllowLineBreak(tokens); // allow a line break after a binary operator
 					Token nextIdent = RequireToken(tokens, Token.Type.Identifier);
 					// We're chaining sequences here; look up (by invoking)
 					// the previous part of the sequence, so we can build on it.
@@ -895,10 +957,12 @@ namespace Miniscript {
 					}				
 				} else if (tokens.Peek().type == Token.Type.LSquare && !tokens.Peek().afterSpace) {
 					tokens.Dequeue();	// discard '['
+					AllowLineBreak(tokens); // allow a line break after open bracket
 					val = FullyEvaluate(val);
 	
 					if (tokens.Peek().type == Token.Type.Colon) {	// e.g., foo[:4]
 						tokens.Dequeue();	// discard ':'
+						AllowLineBreak(tokens); // allow a line break after colon
 						Value index2 = ParseExpr(tokens);
 						ValTemp temp = new ValTemp(output.nextTempNum++);
 						Intrinsics.CompileSlice(output.code, val, null, index2, temp.tempNum);
@@ -907,6 +971,7 @@ namespace Miniscript {
 						Value index = ParseExpr(tokens);
 						if (tokens.Peek().type == Token.Type.Colon) {	// e.g., foo[2:4] or foo[2:]
 							tokens.Dequeue();	// discard ':'
+							AllowLineBreak(tokens); // allow a line break after colon
 							Value index2 = null;
 							if (tokens.Peek().type != Token.Type.RSquare) index2 = ParseExpr(tokens);
 							ValTemp temp = new ValTemp(output.nextTempNum++);
@@ -958,10 +1023,14 @@ namespace Miniscript {
 			if (tokens.Peek().type == Token.Type.RCurly) {
 				tokens.Dequeue();
 			} else while (true) {
+				AllowLineBreak(tokens); // allow a line break after a comma or open brace
+
 				Value key = ParseExpr(tokens);
 				if (key == null) throw new CompilerException(errorContext, tokens.lineNum,
 						"expression required as map key");
 				RequireToken(tokens, Token.Type.Colon);
+				// allow a line break after a colon
+				while (tokens.Peek().type == Token.Type.EOL && !tokens.AtEnd) tokens.Dequeue();
 				Value value = ParseExpr(tokens);
 
 				map.map[key] = value;
@@ -986,6 +1055,8 @@ namespace Miniscript {
 			if (tokens.Peek().type == Token.Type.RSquare) {
 				tokens.Dequeue();
 			} else while (true) {
+				AllowLineBreak(tokens); // allow a line break after a comma or open bracket
+
 				Value elem = ParseExpr(tokens);
 				list.values.Add(elem);
 				if (RequireEitherToken(tokens, Token.Type.Comma, Token.Type.RSquare).type == Token.Type.RSquare) break;
@@ -1002,6 +1073,7 @@ namespace Miniscript {
 			ExpressionParsingMethod nextLevel = ParseAtom;
 			if (tokens.Peek().type != Token.Type.LParen) return nextLevel(tokens, asLval, statementStart);
 			tokens.Dequeue();
+			AllowLineBreak(tokens); // allow a line break after an open paren
 			Value val = ParseExpr(tokens);
 			RequireToken(tokens, Token.Type.RParen);
 			return val;
@@ -1022,6 +1094,7 @@ namespace Miniscript {
 				if (tokens.Peek().type == Token.Type.RParen) {
 					tokens.Dequeue();
 				} else while (true) {
+					AllowLineBreak(tokens); // allow a line break after a comma or open paren
 					Value arg = ParseExpr(tokens);
 					output.Add(new TAC.Line(null, TAC.Line.Op.PushParam, arg));
 					argCount++;
@@ -1110,6 +1183,8 @@ namespace Miniscript {
 			TestValidParse("f = function(x)\nprint x\nend function\nf 42");
 			TestValidParse("myList = [1, null, 3]");
 			TestValidParse("while true; if true then; break; else; print 1; end if; end while");
+			TestValidParse("x = 0 or\n1");
+			TestValidParse("x = [1, 2, \n 3]", true);
 		}
 	}
 }
