@@ -382,7 +382,12 @@ namespace MiniScript {
 				output->Add(TACLine(TACLine::Op::PushParam, arg));
 				argCount++;
 				if (tokens.Peek().type == Token::Type::EOL) break;
-				if (tokens.Peek().type == Token::Type::Keyword || tokens.Peek().text == "else") break;
+				if (tokens.Peek().type == Token::Type::Keyword and tokens.Peek().text == "else") break;
+				if (tokens.Peek().type == Token::Type::Comma) {
+					tokens.Dequeue();
+					AllowLineBreak(tokens);
+					continue;
+				}
 				if (RequireEitherToken(tokens, Token::Type::Comma, Token::Type::EOL).type == Token::Type::EOL) break;
 			}
 			Value result = Value::Temp(output->nextTempNum++);

@@ -547,7 +547,12 @@ namespace Miniscript {
 					output.Add(new TAC.Line(null, TAC.Line.Op.PushParam, arg));
 					argCount++;
 					if (tokens.Peek().type == Token.Type.EOL) break;
-					if (tokens.Peek().type == Token.Type.Keyword || tokens.Peek().text == "else") break;
+					if (tokens.Peek().type == Token.Type.Keyword && tokens.Peek().text == "else") break;
+					if (tokens.Peek().type == Token.Type.Comma) {
+						tokens.Dequeue();
+						AllowLineBreak(tokens);
+						continue;
+					}
 					if (RequireEitherToken(tokens, Token.Type.Comma, Token.Type.EOL).type == Token.Type.EOL) break;
 				}
 				ValTemp result = new ValTemp(output.nextTempNum++);
@@ -1029,8 +1034,7 @@ namespace Miniscript {
 				if (key == null) throw new CompilerException(errorContext, tokens.lineNum,
 						"expression required as map key");
 				RequireToken(tokens, Token.Type.Colon);
-				// allow a line break after a colon
-				while (tokens.Peek().type == Token.Type.EOL && !tokens.AtEnd) tokens.Dequeue();
+				AllowLineBreak(tokens); // allow a line break after a colon
 				Value value = ParseExpr(tokens);
 
 				map.map[key] = value;
@@ -1184,7 +1188,8 @@ namespace Miniscript {
 			TestValidParse("myList = [1, null, 3]");
 			TestValidParse("while true; if true then; break; else; print 1; end if; end while");
 			TestValidParse("x = 0 or\n1");
-			TestValidParse("x = [1, 2, \n 3]", true);
+			TestValidParse("x = [1, 2, \n 3]");
+			TestValidParse("range 1,\n10, 2", true);
 		}
 	}
 }
