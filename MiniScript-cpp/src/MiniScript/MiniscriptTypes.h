@@ -44,6 +44,9 @@ namespace MiniScript {
 		
 		// Function code (compiled down to TAC form)
 		List<TACLine> code;
+		
+		// Local variables where the function was defined {#8}
+		ValueDict moduleVars;
 	};
 
 	class SeqElemStorage;

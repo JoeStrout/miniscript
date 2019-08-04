@@ -622,8 +622,10 @@ namespace Miniscript {
 //			Console.WriteLine("STARTED FUNCTION");
 
 			// Create a function object attached to the new parse state code.
-			func.code = pendingState.code;		
-			return new ValFunction(func);
+			func.code = pendingState.code;
+			var valFunc = new ValFunction(func);
+			output.Add(new TAC.Line(null, TAC.Line.Op.BindContextOfA, valFunc));
+			return valFunc;
 		}
 
 		Value ParseOr(Lexer tokens, bool asLval=false, bool statementStart=false) {

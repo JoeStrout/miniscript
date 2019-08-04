@@ -40,6 +40,7 @@ namespace MiniScript {
 			AisaB,
 			AAndB,
 			AOrB,
+			BindContextOfA,
 			CopyA,
 			NotA,
 			GotoA,
@@ -75,6 +76,7 @@ namespace MiniScript {
 		List<TACLine> code;			// TAC lines we're executing
 		long lineNum;				// next line to be executed
 		ValueDict variables;		// local variables for this call frame
+		ValueDict moduleVars;		// variables of the context where this function was defined
 		ValueList args;				// pushed arguments for upcoming calls
 		Context *parent;			// parent (calling) context
 		Value resultStorage;		// where to store the return value (in the calling context)

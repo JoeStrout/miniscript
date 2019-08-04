@@ -79,6 +79,9 @@ namespace MiniScript {
 			case Op::AOrB:
 				text = lhs.ToString() + " := " + rhsA.ToString() + " or " + rhsB.ToString();
 				break;
+			case Op::BindContextOfA:
+				text = rhsA.ToString() + ".moduleVars = <locals>";
+				break;
 			case Op::CopyA:
 				text = lhs.ToString() + " := copy of " + rhsA.ToString();
 				break;
@@ -437,6 +440,12 @@ namespace MiniScript {
 		} else {
 			// something else... perhaps null
 			switch (op) {
+				case Op::BindContextOfA:
+				{
+					FunctionStorage *fA = (FunctionStorage*)(opA.data.ref);
+					fA->moduleVars = context->variables;
+					return Value::null;
+				} break;
 				case Op::NotA:
 					return Value::Truth(!opA.BoolValue());
 				default:
@@ -506,7 +515,10 @@ namespace MiniScript {
 		Value result;
 		if (variables.Get(identifier, &result)) return result;
 		
-		// OK, we don't have a local variable with that name.
+		// check for a module variable
+		if (moduleVars.Count() > 0 && moduleVars.Get(identifier, &result)) return result;
+		
+		// OK, we don't have a local or module variable with that name.
 		// Check the global scope (if that's not us already).
 		if (parent != NULL) {
 			Context* globals = Root();
@@ -626,7 +638,9 @@ namespace MiniScript {
 					else self = seq.Val(context);
 				}
 				long argCount = line.rhsB.IntValue();
-				Context* nextContext = context->NextCallContext((FunctionStorage*)(funcVal.data.ref), argCount, not self.IsNull(), line.lhs);
+				FunctionStorage *fs = (FunctionStorage*)(funcVal.data.ref);
+				Context* nextContext = context->NextCallContext(fs, argCount, not self.IsNull(), line.lhs);
+				nextContext->moduleVars = fs->moduleVars;
 				if (!valueFoundIn.empty()) nextContext->SetVar("super", super);
 				if (not self.IsNull()) nextContext->SetVar("self", self);
 				stack.Add(nextContext);

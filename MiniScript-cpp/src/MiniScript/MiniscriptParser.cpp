@@ -460,7 +460,9 @@ namespace MiniScript {
 		
 		// Create a function object attached to the new parse state code.
 		func->code = pendingState.code;
-		return Value(func);
+		Value valFunc = Value(func);
+		output->Add(TACLine(Value::null, TACLine::Op::BindContextOfA, valFunc));
+		return valFunc;
 	}
 	
 	Value Parser::ParseOr(Lexer tokens, bool asLval, bool statementStart) {

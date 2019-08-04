@@ -128,4 +128,6 @@ Version 1.4.2: (not yet released)
 or brace; or a comma; or any binary operator, then you can continue the statement on
 the next line.  Works in both REPL and script mode.  {#8}
 
+- When you define a function B locally within a function A, the code of B now has access to the local variables in A.  {#9}
+
 
