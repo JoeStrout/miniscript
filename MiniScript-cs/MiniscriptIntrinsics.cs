@@ -487,7 +487,8 @@ namespace Miniscript {
 				ValList src = (val as ValList);
 				List<string> list = new List<string>(src.values.Count);
 				for (int i=0; i<src.values.Count; i++) {
-					list.Add(src.values[i].ToString());
+					if (src.values[i] == null) list.Add(null);
+					else list.Add(src.values[i].ToString());
 				}
 				string result = string.Join(delim, list.ToArray());
 				return new Intrinsic.Result(result);

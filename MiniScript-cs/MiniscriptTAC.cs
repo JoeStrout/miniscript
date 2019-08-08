@@ -133,7 +133,7 @@ namespace Miniscript {
 					text = string.Format("{0} := {1} isa {2}", lhs, rhsA, rhsB);
 					break;
 				case Op.BindContextOfA:
-					text = string.Format("{0}.moduleVars = <locals>", rhsA);
+					text = string.Format("{0}.moduleVars = {1}", rhsA, rhsB);
 					break;
 				case Op.CopyA:
 					text = string.Format("{0} := copy of {1}", lhs, rhsA);
@@ -221,6 +221,7 @@ namespace Miniscript {
 				Value opB = rhsB!=null ? rhsB.Val(context) : null;
 
 				if (op == Op.AisaB) {
+					if (opA == null) return ValNumber.Truth(opB == null);
 					return ValNumber.Truth(opA.IsA(opB, context.vm));
 				}
 
@@ -365,6 +366,8 @@ namespace Miniscript {
 							if (extraChars > 0) result.Append(sA.Substring(0, extraChars));
 							return new ValString(result.ToString());
 						}
+					case Op.NotA:
+						return ValNumber.Truth(string.IsNullOrEmpty(sA));
 					case Op.AEqualB:
 						return ValNumber.Truth(string.Compare(sA, opB.ToString(context.vm)) == 0);
 					case Op.ANotEqualB:
@@ -487,6 +490,7 @@ namespace Miniscript {
 					}
 				}
 				
+
 				if (op == Op.AAndB || op == Op.AOrB) {
 					// We already handled the case where opA was a number above;
 					// this code handles the case where opA is something else.

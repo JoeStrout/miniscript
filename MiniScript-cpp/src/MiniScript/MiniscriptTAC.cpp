@@ -161,6 +161,7 @@ namespace MiniScript {
 		Value opB = rhsB.type == ValueType::Null ? rhsB : rhsB.Val(context);
 		
 		if (op == Op::AisaB) {
+			if (opA.IsNull()) return Value::Truth(opB.IsNull());
 			return Value::Truth(opA.IsA(opB, context->vm));
 		}
 
@@ -318,6 +319,8 @@ namespace MiniScript {
 					result.takeoverBuffer(buf, totalBytes);
 					return Value(result);
 				}
+				case Op::NotA:
+					return Value::Truth(sA.empty());
 				case Op::AEqualB:
 					return Value::Truth(String::Compare(sA, opB.ToString()) == 0);
 				case Op::ANotEqualB:
