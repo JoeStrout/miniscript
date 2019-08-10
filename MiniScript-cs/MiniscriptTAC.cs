@@ -413,8 +413,8 @@ namespace Miniscript {
 						List<Value> list2 = ((ValList)opB).values;
 						if (list.Count + list2.Count > ValList.maxSize) throw new LimitExceededException("list too large");
 						List<Value> result = new List<Value>(list.Count + list2.Count);
-						foreach (Value v in list) result.Add(v == null ? null : v.Val(context));
-						foreach (Value v in list2) result.Add(v == null ? null : v.Val(context));
+						foreach (Value v in list) result.Add(context.ValueInContext(v));
+						foreach (Value v in list2) result.Add(context.ValueInContext(v));
 						return new ValList(result);
 					} else if (op == Op.ATimesB || op == Op.ADividedByB) {
 						// list replication (or division)
@@ -461,8 +461,8 @@ namespace Miniscript {
 						Check.Type(opB, typeof(ValMap), "map combination");
 						Dictionary<Value, Value> map2 = ((ValMap)opB).map;
 						ValMap result = new ValMap();
-						foreach (KeyValuePair<Value, Value> kv in map) result.map[kv.Key] = kv.Value.Val(context);
-						foreach (KeyValuePair<Value, Value> kv in map2) result.map[kv.Key] = kv.Value.Val(context);
+						foreach (KeyValuePair<Value, Value> kv in map) result.map[kv.Key] = context.ValueInContext(kv.Value);
+						foreach (KeyValuePair<Value, Value> kv in map2) result.map[kv.Key] = context.ValueInContext(kv.Value);
 						return result;
 					} else if (op == Op.NotA) {
 						return ValNumber.Truth(!opA.BoolValue());
@@ -481,6 +481,7 @@ namespace Miniscript {
 					switch (op) {
 					case Op.BindContextOfA:
 						{
+							if (context.variables == null) context.variables = new ValMap();
 							ValFunction valFunc = (ValFunction)opA;
 							valFunc.moduleVars = context.variables;
 							return null;
@@ -631,6 +632,14 @@ namespace Miniscript {
 				if (moduleVars != null && moduleVars.TryGetValue(identifier, out result)) {
 					return result;
 				}
+				if (UnityEngine.Input.GetKey(UnityEngine.KeyCode.LeftShift)) {
+					var sb = new System.Text.StringBuilder();
+					if (moduleVars == null) sb.Append("null");
+					else {
+						foreach (var key in moduleVars.Keys) sb.Append(key + " ");
+					}
+					UnityEngine.Debug.Log("identifier not found in: " + sb.ToString());
+				}
 
 				// OK, we don't have a local or module variable with that name.
 				// Check the global scope (if that's not us already).
@@ -668,6 +677,11 @@ namespace Miniscript {
 				} else {
 					if (lhs != null) throw new RuntimeException("not an lvalue");
 				}
+			}
+			
+			public Value ValueInContext(Value value) {
+				if (value == null) return null;
+				return value.Val(this);
 			}
 
 			/// <summary>
@@ -843,7 +857,7 @@ namespace Miniscript {
 			void DoOneLine(Line line, Context context) {
 //				Console.WriteLine("EXECUTING line " + (context.lineNum-1) + ": " + line);
 				if (line.op == Line.Op.PushParam) {
-					Value val = line.rhsA == null ? null : line.rhsA.Val(context);
+					Value val = context.ValueInContext(line.rhsA);
 					context.PushParamArgument(val);
 				} else if (line.op == Line.Op.CallFunctionA) {
 					// Resolve rhsA.  If it's a function, invoke it; otherwise,
@@ -859,7 +873,7 @@ namespace Miniscript {
 							// when invoking via "super"
 							Value seq = ((ValSeqElem)(line.rhsA)).sequence;
 							if (seq is ValVar && ((ValVar)seq).identifier == "super") self = context.GetVar("self");
-							else self = seq.Val(context);
+							else self = context.ValueInContext(seq);
 						}
 						ValFunction func = (ValFunction)funcVal;
 						int argCount = line.rhsB.IntValue();
