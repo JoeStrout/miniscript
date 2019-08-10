@@ -405,19 +405,18 @@ namespace Miniscript {
 			f.code = (context, partialResult) => {
 				Value self = context.GetVar("self");
 				Value value = context.GetVar("value");
-				if (value == null) {
-					throw new RuntimeException("indexOf requires a value argument");
-				}
 				Value after = context.GetVar("after");
 				if (self is ValList) {
 					List<Value> list = ((ValList)self).values;
 					int idx;
-					if (after == null) idx = list.FindIndex(x => x.Equality(value) == 1);
+					if (after == null) idx = list.FindIndex(x => 
+						x == null ? value == null : x.Equality(value) == 1);
 					else {
 						int afterIdx = after.IntValue();
 						if (afterIdx < -1) afterIdx += list.Count;
 						if (afterIdx < -1 || afterIdx >= list.Count-1) return Intrinsic.Result.Null;
-						idx = list.FindIndex(afterIdx + 1, x => x.Equality(value) == 1);
+						idx = list.FindIndex(afterIdx + 1, x => 
+							x == null ? value == null : x.Equality(value) == 1);
 					}
 					if (idx >= 0) return new Intrinsic.Result(idx);
 				} else if (self is ValString) {

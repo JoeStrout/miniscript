@@ -154,9 +154,6 @@ namespace MiniScript {
 		Value self = context->GetVar("self");
 		Value value = context->GetVar("value");
 		Value after = context->GetVar("after");
-		if (value.IsNull()) {
-			throw RuntimeException("indexOf requires a value argument");
-		}
 		if (self.type == ValueType::List) {
 			ValueList list = self.GetList();
 			long count = list.Count();
