@@ -138,10 +138,16 @@ class MainClass {
 
 		Print("\n");
 
-		Print("Running quick test.\n");
-		RunFile("../../../QuickTest.mscp", true);
+		const string quickTestFilePath = "../../../QuickTest.mscp";
 
-		
+		if (File.Exists(quickTestFilePath)) {
+			Print("Running quick test.\n");
+			RunFile(quickTestFilePath, true);
+		} else {
+			Print("Quick test not found, skipping...\n");
+		}
+
+
 		if (args.Length > 0) {
 			RunFile(args[0]);
 			return;
