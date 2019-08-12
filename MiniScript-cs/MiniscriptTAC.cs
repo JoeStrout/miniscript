@@ -632,14 +632,6 @@ namespace Miniscript {
 				if (moduleVars != null && moduleVars.TryGetValue(identifier, out result)) {
 					return result;
 				}
-				if (UnityEngine.Input.GetKey(UnityEngine.KeyCode.LeftShift)) {
-					var sb = new System.Text.StringBuilder();
-					if (moduleVars == null) sb.Append("null");
-					else {
-						foreach (var key in moduleVars.Keys) sb.Append(key + " ");
-					}
-					UnityEngine.Debug.Log("identifier not found in: " + sb.ToString());
-				}
 
 				// OK, we don't have a local or module variable with that name.
 				// Check the global scope (if that's not us already).
