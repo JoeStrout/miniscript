@@ -132,3 +132,4 @@ the next line.  Works in both REPL and script mode.  {#8}
 
 - Fixed a bug in the C# version that could cause a NullReferenceException to occur when storing a map that contains null as the key in another map.
 
+- Fixed a bug in the C# version that could cause a NullReferenceException to occur when comparing a string to null.

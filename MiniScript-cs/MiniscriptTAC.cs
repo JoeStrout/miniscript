@@ -331,63 +331,58 @@ namespace Miniscript {
 
 				} else if (opA is ValString) {
 					string sA = ((ValString)opA).value;
+					if (op == Op.ATimesB || op == Op.ADividedByB) {
+						double factor = 0;
+						if (op == Op.ATimesB) {
+							Check.Type(opB, typeof(ValNumber), "string replication");
+							factor = ((ValNumber)opB).value;
+						} else {
+							Check.Type(opB, typeof(ValNumber), "string division");
+							factor = 1.0 / ((ValNumber)opB).value;								
+						}
+						int repeats = (int)factor;
+						if (repeats < 0) return ValString.empty;
+						if (repeats * sA.Length > ValString.maxSize) throw new LimitExceededException("string too large");
+						var result = new System.Text.StringBuilder();
+						for (int i = 0; i < repeats; i++) result.Append(sA);
+						int extraChars = (int)(sA.Length * (factor - repeats));
+						if (extraChars > 0) result.Append(sA.Substring(0, extraChars));
+						return new ValString(result.ToString());						
+					}
+					if (op == Op.ElemBofA || op == Op.ElemBofIterA) {
+						int idx = opB.IntValue();
+						Check.Range(idx, -sA.Length, sA.Length - 1, "string index");
+						if (idx < 0) idx += sA.Length;
+						return new ValString(sA.Substring(idx, 1));
+					}
+					string sB = (opB == null ? null : opB.ToString(context.vm));
 					switch (op) {
 					case Op.APlusB:
 						{
 							if (opB == null) return opA;
-							String sB = opB.ToString(context.vm);
 							if (sA.Length + sB.Length > ValString.maxSize) throw new LimitExceededException("string too large");
 							return new ValString(sA + sB);
 						}
 					case Op.AMinusB:
 						{
 							if (opB == null) return opA;
-							string sB = opB.ToString(context.vm);
 							if (sA.EndsWith(sB)) sA = sA.Substring(0, sA.Length - sB.Length);
 							return new ValString(sA);
-						}
-					case Op.ATimesB:
-					case Op.ADividedByB:
-						{
-							double factor = 0;
-							if (op == Op.ATimesB) {
-								Check.Type(opB, typeof(ValNumber), "string replication");
-								factor = ((ValNumber)opB).value;
-							} else {
-								Check.Type(opB, typeof(ValNumber), "string division");
-								factor = 1.0 / ((ValNumber)opB).value;								
-							}
-							int repeats = (int)factor;
-							if (repeats < 0) return ValString.empty;
-							if (repeats * sA.Length > ValString.maxSize) throw new LimitExceededException("string too large");
-							var result = new System.Text.StringBuilder();
-							for (int i = 0; i < repeats; i++) result.Append(sA);
-							int extraChars = (int)(sA.Length * (factor - repeats));
-							if (extraChars > 0) result.Append(sA.Substring(0, extraChars));
-							return new ValString(result.ToString());
 						}
 					case Op.NotA:
 						return ValNumber.Truth(string.IsNullOrEmpty(sA));
 					case Op.AEqualB:
-						return ValNumber.Truth(string.Compare(sA, opB.ToString(context.vm)) == 0);
+						return ValNumber.Truth(string.Compare(sA, sB) == 0);
 					case Op.ANotEqualB:
-						return ValNumber.Truth(string.Compare(sA, opB.ToString(context.vm)) != 0);
+						return ValNumber.Truth(string.Compare(sA, sB) != 0);
 					case Op.AGreaterThanB:
-						return ValNumber.Truth(string.Compare(sA, opB.ToString(context.vm)) > 0);
+						return ValNumber.Truth(string.Compare(sA, sB) > 0);
 					case Op.AGreatOrEqualB:
-						return ValNumber.Truth(string.Compare(sA, opB.ToString(context.vm)) >= 0);
+						return ValNumber.Truth(string.Compare(sA, sB) >= 0);
 					case Op.ALessThanB:
-						return ValNumber.Truth(string.Compare(sA, opB.ToString(context.vm)) < 0);
+						return ValNumber.Truth(string.Compare(sA, sB) < 0);
 					case Op.ALessOrEqualB:
-						return ValNumber.Truth(string.Compare(sA, opB.ToString(context.vm)) <= 0);
-					case Op.ElemBofA:
-					case Op.ElemBofIterA:
-						{
-							int idx = opB.IntValue();
-							Check.Range(idx, -sA.Length, sA.Length - 1, "string index");
-							if (idx < 0) idx += sA.Length;
-							return new ValString(sA.Substring(idx, 1));
-						}
+						return ValNumber.Truth(string.Compare(sA, sB) <= 0);
 					case Op.LengthOfA:
 						return new ValNumber(sA.Length);
 					default:
