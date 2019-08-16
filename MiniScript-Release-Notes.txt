@@ -130,4 +130,5 @@ the next line.  Works in both REPL and script mode.  {#8}
 
 - When you define a function B locally within a function A, the code of B now has access to the local variables in A.  {#9}
 
+- Fixed a bug in the C# version that could cause a NullReferenceException to occur when storing a map that contains null as the key in another map.
 

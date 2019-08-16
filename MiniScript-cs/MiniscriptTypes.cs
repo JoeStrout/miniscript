@@ -687,7 +687,7 @@ namespace Miniscript {
 			if (recursionDepth < 0) return result;  // (important to recurse an odd number of times, due to bit flipping)
 			foreach (KeyValuePair<Value, Value> kv in map) {
 				result ^= kv.Key.Hash(recursionDepth-1);
-				result ^= kv.Value.Hash(recursionDepth-1);
+				if (kv.Value != null) result ^= kv.Value.Hash(recursionDepth-1);
 			}
 			return result;
 		}
