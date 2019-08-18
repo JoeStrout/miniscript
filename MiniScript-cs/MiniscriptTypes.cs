@@ -146,8 +146,8 @@ namespace Miniscript {
 		public static int Compare(Value x, Value y) {
 			// If either argument is a string, do a string comparison
 			if (x is ValString || y is ValString) {
-					String sx = x.ToString();
-					String sy = y.ToString();
+					var sx = x.ToString();
+					var sy = y.ToString();
 					return sx.CompareTo(sy);
 			}
 			// If both arguments are numbers, compare numerically
@@ -268,7 +268,7 @@ namespace Miniscript {
 		public string value;
 
 		public ValString(string value) {
-			this.value = (value == null ? _empty.value : value);
+			this.value = value ?? _empty.value;
 		}
 
 		public override string ToString(TAC.Machine vm) {
@@ -298,7 +298,7 @@ namespace Miniscript {
 		}
 
 		public Value GetElem(Value index) {
-			int i = index.IntValue();
+			var i = index.IntValue();
 			if (i < 0) i += value.Length;
 			if (i < 0 || i >= value.Length) {
 				throw new IndexException("Index Error (string index " + index + " out of range)");
@@ -372,15 +372,15 @@ namespace Miniscript {
 			// CAUTION: do not mutate our original list!  We may need
 			// it in its original form on future iterations.
 			ValList result = null;
-			for (int i = 0; i < values.Count; i++) {
-				bool copied = false;
+			for (var i = 0; i < values.Count; i++) {
+				var copied = false;
 				if (values[i] is ValTemp || values[i] is ValVar) {
 					Value newVal = values[i].Val(context);
 					if (newVal != values[i]) {
 						// OK, something changed, so we're going to need a new copy of the list.
 						if (result == null) {
 							result = new ValList();
-							for (int j = 0; j < i; j++) result.values.Add(values[j]);
+							for (var j = 0; j < i; j++) result.values.Add(values[j]);
 						}
 						result.values.Add(newVal);
 						copied = true;
@@ -391,8 +391,7 @@ namespace Miniscript {
 					result.values.Add(values[i]);
 				}
 			}
-			if (result != null) return result;
-			return this;
+			return result ?? this;
 		}
 
 		public ValList EvalCopy(TAC.Context context) {
@@ -400,8 +399,8 @@ namespace Miniscript {
 			// This is used when a list literal appears in the source, to
 			// ensure that each time that code executes, we get a new, distinct
 			// mutable object, rather than the same object multiple times.
-			ValList result = new ValList();
-			for (int i = 0; i < values.Count; i++) {
+			var result = new ValList();
+			for (var i = 0; i < values.Count; i++) {
 				result.values.Add(values[i] == null ? null : values[i].Val(context));
 			}
 			return result;
@@ -413,12 +412,12 @@ namespace Miniscript {
 				string shortName = vm.FindShortName(this);
 				if (shortName != null) return shortName;
 			}
-			string[] strs = new string[values.Count];
-			for (int i = 0; i < values.Count; i++) {
+			var strs = new string[values.Count];
+			for (var i = 0; i < values.Count; i++) {
 				if (values[i] == null) strs[i] = "null";
 				else strs[i] = values[i].CodeForm(vm, recursionLimit - 1);
 			}
-			return "[" + String.Join(", ", strs) + "]";
+			return "[" + string.Join(", ", strs) + "]";
 		}
 
 		public override string ToString(TAC.Machine vm) {
@@ -438,7 +437,7 @@ namespace Miniscript {
 			//return values.GetHashCode();
 			int result = values.Count.GetHashCode();
 			if (recursionDepth < 1) return result;
-			for (int i = 0; i < values.Count; i++) {
+			for (var i = 0; i < values.Count; i++) {
 				result ^= values[i].Hash(recursionDepth-1);
 			}
 			return result;
@@ -452,7 +451,7 @@ namespace Miniscript {
 			if (count != rhl.Count) return 0;
 			if (recursionDepth < 1) return 0.5;		// in too deep
 			double result = 1;
-			for (int i = 0; i < count; i++) {
+			for (var i = 0; i < count; i++) {
 				result *= values[i].Equality(rhl[i], recursionDepth-1);
 				if (result <= 0) break;
 			}
@@ -462,7 +461,7 @@ namespace Miniscript {
 		public override bool CanSetElem() { return true; }
 
 		public override void SetElem(Value index, Value value) {
-			int i = index.IntValue();
+			var i = index.IntValue();
 			if (i < 0) i += values.Count;
 			if (i < 0 || i >= values.Count) {
 				throw new IndexException("Index Error (list index " + index + " out of range)");
@@ -471,7 +470,7 @@ namespace Miniscript {
 		}
 
 		public Value GetElem(Value index) {
-			int i = index.IntValue();
+			var i = index.IntValue();
 			if (i < 0) i += values.Count;
 			if (i < 0 || i >= values.Count) {
 				throw new IndexException("Index Error (list index " + index + " out of range)");
@@ -510,7 +509,7 @@ namespace Miniscript {
 		/// <returns>true if the map contains that key; false otherwise</returns>
 		public bool ContainsKey(string identifier) {
 			var idVal = TempValString.Get(identifier);
-			bool result = map.ContainsKey(idVal);
+			var result = map.ContainsKey(idVal);
 			TempValString.Release(idVal);
 			return result;
 		}
@@ -635,7 +634,7 @@ namespace Miniscript {
 			// This is used when a map literal appears in the source, to
 			// ensure that each time that code executes, we get a new, distinct
 			// mutable object, rather than the same object multiple times.
-			ValMap result = new ValMap();
+			var result = new ValMap();
 			foreach (Value k in map.Keys) {
 				Value key = k;		// stupid C#!
 				Value value = map[key];
@@ -652,8 +651,8 @@ namespace Miniscript {
 				string shortName = vm.FindShortName(this);
 				if (shortName != null) return shortName;
 			}
-			string[] strs = new string[map.Count];
-			int i = 0;
+			var strs = new string[map.Count];
+			var i = 0;
 			foreach (KeyValuePair<Value, Value> kv in map) {
 				int nextRecurLimit = recursionLimit - 1;
 				if (kv.Key == ValString.magicIsA) nextRecurLimit = 1;
@@ -733,7 +732,7 @@ namespace Miniscript {
 				throw new IndexException("index " + index + " out of range for map");
 			}
 			Value key = keys.ElementAt<Value>(index);	// (TODO: consider more efficient methods here)
-			ValMap result = new ValMap();
+			var result = new ValMap();
 			result.map[keyStr] = key;
 			result.map[valStr] = map[key];
 			return result;
@@ -777,7 +776,7 @@ namespace Miniscript {
 		public string ToString(TAC.Machine vm) {
 			var s = new System.Text.StringBuilder();
 			s.Append("FUNCTION(");			
-			for (int i=0; i < parameters.Count(); i++) {
+			for (var i=0; i < parameters.Count(); i++) {
 				if (i > 0) s.Append(", ");
 				s.Append(parameters[i].name);
 				if (parameters[i].defaultValue != null) s.Append("=" + parameters[i].defaultValue.CodeForm(vm));
@@ -818,7 +817,7 @@ namespace Miniscript {
 		public override double Equality(Value rhs, int recursionDepth=16) {
 			// Two Function values are equal only if they refer to the exact same function
 			if (!(rhs is ValFunction)) return 0;
-			ValFunction other = (ValFunction)rhs;
+			var other = (ValFunction)rhs;
 			return function == other.function ? 1 : 0;
 		}
 
@@ -906,9 +905,9 @@ namespace Miniscript {
 		/// <param name="identifier">Identifier to look for.</param>
 		/// <param name="context">Context.</param>
 		public static Value Resolve(Value sequence, string identifier, TAC.Context context, out ValMap valueFoundIn) {
-			bool includeMapType = true;
+			var includeMapType = true;
 			valueFoundIn = null;
-			int loopsLeft = 1000;		// (max __isa chain depth)
+			var loopsLeft = 1000;		// (max __isa chain depth)
 			while (sequence != null) {
 				if (sequence is ValTemp || sequence is ValVar) sequence = sequence.Val(context);
 				if (sequence is ValMap) {
@@ -931,20 +930,16 @@ namespace Miniscript {
 						includeMapType = false;
 					}
 				} else if (sequence is ValList) {
-					sequence = context.vm.listType;
-					if (sequence == null) sequence = Intrinsics.ListType();
+					sequence = context.vm.listType ?? Intrinsics.ListType();
 					includeMapType = false;
 				} else if (sequence is ValString) {
-					sequence = context.vm.stringType;
-					if (sequence == null) sequence = Intrinsics.StringType();
+					sequence = context.vm.stringType ?? Intrinsics.StringType();
 					includeMapType = false;
 				} else if (sequence is ValNumber) {
-					sequence = context.vm.numberType;
-					if (sequence == null) sequence = Intrinsics.NumberType();
+					sequence = context.vm.numberType ?? Intrinsics.NumberType();
 					includeMapType = false;
 				} else if (sequence is ValFunction) {
-					sequence = context.vm.functionType;
-					if (sequence == null) sequence = Intrinsics.FunctionType();
+					sequence = context.vm.functionType ?? Intrinsics.FunctionType();
 					includeMapType = false;
 				} else {
 					throw new TypeException("Type Error (while attempting to look up " + identifier + ")");
@@ -1005,10 +1000,7 @@ namespace Miniscript {
 
 		static RValueEqualityComparer _instance = null;
 		public static RValueEqualityComparer instance {
-			get {
-				if (_instance == null) _instance = new RValueEqualityComparer();
-				return _instance;
-			}
+			get { return _instance ?? (_instance = new RValueEqualityComparer()); }
 		}
 	}
 	
