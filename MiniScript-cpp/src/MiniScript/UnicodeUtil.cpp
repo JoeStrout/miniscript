@@ -4,9 +4,6 @@
 
 #include "UnicodeUtil.h"
 #include "Dictionary.h"
-#if _MSC_VER
-	#include "wintype.h"
-#endif
 #include "QA.h"
 #include "UnitTest.h"
 

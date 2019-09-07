@@ -6,6 +6,7 @@
 //  Copyright © 2018 Joe Strout. All rights reserved.
 //
 
+#define _USE_MATH_DEFINES
 #include "MiniscriptIntrinsics.h"
 #include "MiniscriptTAC.h"
 #include "UnicodeUtil.h"

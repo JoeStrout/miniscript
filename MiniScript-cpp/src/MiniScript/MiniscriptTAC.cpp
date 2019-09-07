@@ -8,7 +8,11 @@
 
 #include "MiniscriptTAC.h"
 #include <math.h>		// for pow() and fmod()
-#include <sys/time.h>	// for gettimeofday
+#if _WIN32 || _WIN64
+	#include <windows.h>	// for GetTickCount
+#else
+	#include <sys/time.h>	// for gettimeofday
+#endif
 #include <iostream>		// (for debugging)
 
 namespace MiniScript {
@@ -689,8 +693,12 @@ namespace MiniScript {
 	}
 	
 	double Machine::CurrentWallClockTime() {
-		struct timeval timecheck;
-		gettimeofday(&timecheck, NULL);
-		return (long)timecheck.tv_sec * 1.0 + (long)timecheck.tv_usec / 1000000.0;
+		#if _WIN32 || _WIN64
+			return GetTickCount() * 0.001;
+		#else
+			struct timeval timecheck;
+			gettimeofday(&timecheck, NULL);
+			return (long)timecheck.tv_sec * 1.0 + (long)timecheck.tv_usec / 1000000.0;
+		#endif
 	}
 }

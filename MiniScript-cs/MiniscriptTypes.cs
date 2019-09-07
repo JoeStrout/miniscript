@@ -509,7 +509,7 @@ namespace Miniscript {
 		/// <returns>true if the map contains that key; false otherwise</returns>
 		public bool ContainsKey(string identifier) {
 			var idVal = TempValString.Get(identifier);
-			var result = map.ContainsKey(idVal);
+			bool result = map.ContainsKey(idVal);
 			TempValString.Release(idVal);
 			return result;
 		}
@@ -652,7 +652,7 @@ namespace Miniscript {
 				if (shortName != null) return shortName;
 			}
 			var strs = new string[map.Count];
-			var i = 0;
+			int i = 0;
 			foreach (KeyValuePair<Value, Value> kv in map) {
 				int nextRecurLimit = recursionLimit - 1;
 				if (kv.Key == ValString.magicIsA) nextRecurLimit = 1;
@@ -701,7 +701,12 @@ namespace Miniscript {
 			double result = 1;
 			foreach (KeyValuePair<Value, Value> kv in map) {
 				if (!rhm.ContainsKey(kv.Key)) return 0;
-				result *= kv.Value.Equality(rhm[kv.Key], recursionDepth-1);
+				var rhvalue = rhm[kv.Key];
+				if (kv.Value == null) {
+					if (rhvalue != null) return 0;
+					continue;
+				}
+				result *= kv.Value.Equality(rhvalue, recursionDepth-1);
 				if (result <= 0) break;
 			}
 			return result;
@@ -907,7 +912,7 @@ namespace Miniscript {
 		public static Value Resolve(Value sequence, string identifier, TAC.Context context, out ValMap valueFoundIn) {
 			var includeMapType = true;
 			valueFoundIn = null;
-			var loopsLeft = 1000;		// (max __isa chain depth)
+			int loopsLeft = 1000;		// (max __isa chain depth)
 			while (sequence != null) {
 				if (sequence is ValTemp || sequence is ValVar) sequence = sequence.Val(context);
 				if (sequence is ValMap) {
@@ -1000,7 +1005,10 @@ namespace Miniscript {
 
 		static RValueEqualityComparer _instance = null;
 		public static RValueEqualityComparer instance {
-			get { return _instance ?? (_instance = new RValueEqualityComparer()); }
+			get {
+				if (_instance == null) _instance = new RValueEqualityComparer();
+				return _instance;
+			}
 		}
 	}
 	

@@ -18,17 +18,18 @@
 #include "MiniScript/MiniscriptParser.h"
 #include "MiniScript/MiniscriptInterpreter.h"
 #include "OstreamSupport.h"
-#include "SplitJoin.h"
-#include "editline.h"
+#include "MiniScript/SplitJoin.h"
 
 #include <stdio.h>
-#include <unistd.h>
-#include <dirent.h>		// for readdir
-#include <libgen.h>		// for basename and dirname
+#if _WIN32 || _WIN64
+	// ToDo!
+#else
+	#include <unistd.h>
+	#include <dirent.h>		// for readdir
+	#include <libgen.h>		// for basename and dirname
+#endif
 
 using namespace MiniScript;
-
-extern bool useEditline;
 
 bool exitASAP = false;
 int exitResult = 0;

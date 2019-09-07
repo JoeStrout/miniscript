@@ -9,6 +9,8 @@
 #ifndef MSQA_H
 #define MSQA_H
 
+#include <ciso646>  // (force non-conforming compilers to join the 21st century)
+
 namespace MiniScript {
 	
 	extern void _Error(const char *msg, const char *filename, const int linenum);

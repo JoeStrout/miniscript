@@ -6,6 +6,7 @@
 #ifndef SIMPLESTRING_H
 #define SIMPLESTRING_H
 
+#include <ciso646>  // (force non-conforming compilers to join the 21st century)
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>

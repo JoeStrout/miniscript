@@ -9,7 +9,13 @@
 #ifndef SHELLINTRINSICS_H
 #define SHELLINTRINSICS_H
 
-#include "MiniscriptTypes.h"
+#include "MiniScript/MiniscriptTypes.h"
+#if _WIN32 || _WIN64
+	#define useEditline 0
+#else
+	#include "editline.h"
+	#define useEditline 1
+#endif
 
 extern bool exitASAP;
 extern int exitResult;

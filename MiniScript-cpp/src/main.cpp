@@ -17,13 +17,11 @@
 #include "MiniScript/MiniscriptParser.h"
 #include "MiniScript/MiniscriptInterpreter.h"
 #include "OstreamSupport.h"
-#include "SplitJoin.h"
-#include "editline.h"
+#include "MiniScript/SplitJoin.h"
 #include "ShellIntrinsics.h"
 
 using namespace MiniScript;
 
-bool useEditline = true;
 bool printHeaderInfo = true;
 
 static bool dumpTAC = false;
@@ -74,13 +72,13 @@ static int DoREPL() {
 		const char *prompt = (interp.NeedMoreInput() ? ">>> " : "> ");
 		
 		try {
-			if (useEditline) {
+			#if useEditline
 				char *buf;
 				buf = readline(prompt);
 				if (buf == NULL) return 0;
 				interp.REPL(buf);
 				free(buf);
-			} else {
+			#else
 				// Standard C++ I/O:
 				char buf[1024];
 				if (interp.NeedMoreInput()) std::cout << ">>> "; else std::cout << "> ";
@@ -88,7 +86,7 @@ static int DoREPL() {
 					std::cout << std::endl;
 					return 0;
 				}
-			}
+			#endif
 		} catch (MiniscriptException mse) {
 			std::cerr << "Runtime Exception: " << mse.message << std::endl;
 			interp.vm->Stop();
