@@ -22,7 +22,8 @@
 
 #include <stdio.h>
 #if _WIN32 || _WIN64
-	// ToDo!
+	#include <direct.h>
+	#define getcwd _getcwd
 #else
 	#include <unistd.h>
 	#include <dirent.h>		// for readdir
@@ -60,19 +61,19 @@ static ValueDict& FileHandleClass();
 static IntrinsicResult intrinsic_input(Context *context, IntrinsicResult partialResult) {
 	Value prompt = context->GetVar("prompt");
 	
-	if (useEditline) {
+	#if useEditline
 		char *buf;
 		buf = readline(prompt.ToString().c_str());
 		if (buf == NULL) return IntrinsicResult(Value::emptyString);
 		String s(buf);
 		free(buf);
 		return IntrinsicResult(s);
-	} else {
+	#else
 		std::cout << prompt.ToString();
 		char buf[1024];
 		if (not std::cin.getline(buf, sizeof(buf))) return IntrinsicResult::Null;
 		return IntrinsicResult(String(buf));
-	}
+	#endif
 }
 
 static IntrinsicResult intrinsic_shellArgs(Context *context, IntrinsicResult partialResult) {
@@ -110,15 +111,19 @@ static IntrinsicResult intrinsic_readdir(Context *context, IntrinsicResult parti
 	String pathStr = path.ToString();
 	if (path.IsNull() || pathStr.empty()) pathStr = ".";
 	ValueList result;
-	DIR *dir = opendir(pathStr.c_str());
-	if (dir != NULL) {
-		while (struct dirent *entry = readdir(dir)) {
-			String name(entry->d_name);
-			if (name == "." || name == "..") continue;
-			result.Add(name);
+	#if _WIN32 || _WIN64
+		// ToDo!
+	#else
+		DIR *dir = opendir(pathStr.c_str());
+		if (dir != NULL) {
+			while (struct dirent *entry = readdir(dir)) {
+				String name(entry->d_name);
+				if (name == "." || name == "..") continue;
+				result.Add(name);
+			}
 		}
-	}
-	closedir(dir);
+		closedir(dir);
+	#endif
 	return IntrinsicResult(result);
 }
 
@@ -126,7 +131,11 @@ static IntrinsicResult intrinsic_basename(Context *context, IntrinsicResult part
 	Value path = context->GetVar("path");
 	if (path.IsNull()) return IntrinsicResult(Value::zero);
 	String pathStr = path.ToString();
-	String result(basename((char*)pathStr.c_str()));
+	#if _WIN32 || _WIN64
+		String result = "ToDo!";
+	#else
+		String result(basename((char*)pathStr.c_str()));
+	#endif
 	return IntrinsicResult(result);
 }
 
@@ -134,7 +143,11 @@ static IntrinsicResult intrinsic_dirname(Context *context, IntrinsicResult parti
 	Value path = context->GetVar("path");
 	if (path.IsNull()) return IntrinsicResult(Value::zero);
 	String pathStr = path.ToString();
-	String result(dirname((char*)pathStr.c_str()));
+	#if _WIN32 || _WIN64
+		String result = "ToDo!";
+	#else
+		String result(dirname((char*)pathStr.c_str()));
+	#endif
 	return IntrinsicResult(result);
 }
 
