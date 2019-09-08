@@ -81,11 +81,12 @@ static int DoREPL() {
 			#else
 				// Standard C++ I/O:
 				char buf[1024];
-				if (interp.NeedMoreInput()) std::cout << ">>> "; else std::cout << "> ";
+				std::cout << prompt;
 				if (not std::cin.getline(buf, sizeof(buf))) {
 					std::cout << std::endl;
 					return 0;
 				}
+				interp.REPL(buf);
 			#endif
 		} catch (MiniscriptException mse) {
 			std::cerr << "Runtime Exception: " << mse.message << std::endl;

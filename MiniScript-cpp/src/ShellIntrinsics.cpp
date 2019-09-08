@@ -22,6 +22,7 @@
 
 #include <stdio.h>
 #if _WIN32 || _WIN64
+	#include <windows.h>
 	#include <direct.h>
 	#define getcwd _getcwd
 #else
@@ -112,7 +113,17 @@ static IntrinsicResult intrinsic_readdir(Context *context, IntrinsicResult parti
 	if (path.IsNull() || pathStr.empty()) pathStr = ".";
 	ValueList result;
 	#if _WIN32 || _WIN64
-		// ToDo!
+		pathStr += "\\*";
+		WIN32_FIND_DATA data;
+		HANDLE hFind = FindFirstFile(pathStr.c_str(), &data);
+		if (hFind != INVALID_HANDLE_VALUE) {
+			do {
+				String name(data.cFileName);
+				if (name == "." || name == "..") continue;
+				result.Add(name);
+			} while (FindNextFile(hFind, &data) != 0);
+			FindClose(hFind);
+		}
 	#else
 		DIR *dir = opendir(pathStr.c_str());
 		if (dir != NULL) {
@@ -132,8 +143,12 @@ static IntrinsicResult intrinsic_basename(Context *context, IntrinsicResult part
 	if (path.IsNull()) return IntrinsicResult(Value::zero);
 	String pathStr = path.ToString();
 	#if _WIN32 || _WIN64
-		String result = "ToDo!";
-	#else
+		char driveBuf[3];
+		char nameBuf[256];
+		char extBuf[256];
+		_splitpath_s(pathStr.c_str(), driveBuf, sizeof(driveBuf), NULL, 0, nameBuf, sizeof(nameBuf), extBuf, sizeof(extBuf));
+		String result = String(nameBuf) + String(extBuf);
+    #else
 		String result(basename((char*)pathStr.c_str()));
 	#endif
 	return IntrinsicResult(result);
@@ -144,7 +159,12 @@ static IntrinsicResult intrinsic_dirname(Context *context, IntrinsicResult parti
 	if (path.IsNull()) return IntrinsicResult(Value::zero);
 	String pathStr = path.ToString();
 	#if _WIN32 || _WIN64
-		String result = "ToDo!";
+		char pathBuf[512];
+		_fullpath(pathBuf, pathStr.c_str(), sizeof(pathBuf));
+		char driveBuf[3];
+		char dirBuf[256];
+		_splitpath_s(pathBuf, driveBuf, sizeof(driveBuf), dirBuf, sizeof(dirBuf), NULL, 0, NULL, 0);
+		String result = String(driveBuf) + String(dirBuf);
 	#else
 		String result(dirname((char*)pathStr.c_str()));
 	#endif
@@ -154,8 +174,13 @@ static IntrinsicResult intrinsic_dirname(Context *context, IntrinsicResult parti
 static IntrinsicResult intrinsic_child(Context *context, IntrinsicResult partialResult) {
 	String path = context->GetVar("parentPath").ToString();
 	String filename = context->GetVar("childName").ToString();
-	if (path.EndsWith("/")) return IntrinsicResult(path + filename);
-	return IntrinsicResult(path + "/" + filename);
+	#if _WIN32 || _WIN64
+		String pathSep = "\\";
+	#else
+		String pathSep = "/";
+	#endif
+	if (path.EndsWith(pathSep)) return IntrinsicResult(path + filename);
+	return IntrinsicResult(path + pathSep + filename);
 }
 
 static IntrinsicResult intrinsic_rename(Context *context, IntrinsicResult partialResult) {
