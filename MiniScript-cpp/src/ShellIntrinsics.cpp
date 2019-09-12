@@ -23,12 +23,18 @@
 #include <stdio.h>
 #if _WIN32 || _WIN64
 	#include <windows.h>
+	#include <Shlwapi.h>
+	#include <Fileapi.h>
 	#include <direct.h>
+	#include <time.h>
 	#define getcwd _getcwd
 #else
 	#include <unistd.h>
 	#include <dirent.h>		// for readdir
 	#include <libgen.h>		// for basename and dirname
+	#include <sys/stat.h>	// for stat
+	#include <copyfile.h>	// for copyfile
+	#include <stdlib.h>		// for realpath
 #endif
 
 using namespace MiniScript;
@@ -45,7 +51,13 @@ Intrinsic *i_chdir = NULL;
 Intrinsic *i_readdir = NULL;
 Intrinsic *i_basename = NULL;
 Intrinsic *i_dirname = NULL;
-Intrinsic *i_child= NULL;
+Intrinsic *i_child = NULL;
+Intrinsic *i_exists = NULL;
+Intrinsic *i_info = NULL;
+Intrinsic *i_mkdir = NULL;
+Intrinsic *i_copy = NULL;
+Intrinsic *i_readLines = NULL;
+Intrinsic *i_writeLines = NULL;
 Intrinsic *i_rename = NULL;
 Intrinsic *i_remove = NULL;
 Intrinsic *i_fopen = NULL;
@@ -55,6 +67,7 @@ Intrinsic *i_fwrite = NULL;
 Intrinsic *i_fwriteLine = NULL;
 Intrinsic *i_fread = NULL;
 Intrinsic *i_freadLine = NULL;
+Intrinsic *i_fposition = NULL;
 Intrinsic *i_feof = NULL;
 
 static ValueDict& FileHandleClass();
@@ -171,6 +184,102 @@ static IntrinsicResult intrinsic_dirname(Context *context, IntrinsicResult parti
 	return IntrinsicResult(result);
 }
 
+static IntrinsicResult intrinsic_exists(Context *context, IntrinsicResult partialResult) {
+	Value path = context->GetVar("path");
+	if (path.IsNull()) return IntrinsicResult(Value::null);
+	String pathStr = path.ToString();
+	#if _WIN32 || _WIN64
+		char pathBuf[512];
+		_fullpath(pathBuf, pathStr.c_str(), sizeof(pathBuf));
+		WIN32_FIND_DATA FindFileData;
+		HANDLE handle = FindFirstFile(pathBuf, &FindFileData) ;
+		bool found = handle != INVALID_HANDLE_VALUE;
+		if (found) FindClose(handle);
+	#else
+		bool found = (access(pathStr.c_str(), F_OK ) != -1);
+	#endif
+	return IntrinsicResult(Value::Truth(found));
+}
+
+#if _WIN32 || _WIN64
+static String timespec2str(const __time64_t* ts) {
+#else
+static String timespec2str(struct timespec *ts) {
+#endif
+	struct tm t;
+	
+	#if _WIN32 || _WIN64
+		gmtime_s(&t, ts);
+	#else
+		tzset();
+		if (localtime_r(&(ts->tv_sec), &t) == NULL) return "";
+	#endif
+	
+	String result = String::Format(1900 + t.tm_year) + "-";
+	if (t.tm_mon < 10) result += "0";
+	result += String::Format(1 + t.tm_mon) + "-";
+	if (t.tm_mday < 10) result += "0";
+	result += String::Format(t.tm_mday) + " ";
+	if (t.tm_hour < 10) result += "0";
+	result += String::Format(t.tm_hour) + ":";
+	if (t.tm_min < 10) result += "0";
+	result += String::Format(t.tm_min) + ":";
+	if (t.tm_sec < 10) result += "0";
+	result += String::Format(t.tm_sec);
+
+	return result;
+}
+
+static IntrinsicResult intrinsic_info(Context *context, IntrinsicResult partialResult) {
+	Value path = context->GetVar("path");
+	String pathStr;
+	if (!path.IsNull()) pathStr = path.ToString();
+	if (pathStr.empty()) {
+		char buf[1024];
+		getcwd(buf, sizeof(buf));
+		pathStr = buf;
+	}
+#if _WIN32 || _WIN64
+	char pathBuf[512];
+	_fullpath(pathBuf, pathStr.c_str(), sizeof(pathBuf));
+	struct _stati64 stats;
+	if (_stati64(pathBuf, &stats) != 0) return IntrinsicResult(Value::null);
+	ValueDict map;
+	map.SetValue("path", String(pathBuf));
+	map.SetValue("isDirectory", (stats.st_mode & _S_IFDIR) != 0);
+	map.SetValue("size", stats.st_size);
+	map.SetValue("date", timespec2str(&stats.st_mtime));
+	Value result(map);
+	
+#else
+	char pathBuf[PATH_MAX];
+	realpath(pathStr.c_str(), pathBuf);
+	struct stat stats;
+	if (stat(pathStr.c_str(), &stats) < 0) return IntrinsicResult(Value::null);
+	ValueDict map;
+	map.SetValue("path", String(pathBuf));
+	map.SetValue("isDirectory", S_ISDIR (stats.st_mode));
+	map.SetValue("size", stats.st_size);
+	map.SetValue("date", timespec2str(&stats.st_mtimespec));
+	Value result(map);
+#endif
+	return IntrinsicResult(result);
+}
+
+static IntrinsicResult intrinsic_mkdir(Context *context, IntrinsicResult partialResult) {
+	Value path = context->GetVar("path");
+	if (path.IsNull()) return IntrinsicResult(Value::null);
+	String pathStr = path.ToString();
+#if _WIN32 || _WIN64
+	char pathBuf[512];
+	_fullpath(pathBuf, pathStr.c_str(), sizeof(pathBuf));
+	bool result = CreateDirectory(pathBuf, NULL);	
+#else
+	bool result = (mkdir(pathStr.c_str(), 0755) == 0);
+#endif
+	return IntrinsicResult(result);
+}
+
 static IntrinsicResult intrinsic_child(Context *context, IntrinsicResult partialResult) {
 	String path = context->GetVar("parentPath").ToString();
 	String filename = context->GetVar("childName").ToString();
@@ -190,9 +299,43 @@ static IntrinsicResult intrinsic_rename(Context *context, IntrinsicResult partia
 	return IntrinsicResult(Value::Truth(err == 0));
 }
 
+static IntrinsicResult intrinsic_copy(Context *context, IntrinsicResult partialResult) {
+	String oldPath = context->GetVar("oldPath").ToString();
+	String newPath = context->GetVar("newPath").ToString();
+	
+	//Here we use kernel-space copying for performance reasons
+	#if _WIN32 || _WIN64
+		bool success = CopyFile(oldPath.c_str(), newPath.c_str(), false);
+		int result = success ? 0 : 1;
+	#elif defined(__APPLE__) || defined(__FreeBSD__)
+		//fcopyfile works on FreeBSD and OS X 10.5+
+		int result = copyfile(oldPath.c_str(), newPath.c_str(), 0, COPYFILE_ALL);
+	#else
+		//sendfile will work with non-socket output (i.e. regular file) on Linux 2.6.33+
+		off_t bytesCopied = 0;
+		struct stat fileinfo = {0};
+		fstat(input, &fileinfo);
+		int result = sendfile(newPath.c_str(), oldPath.c_str(), &bytesCopied, fileinfo.st_size);
+	#endif
+
+	return IntrinsicResult(Value::Truth(result == 0));
+}
+
 static IntrinsicResult intrinsic_remove(Context *context, IntrinsicResult partialResult) {
 	String path = context->GetVar("path").ToString();
-	int err = remove(path.c_str());
+	#if _WIN32 || _WIN64
+		bool isDir = false;
+		struct _stati64 stats;
+		if (_stati64(path.c_str(), &stats) == 0) {
+			isDir = ((stats.st_mode & _S_IFDIR) != 0);
+		}
+		bool ok;
+		if (isDir) ok = RemoveDirectory(path.c_str());
+		else ok = DeleteFile(path.c_str());
+		int err = ok ? 0 : 1;
+	#else
+		int err = remove(path.c_str());
+	#endif
 	return IntrinsicResult(Value::Truth(err == 0));
 }
 
@@ -271,6 +414,14 @@ static IntrinsicResult intrinsic_fread(Context *context, IntrinsicResult partial
 	return IntrinsicResult(result);
 }
 
+static IntrinsicResult intrinsic_fposition(Context *context, IntrinsicResult partialResult) {
+	Value self = context->GetVar("self");
+	
+	FILE *handle;
+	if (!openFileMap.Get(self, &handle)) return IntrinsicResult::Null;
+	return IntrinsicResult(ftell(handle));
+}
+
 static IntrinsicResult intrinsic_feof(Context *context, IntrinsicResult partialResult) {
 	Value self = context->GetVar("self");
 	
@@ -289,7 +440,7 @@ static IntrinsicResult intrinsic_freadLine(Context *context, IntrinsicResult par
 	if (str == NULL) return IntrinsicResult::Null;
 	// Grr... we need to strip the terminating newline.
 	// Still probably faster than reading character by character though.
-	for (int i=0; i<1024; i++) {
+	for (int i=0; i<sizeof(buf); i++) {
 		if (buf[i] == '\n') {
 			buf[i] = 0;
 			break;
@@ -298,6 +449,69 @@ static IntrinsicResult intrinsic_freadLine(Context *context, IntrinsicResult par
 	String result(buf);
 	
 	return IntrinsicResult(result);
+}
+
+static IntrinsicResult intrinsic_readLines(Context *context, IntrinsicResult partialResult) {
+	Value self = context->GetVar("self");
+	String path = context->GetVar("path").ToString();
+	
+	FILE *handle = fopen(path.c_str(), "r");
+	if (handle == NULL) return IntrinsicResult::Null;
+
+	// Read in 1K chunks, dividing into lines.
+	ValueList list;
+	char buf[1024];
+	String partialLine;
+	while (!feof(handle)) {
+		int bytesRead = fread(buf, 1, sizeof(buf), handle);
+		if (bytesRead == 0) break;
+		int lineStart = 0;
+		for (int i=0; i<bytesRead; i++) {
+			if (buf[i] == '\n' || buf[i] == '\r') {
+				String line(&buf[lineStart], i - lineStart);
+				if (!partialLine.empty()) {
+					line = partialLine + line;
+					partialLine = "";
+				}
+				list.Add(line);
+				if (buf[i] == '\n' && i+1 < bytesRead && buf[i+1] == '\r') i++;
+				if (i+1 < bytesRead && buf[i+1] == 0) i++;
+				lineStart = i + 1;
+			}
+		}
+		if (lineStart < bytesRead) {
+			partialLine = String(&buf[lineStart], bytesRead - lineStart);
+		}
+	}
+	fclose(handle);
+	return IntrinsicResult(list);
+}
+
+static IntrinsicResult intrinsic_writeLines(Context *context, IntrinsicResult partialResult) {
+	Value self = context->GetVar("self");
+	String path = context->GetVar("path").ToString();
+	Value lines = context->GetVar("lines");
+
+	FILE *handle = fopen(path.c_str(), "w");
+	if (handle == NULL) return IntrinsicResult::Null;
+
+	size_t written = 0;
+	if (lines.type == ValueType::List) {
+		ValueList list = lines.GetList();
+		for (int i=0; i<list.Count(); i++) {
+			String data = list[i].ToString();
+			written += fwrite(data.c_str(), 1, data.sizeB(), handle);
+			written += fwrite("\n", 1, 1, handle);
+		}
+	} else {
+		// Anything other than a list, just convert to a string and write it out.
+		String data = lines.ToString();
+		written = fwrite(data.c_str(), 1, data.sizeB(), handle);
+		written += fwrite("\n", 1, 1, handle);
+	}
+	
+	fclose(handle);
+	return IntrinsicResult((int)written);
 }
 
 
@@ -309,11 +523,17 @@ static IntrinsicResult intrinsic_File(Context *context, IntrinsicResult partialR
 		fileModule.SetValue("setdir", i_chdir->GetFunc());
 		fileModule.SetValue("children", i_readdir->GetFunc());
 		fileModule.SetValue("name", i_basename->GetFunc());
+		fileModule.SetValue("exists", i_exists->GetFunc());
+		fileModule.SetValue("info", i_info->GetFunc());
+		fileModule.SetValue("makedir", i_mkdir->GetFunc());
 		fileModule.SetValue("parent", i_dirname->GetFunc());
 		fileModule.SetValue("child", i_child->GetFunc());
 		fileModule.SetValue("move", i_rename->GetFunc());
+		fileModule.SetValue("copy", i_copy->GetFunc());
 		fileModule.SetValue("delete", i_remove->GetFunc());
 		fileModule.SetValue("open", i_fopen->GetFunc());
+		fileModule.SetValue("readLines", i_readLines->GetFunc());
+		fileModule.SetValue("writeLines", i_writeLines->GetFunc());
 	}
 	
 	return IntrinsicResult(fileModule);
@@ -329,6 +549,7 @@ static ValueDict& FileHandleClass() {
 		result.SetValue("writeLine", i_fwriteLine->GetFunc());
 		result.SetValue("read", i_fread->GetFunc());
 		result.SetValue("readLine", i_freadLine->GetFunc());
+		result.SetValue("position", i_fposition->GetFunc());
 		result.SetValue("atEnd", i_feof->GetFunc());
 	}
 	
@@ -351,7 +572,7 @@ void AddShellIntrinsics() {
 	f->AddParam("prompt", "");
 	f->code = &intrinsic_input;
 
-	f = Intrinsic::Create("File");
+	f = Intrinsic::Create("file");
 	f->code = &intrinsic_File;
 
 	i_getcwd = Intrinsic::Create("");
@@ -378,10 +599,27 @@ void AddShellIntrinsics() {
 	i_child->AddParam("childName");
 	i_child->code = &intrinsic_child;
 	
+	i_exists = Intrinsic::Create("");
+	i_exists->AddParam("path");
+	i_exists->code = &intrinsic_exists;
+	
+	i_info = Intrinsic::Create("");
+	i_info->AddParam("path");
+	i_info->code = &intrinsic_info;
+	
+	i_mkdir = Intrinsic::Create("");
+	i_mkdir->AddParam("path");
+	i_mkdir->code = &intrinsic_mkdir;
+
 	i_rename = Intrinsic::Create("");
 	i_rename->AddParam("oldPath");
 	i_rename->AddParam("newPath");
 	i_rename->code = &intrinsic_rename;
+	
+	i_copy = Intrinsic::Create("");
+	i_copy->AddParam("oldPath");
+	i_copy->AddParam("newPath");
+	i_copy->code = &intrinsic_copy;
 	
 	i_remove = Intrinsic::Create("");
 	i_remove->AddParam("path");
@@ -415,5 +653,16 @@ void AddShellIntrinsics() {
 	
 	i_feof = Intrinsic::Create("");
 	i_feof->code = &intrinsic_feof;
-
+	
+	i_fposition = Intrinsic::Create("");
+	i_fposition->code = &intrinsic_fposition;
+	
+	i_readLines = Intrinsic::Create("");
+	i_readLines->AddParam("path");
+	i_readLines->code = &intrinsic_readLines;
+	
+	i_writeLines = Intrinsic::Create("");
+	i_writeLines->AddParam("path");
+	i_writeLines->AddParam("lines");
+	i_writeLines->code = &intrinsic_writeLines;
 }
