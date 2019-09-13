@@ -41,11 +41,14 @@ static int ReturnErr(String s, int errCode = -1) {
 
 static void PrintHeaderInfo() {
 	if (!printHeaderInfo) return;
-	std::cout << "MiniScript v" << MiniScript::hostVersion;
+	std::cout << "MiniScript " << std::endl
+	<< MiniScript::hostName << " v" << MiniScript::hostVersion
+	<< "; language v" << VERSION;
 #if(DEBUG)
 	std::cout << " (DEBUG)";
 #endif
-	std::cout << std::endl << __DATE__ << std::endl;
+//	std::cout << std::endl;
+	std::cout <<  " (" << __DATE__ << ")" << std::endl;
 	printHeaderInfo = false;	// (print this stuff only once)
 }
 
@@ -243,8 +246,14 @@ int main(int argc, const char * argv[]) {
 	std::cout << "total RefCountedStorage instances left (includes 2 Unicode case maps): " << RefCountedStorage::instanceCount << std::endl;
 #endif
 	
-	MiniScript::hostVersion = 1.4;
+	MiniScript::hostVersion = 1.0;
+#if _WIN32 || _WIN64
+	MiniScript::hostName = "Command-Line (Windows)";
+#elif defined(__APPLE__) || defined(__FreeBSD__)
 	MiniScript::hostName = "Command-Line (Unix)";
+#else
+	MiniScript::hostName = "Command-Line (Linux)";
+#endif
 	MiniScript::hostInfo = "https://miniscript.org/cmdline/";
 	
 	AddShellIntrinsics();

@@ -722,7 +722,7 @@ namespace MiniScript {
 	static IntrinsicResult intrinsic_version(Context *context, IntrinsicResult partialResult) {
 		if (context->vm->versionMap.IsNull()) {
 			ValueDict d;
-			d.SetValue("miniscript", 1.4);
+			d.SetValue("miniscript", VERSION);
 			
 			// Convert from e.g. "Jan 14 2012" to sortable (SQL) format, "2012-01-14".
 			String mmm_dd_yyyy(__DATE__);

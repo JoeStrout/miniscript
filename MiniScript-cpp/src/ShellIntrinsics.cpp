@@ -76,6 +76,7 @@ Intrinsic *i_freadLine = NULL;
 Intrinsic *i_fposition = NULL;
 Intrinsic *i_feof = NULL;
 
+#if !_WIN32 && !_WIN64
 // Copy a file.  Return 0 on success, or some value < 0 on error.
 static int UnixishCopyFile(const char* source, const char* destination) {
 	// Based on: https://stackoverflow.com/questions/2180079
@@ -106,6 +107,7 @@ static int UnixishCopyFile(const char* source, const char* destination) {
 	
 	return result;
 }
+#endif
 
 static ValueDict& FileHandleClass();
 
@@ -486,7 +488,7 @@ static IntrinsicResult intrinsic_readLines(Context *context, IntrinsicResult par
 	char buf[1024];
 	String partialLine;
 	while (!feof(handle)) {
-		int bytesRead = fread(buf, 1, sizeof(buf), handle);
+		size_t bytesRead = fread(buf, 1, sizeof(buf), handle);
 		if (bytesRead == 0) break;
 		int lineStart = 0;
 		for (int i=0; i<bytesRead; i++) {
