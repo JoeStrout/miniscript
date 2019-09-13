@@ -29,12 +29,18 @@
 	#include <time.h>
 	#define getcwd _getcwd
 #else
+	#include <fcntl.h>
+	#include <unistd.h>
 	#include <unistd.h>
 	#include <dirent.h>		// for readdir
 	#include <libgen.h>		// for basename and dirname
 	#include <sys/stat.h>	// for stat
-	#include <copyfile.h>	// for copyfile
 	#include <stdlib.h>		// for realpath
+	#if defined(__APPLE__) || defined(__FreeBSD__)
+		#include <copyfile.h>
+	#else
+		#include <sys/sendfile.h>
+	#endif
 #endif
 
 using namespace MiniScript;
@@ -69,6 +75,37 @@ Intrinsic *i_fread = NULL;
 Intrinsic *i_freadLine = NULL;
 Intrinsic *i_fposition = NULL;
 Intrinsic *i_feof = NULL;
+
+// Copy a file.  Return 0 on success, or some value < 0 on error.
+static int UnixishCopyFile(const char* source, const char* destination) {
+	// Based on: https://stackoverflow.com/questions/2180079
+	int input, output;
+	if ((input = open(source, O_RDONLY)) == -1)	{
+		return -1;
+	}
+	if ((output = creat(destination, 0660)) == -1) {
+		close(input);
+		return -1;
+	}
+	
+	//Here we use kernel-space copying for performance reasons
+#if defined(__APPLE__) || defined(__FreeBSD__)
+	//fcopyfile works on FreeBSD and OS X 10.5+
+	int result = fcopyfile(input, output, 0, COPYFILE_ALL);
+#else
+	//sendfile will work with non-socket output (i.e. regular file) on Linux 2.6.33+
+	off_t bytesCopied = 0;
+	struct stat fileinfo = {0};
+	fstat(input, &fileinfo);
+	int result = sendfile(output, input, &bytesCopied, fileinfo.st_size);
+	if (result > 0) result = 0;  // sendfile returns # of bytes copied; any value >= 0 is success.
+#endif
+	
+	close(input);
+	close(output);
+	
+	return result;
+}
 
 static ValueDict& FileHandleClass();
 
@@ -201,20 +238,7 @@ static IntrinsicResult intrinsic_exists(Context *context, IntrinsicResult partia
 	return IntrinsicResult(Value::Truth(found));
 }
 
-#if _WIN32 || _WIN64
-static String timespec2str(const __time64_t* ts) {
-#else
-static String timespec2str(struct timespec *ts) {
-#endif
-	struct tm t;
-	
-	#if _WIN32 || _WIN64
-		gmtime_s(&t, ts);
-	#else
-		tzset();
-		if (localtime_r(&(ts->tv_sec), &t) == NULL) return "";
-	#endif
-	
+static String timestampToString(const struct tm& t) {
 	String result = String::Format(1900 + t.tm_year) + "-";
 	if (t.tm_mon < 10) result += "0";
 	result += String::Format(1 + t.tm_mon) + "-";
@@ -239,6 +263,7 @@ static IntrinsicResult intrinsic_info(Context *context, IntrinsicResult partialR
 		getcwd(buf, sizeof(buf));
 		pathStr = buf;
 	}
+	struct tm t;
 #if _WIN32 || _WIN64
 	char pathBuf[512];
 	_fullpath(pathBuf, pathStr.c_str(), sizeof(pathBuf));
@@ -248,7 +273,7 @@ static IntrinsicResult intrinsic_info(Context *context, IntrinsicResult partialR
 	map.SetValue("path", String(pathBuf));
 	map.SetValue("isDirectory", (stats.st_mode & _S_IFDIR) != 0);
 	map.SetValue("size", stats.st_size);
-	map.SetValue("date", timespec2str(&stats.st_mtime));
+	gmtime_s(&t, &stats.st_mtime);
 	Value result(map);
 	
 #else
@@ -260,9 +285,15 @@ static IntrinsicResult intrinsic_info(Context *context, IntrinsicResult partialR
 	map.SetValue("path", String(pathBuf));
 	map.SetValue("isDirectory", S_ISDIR (stats.st_mode));
 	map.SetValue("size", stats.st_size);
-	map.SetValue("date", timespec2str(&stats.st_mtimespec));
+	#if defined(__APPLE__) || defined(__FreeBSD__)
+		tzset();
+		localtime_r(&(stats.st_mtimespec.tv_sec), &t);
+	#else
+		localtime_r(&stats.st_mtime, &t);
+	#endif
 	Value result(map);
 #endif
+	map.SetValue("date", timestampToString(t));
 	return IntrinsicResult(result);
 }
 
@@ -303,19 +334,11 @@ static IntrinsicResult intrinsic_copy(Context *context, IntrinsicResult partialR
 	String oldPath = context->GetVar("oldPath").ToString();
 	String newPath = context->GetVar("newPath").ToString();
 	
-	//Here we use kernel-space copying for performance reasons
 	#if _WIN32 || _WIN64
 		bool success = CopyFile(oldPath.c_str(), newPath.c_str(), false);
 		int result = success ? 0 : 1;
-	#elif defined(__APPLE__) || defined(__FreeBSD__)
-		//fcopyfile works on FreeBSD and OS X 10.5+
-		int result = copyfile(oldPath.c_str(), newPath.c_str(), 0, COPYFILE_ALL);
 	#else
-		//sendfile will work with non-socket output (i.e. regular file) on Linux 2.6.33+
-		off_t bytesCopied = 0;
-		struct stat fileinfo = {0};
-		fstat(input, &fileinfo);
-		int result = sendfile(newPath.c_str(), oldPath.c_str(), &bytesCopied, fileinfo.st_size);
+		int result = UnixishCopyFile(oldPath.c_str(), newPath.c_str());
 	#endif
 
 	return IntrinsicResult(Value::Truth(result == 0));
