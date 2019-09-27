@@ -223,7 +223,7 @@ namespace Miniscript {
 			try {
 				if (sourceLine != null) parser.Parse(sourceLine, true);
 				if (!parser.NeedMoreInput()) {
-					while (!vm.done) {
+					while (!vm.done && !vm.yielding) {
 						if (vm.runTime - startTime > timeLimit) return;	// time's up for now!
 						vm.Step();
 					}

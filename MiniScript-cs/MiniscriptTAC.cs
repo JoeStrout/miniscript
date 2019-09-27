@@ -600,6 +600,55 @@ namespace Miniscript {
 			}
 			
 			/// <summary>
+			/// Get the value of a local variable ONLY -- does not check any other
+			/// scopes, nor check for special built-in identifiers like "globals".
+			/// Used mainly by host apps to easily look up an argument to an
+			/// intrinsic function call by the parameter name.
+			/// </summary>
+			public Value GetLocal(string identifier, Value defaultValue=null) {
+				Value result;
+				if (variables != null && variables.TryGetValue(identifier, out result)) {
+					return result;
+				}
+				return defaultValue;
+			}
+			
+			public int GetLocalInt(string identifier, int defaultValue = 0) {
+				Value result;
+				if (variables != null && variables.TryGetValue(identifier, out result)) {
+					return result.IntValue();
+				}
+				return defaultValue;
+			}
+
+			public bool GetLocalBool(string identifier, bool defaultValue = false) {
+				Value result;
+				if (variables != null && variables.TryGetValue(identifier, out result)) {
+					return result.BoolValue();
+				}
+				return defaultValue;
+			}
+
+			public float GetLocalFloat(string identifier, float defaultValue = 0) {
+				Value result;
+				if (variables != null && variables.TryGetValue(identifier, out result)) {
+					return result.FloatValue();
+				}
+				return defaultValue;
+			}
+
+			public string GetLocalString(string identifier, string defaultValue = null) {
+				Value result;
+				if (variables != null && variables.TryGetValue(identifier, out result)) {
+					if (result == null) return null;	// variable found, but its value was null!
+					return result.ToString();
+				}
+				return defaultValue;
+			}
+
+			
+			
+			/// <summary>
 			/// Get the value of a variable available in this context (including
 			/// locals, globals, and intrinsics).  Raise an exception if no such
 			/// identifier can be found.
