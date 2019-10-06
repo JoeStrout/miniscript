@@ -596,7 +596,9 @@ namespace Miniscript {
 					throw new RuntimeException("can't assign to " + identifier);
 				}
 				if (variables == null) variables = new ValMap();
-				variables[identifier] = value;
+				if (variables.assignOverride == null || !variables.assignOverride(new ValString(identifier), value)) {
+					variables[identifier] = value;
+				}
 			}
 			
 			/// <summary>
