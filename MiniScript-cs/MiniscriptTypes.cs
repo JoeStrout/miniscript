@@ -8,6 +8,7 @@ from which more specific types are derived.
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Globalization;
 
 namespace Miniscript {
 	
@@ -185,13 +186,13 @@ namespace Miniscript {
 			// Convert to a string in the standard MiniScript way.
 			if (value % 1.0 == 0.0) {
 				// integer values as integers
-				return value.ToString("0");
+				return value.ToString("0", CultureInfo.InvariantCulture);
 			} else if (value > 1E10 || value < -1E10 || (value < 1E-6 && value > -1E-6)) {
 				// very large/small numbers in exponential form
-				return value.ToString("E6");
+				return value.ToString("E6", CultureInfo.InvariantCulture);
 			} else {
 				// all others in decimal form, with 1-6 digits past the decimal point
-				return value.ToString("0.0#####");
+				return value.ToString("0.0#####", CultureInfo.InvariantCulture);
 			}
 		}
 
@@ -845,7 +846,7 @@ namespace Miniscript {
 		}
 
 		public override string ToString(TAC.Machine vm) {
-			return "_" + tempNum;
+			return "_" + tempNum.ToString(CultureInfo.InvariantCulture);
 		}
 
 		public override int Hash(int recursionDepth=16) {

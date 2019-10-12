@@ -133,3 +133,5 @@ the next line.  Works in both REPL and script mode.  {#8}
 - Fixed a bug in the C# version that could cause a NullReferenceException to occur when storing a map that contains null as the key in another map.
 
 - Fixed a bug in the C# version that could cause a NullReferenceException to occur when comparing a string to null.
+
+- Fixed inconsistencies in number formatting and parsing on certain systems.  MiniScript now always converts numbers to strings, and vice versa, in the "invariant" format: using a dot as the decimal separator, and nothing for grouping powers of 1000.

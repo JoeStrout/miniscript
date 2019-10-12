@@ -10,6 +10,7 @@ need to deal with Parser directly.
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Globalization;
 
 namespace Miniscript {
 	public class Parser {
@@ -1116,7 +1117,7 @@ namespace Miniscript {
 			Token tok = !tokens.AtEnd ? tokens.Dequeue() : Token.EOL;
 			if (tok.type == Token.Type.Number) {
 				double d;
-				if (double.TryParse(tok.text, out d)) return new ValNumber(d);
+				if (double.TryParse(tok.text, NumberStyles.Number, CultureInfo.InvariantCulture, out d)) return new ValNumber(d);
 				throw new CompilerException("invalid numeric literal: " + tok.text);
 			} else if (tok.type == Token.Type.String) {
 				return new ValString(tok.text);

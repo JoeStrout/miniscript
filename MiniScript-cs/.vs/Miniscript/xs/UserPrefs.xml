@@ -1,0 +1,22 @@
+﻿<Properties StartupConfiguration="{C3806B8F-9702-4B39-B6D9-9ECBC298565F}|Default">
+  <MonoDevelop.Ide.ItemProperties.Miniscript PreferredExecutionTarget="MonoDevelop.Default" />
+  <MonoDevelop.Ide.Workbench ActiveDocument="Program.cs">
+    <Files>
+      <File FileName="Program.cs" Line="129" Column="59" />
+      <File FileName="MiniscriptInterpreter.cs" Line="208" Column="15" />
+      <File FileName="MiniscriptTypes.cs" Line="196" Column="1" />
+      <File FileName="MiniscriptTAC.cs" Line="602" Column="1" />
+      <File FileName="Properties/AssemblyInfo.cs" Line="14" Column="20" />
+      <File FileName="MiniscriptIntrinsics.cs" Line="911" Column="63" />
+    </Files>
+  </MonoDevelop.Ide.Workbench>
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug|x86" />
+  <MonoDevelop.Ide.DebuggingService.Breakpoints>
+    <BreakpointStore>
+      <Catchpoint enabled="false" exceptionName="System.Exception" includeSubclasses="True" />
+      <Breakpoint file="/Users/jstrout/Documents/svnrepo/stroutandsons/MiniScript/MiniScript-cs/MiniscriptParser.cs" relfile="MiniscriptParser.cs" line="1197" column="1" />
+    </BreakpointStore>
+  </MonoDevelop.Ide.DebuggingService.Breakpoints>
+  <MultiItemStartupConfigurations />
+</Properties>

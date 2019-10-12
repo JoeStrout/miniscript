@@ -18,6 +18,7 @@ become available.
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Globalization;
 
 namespace Miniscript {
 	/// <summary>
@@ -1027,7 +1028,7 @@ namespace Miniscript {
 				if (val is ValNumber) return new Intrinsic.Result(val);
 				if (val is ValString) {
 					double value = 0;
-					double.TryParse(val.ToString(), out value);
+					double.TryParse(val.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out value);
 					return new Intrinsic.Result(value);
 				}
 				return Intrinsic.Result.Null;
