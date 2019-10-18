@@ -282,11 +282,15 @@ namespace Miniscript {
 				return new Intrinsic.Result(Math.Asin(context.GetVar("x").DoubleValue()));
 			};
 
-			// atan(x)
+			// atan(y, x=1)
 			f = Intrinsic.Create("atan");
-			f.AddParam("x", 0);
+			f.AddParam("y", 0);
+			f.AddParam("x", 1);
 			f.code = (context, partialResult) => {
-				return new Intrinsic.Result(Math.Atan(context.GetVar("x").DoubleValue()));
+				double y = context.GetVar("y").DoubleValue();
+				double x = context.GetVar("x").DoubleValue();
+				if (x == 1.0) return new Intrinsic.Result(Math.Atan(y));
+				return new Intrinsic.Result(Math.Atan2(y, x));
 			};
 			
 			// char(i)
