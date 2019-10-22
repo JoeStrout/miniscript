@@ -38,22 +38,6 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "src/main.cpp"
-            timestampString = "580161972.315379"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "258"
-            endingLineNumber = "258"
-            landmarkName = "main(int argc, const char * argv[])"
-            landmarkType = "9">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
             shouldBeEnabled = "Yes"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
@@ -74,7 +58,7 @@
                   moduleName = "MiniScript"
                   usesParentBreakpointCondition = "Yes"
                   urlString = "file:///Users/jstrout/Documents/svnrepo/stroutandsons/MiniScript/MiniScript-cpp/src/MiniScript/SimpleVector.h"
-                  timestampString = "590040697.02983"
+                  timestampString = "593397094.610589"
                   startingColumnNumber = "9223372036854775807"
                   endingColumnNumber = "9223372036854775807"
                   startingLineNumber = "193"
@@ -89,7 +73,7 @@
                   moduleName = "MiniScript"
                   usesParentBreakpointCondition = "Yes"
                   urlString = "file:///Users/jstrout/Documents/svnrepo/stroutandsons/MiniScript/MiniScript-cpp/src/MiniScript/SimpleVector.h"
-                  timestampString = "590040697.031956"
+                  timestampString = "593397094.61282"
                   startingColumnNumber = "9223372036854775807"
                   endingColumnNumber = "9223372036854775807"
                   startingLineNumber = "193"
@@ -104,7 +88,7 @@
                   moduleName = "MiniScript"
                   usesParentBreakpointCondition = "Yes"
                   urlString = "file:///Users/jstrout/Documents/svnrepo/stroutandsons/MiniScript/MiniScript-cpp/src/MiniScript/SimpleVector.h"
-                  timestampString = "590040697.033572"
+                  timestampString = "593397094.6153769"
                   startingColumnNumber = "9223372036854775807"
                   endingColumnNumber = "9223372036854775807"
                   startingLineNumber = "193"
@@ -119,7 +103,7 @@
                   moduleName = "MiniScript"
                   usesParentBreakpointCondition = "Yes"
                   urlString = "file:///Users/jstrout/Documents/svnrepo/stroutandsons/MiniScript/MiniScript-cpp/src/MiniScript/SimpleVector.h"
-                  timestampString = "590040697.0353971"
+                  timestampString = "593397094.617732"
                   startingColumnNumber = "9223372036854775807"
                   endingColumnNumber = "9223372036854775807"
                   startingLineNumber = "193"
@@ -134,7 +118,7 @@
                   moduleName = "MiniScript"
                   usesParentBreakpointCondition = "Yes"
                   urlString = "file:///Users/jstrout/Documents/svnrepo/stroutandsons/MiniScript/MiniScript-cpp/src/MiniScript/SimpleVector.h"
-                  timestampString = "590040697.0370229"
+                  timestampString = "593397094.620361"
                   startingColumnNumber = "9223372036854775807"
                   endingColumnNumber = "9223372036854775807"
                   startingLineNumber = "193"
@@ -149,7 +133,7 @@
                   moduleName = "MiniScript"
                   usesParentBreakpointCondition = "Yes"
                   urlString = "file:///Users/jstrout/Documents/svnrepo/stroutandsons/MiniScript/MiniScript-cpp/src/MiniScript/SimpleVector.h"
-                  timestampString = "590040697.038551"
+                  timestampString = "593397094.62304"
                   startingColumnNumber = "9223372036854775807"
                   endingColumnNumber = "9223372036854775807"
                   startingLineNumber = "193"
@@ -164,7 +148,7 @@
                   moduleName = "MiniScript"
                   usesParentBreakpointCondition = "Yes"
                   urlString = "file:///Users/jstrout/Documents/svnrepo/stroutandsons/MiniScript/MiniScript-cpp/src/MiniScript/SimpleVector.h"
-                  timestampString = "590040697.0399981"
+                  timestampString = "593397094.625627"
                   startingColumnNumber = "9223372036854775807"
                   endingColumnNumber = "9223372036854775807"
                   startingLineNumber = "193"
@@ -179,7 +163,7 @@
                   moduleName = "MiniScript"
                   usesParentBreakpointCondition = "Yes"
                   urlString = "file:///Users/jstrout/Documents/svnrepo/stroutandsons/MiniScript/MiniScript-cpp/src/MiniScript/SimpleVector.h"
-                  timestampString = "590040697.041425"
+                  timestampString = "593397094.628099"
                   startingColumnNumber = "9223372036854775807"
                   endingColumnNumber = "9223372036854775807"
                   startingLineNumber = "193"
@@ -194,7 +178,7 @@
                   moduleName = "MiniScript"
                   usesParentBreakpointCondition = "Yes"
                   urlString = "file:///Users/jstrout/Documents/svnrepo/stroutandsons/MiniScript/MiniScript-cpp/src/MiniScript/SimpleVector.h"
-                  timestampString = "590040697.0430551"
+                  timestampString = "593397094.630891"
                   startingColumnNumber = "9223372036854775807"
                   endingColumnNumber = "9223372036854775807"
                   startingLineNumber = "193"
@@ -209,7 +193,7 @@
                   moduleName = "MiniScript"
                   usesParentBreakpointCondition = "Yes"
                   urlString = "file:///Users/jstrout/Documents/svnrepo/stroutandsons/MiniScript/MiniScript-cpp/src/MiniScript/SimpleVector.h"
-                  timestampString = "590040697.045082"
+                  timestampString = "593397094.6336271"
                   startingColumnNumber = "9223372036854775807"
                   endingColumnNumber = "9223372036854775807"
                   startingLineNumber = "193"
@@ -224,7 +208,7 @@
                   moduleName = "MiniScript"
                   usesParentBreakpointCondition = "Yes"
                   urlString = "file:///Users/jstrout/Documents/svnrepo/stroutandsons/MiniScript/MiniScript-cpp/src/MiniScript/SimpleVector.h"
-                  timestampString = "590040697.047047"
+                  timestampString = "593397094.6364909"
                   startingColumnNumber = "9223372036854775807"
                   endingColumnNumber = "9223372036854775807"
                   startingLineNumber = "193"
@@ -239,7 +223,7 @@
                   moduleName = "MiniScript"
                   usesParentBreakpointCondition = "Yes"
                   urlString = "file:///Users/jstrout/Documents/svnrepo/stroutandsons/MiniScript/MiniScript-cpp/src/MiniScript/SimpleVector.h"
-                  timestampString = "590040697.048926"
+                  timestampString = "593397094.6392469"
                   startingColumnNumber = "9223372036854775807"
                   endingColumnNumber = "9223372036854775807"
                   startingLineNumber = "193"
@@ -268,22 +252,6 @@
                   offsetFromSymbolStart = "0">
                </Location>
             </Locations>
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "src/main.cpp"
-            timestampString = "579884339.70103"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "120"
-            endingLineNumber = "120"
-            landmarkName = "DoCommand(String cmd)"
-            landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy

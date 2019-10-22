@@ -61,9 +61,9 @@ namespace MiniScript {
 		}
 		
 		// Calculate the length of the new String
-		unsigned long LengthSum = delimiter.Length() * (parts.Count()-1) +1; // +1 for the null char
+		unsigned long LengthSum = delimiter.LengthB() * (parts.Count()-1) +1; // +1 for the null char
 		for (int i=0; i < parts.Count(); i++) {
-			LengthSum += parts[i].Length();
+			LengthSum += parts[i].LengthB();
 		}
 		
 		// Create a new buffer for it
@@ -72,12 +72,12 @@ namespace MiniScript {
 		// Copy each String into the buffer delimited by the passed in String
 		char *dest = buffer;
 		for (int i=0; i < parts.Count(); i++) {
-			strncpy(dest, parts[i].c_str(), parts[i].Length());
-			dest += parts[i].Length();
+			strncpy(dest, parts[i].c_str(), parts[i].LengthB());
+			dest += parts[i].LengthB();
 			
-			if (delimiter.Length() > 0 and i < parts.Count()-1) {
-				strncpy(dest, delimiter.c_str(), delimiter.Length());
-				dest += delimiter.Length();
+			if (delimiter.LengthB() > 0 and i < parts.Count()-1) {
+				strncpy(dest, delimiter.c_str(), delimiter.LengthB());
+				dest += delimiter.LengthB();
 			}
 		}
 		Assert(dest - buffer == LengthSum - 1);
@@ -127,6 +127,12 @@ namespace MiniScript {
 		
 		String res = Join(" ", list2);
 		Assert(res == "str1 str2 str3");
+		
+		String s2("日本 楽しみ");
+		list = Split(s2);
+		Assert(list.Count() == 2 and list[0] == "日本" and list[1] == "楽しみ");
+		res = Join(" ", list);
+		Assert(res == s2);
 	}
 
 	RegisterUnitTest(TestSplitJoin);
