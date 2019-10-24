@@ -137,3 +137,7 @@ the next line.  Works in both REPL and script mode.  {#8}
 - Fixed inconsistencies in number formatting and parsing on certain systems.  MiniScript now always converts numbers to strings, and vice versa, in the "invariant" format: using a dot as the decimal separator, and nothing for grouping powers of 1000.
 
 - The `atan` intrinsic now takes an optional second parameter; the parameters are now named y (default 0) and x (default 1).  If x is not specified, this is equivalent to the standard one-parameter `atan` function (i.e. existing code is unchanged).  But if both parameters are specified, then this returns radians in the correct quadrant, like the `atan2` function in many other languages.
+
+- Fixed a bug causing spurious errors when running command-line MiniScript with a script file containing non-ASCII characters.  {#24}
+
+- Fixed a bug with string replication in the C++ version.  {#25}

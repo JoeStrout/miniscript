@@ -311,7 +311,7 @@ namespace MiniScript {
 					String extraStr = sA.Substring(0, extraChars);
 					size_t totalBytes = lenB * repeats + extraStr.LengthB();
 					if (totalBytes > Value::maxStringSize) throw LimitExceededException("string too large");
-					char *buf = new char[totalBytes];
+					char *buf = new char[totalBytes+1];
 					if (buf == NULL) return Value::null;
 					char *ptr = buf;
 					for (int i = 0; i < repeats; i++) {
@@ -319,6 +319,7 @@ namespace MiniScript {
 						ptr += lenB;
 					}
 					if (extraChars > 0) strncpy(ptr, extraStr.c_str(), extraStr.LengthB());
+					buf[totalBytes] = 0;	// null terminator
 					String result;
 					result.takeoverBuffer(buf, totalBytes);
 					return Value(result);
