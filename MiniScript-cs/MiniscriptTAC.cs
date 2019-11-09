@@ -133,7 +133,7 @@ namespace Miniscript {
 					text = string.Format("{0} := {1} isa {2}", lhs, rhsA, rhsB);
 					break;
 				case Op.BindContextOfA:
-					text = string.Format("{0}.moduleVars = {1}", rhsA, rhsB);
+					text = string.Format("{0}.outerVars = {1}", rhsA, rhsB);
 					break;
 				case Op.CopyA:
 					text = string.Format("{0} := copy of {1}", lhs, rhsA);
@@ -478,7 +478,7 @@ namespace Miniscript {
 						{
 							if (context.variables == null) context.variables = new ValMap();
 							ValFunction valFunc = (ValFunction)opA;
-							valFunc.moduleVars = context.variables;
+							valFunc.outerVars = context.variables;
 							return null;
 						}
 					case Op.NotA:
@@ -528,7 +528,7 @@ namespace Miniscript {
 			public List<Line> code;			// TAC lines we're executing
 			public int lineNum;				// next line to be executed
 			public ValMap variables;		// local variables for this call frame
-			public ValMap moduleVars;		// variables of the context where this function was defined
+			public ValMap outerVars;		// variables of the context where this function was defined
 			public Stack<Value> args;		// pushed arguments for upcoming calls
 			public Context parent;			// parent (calling) context
 			public Value resultStorage;		// where to store the return value (in the calling context)
@@ -667,6 +667,12 @@ namespace Miniscript {
 					if (root.variables == null) root.variables = new ValMap();
 					return root.variables;
 				}
+				if (identifier == "outer") {
+					// return module variables, if we have them; else globals
+					if (outerVars != null) return outerVars;
+					if (root.variables == null) root.variables = new ValMap();
+					return root.variables;
+				}
 				
 				// check for a local variable
 				Value result;
@@ -675,7 +681,7 @@ namespace Miniscript {
 				}
 
 				// check for a module variable
-				if (moduleVars != null && moduleVars.TryGetValue(identifier, out result)) {
+				if (outerVars != null && outerVars.TryGetValue(identifier, out result)) {
 					return result;
 				}
 
@@ -916,7 +922,7 @@ namespace Miniscript {
 						ValFunction func = (ValFunction)funcVal;
 						int argCount = line.rhsB.IntValue();
 						Context nextContext = context.NextCallContext(func.function, argCount, self != null, line.lhs);
-						nextContext.moduleVars = func.moduleVars;
+						nextContext.outerVars = func.outerVars;
 						if (valueFoundIn != null) nextContext.SetVar("super", super);
 						if (self != null) nextContext.SetVar("self", self);	// (set only if bound above)
 						stack.Push(nextContext);

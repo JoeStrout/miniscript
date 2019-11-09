@@ -84,7 +84,7 @@ namespace MiniScript {
 				text = lhs.ToString() + " := " + rhsA.ToString() + " or " + rhsB.ToString();
 				break;
 			case Op::BindContextOfA:
-				text = rhsA.ToString() + ".moduleVars = <locals>";
+				text = rhsA.ToString() + ".outerVars = <locals>";
 				break;
 			case Op::CopyA:
 				text = lhs.ToString() + " := copy of " + rhsA.ToString();
@@ -451,7 +451,7 @@ namespace MiniScript {
 				case Op::BindContextOfA:
 				{
 					FunctionStorage *fA = (FunctionStorage*)(opA.data.ref);
-					fA->moduleVars = context->variables;
+					fA->outerVars = context->variables;
 					return Value::null;
 				} break;
 				case Op::NotA:
@@ -501,7 +501,7 @@ namespace MiniScript {
 	}
 
 	void Context::SetVar(String identifier, Value value) {
-		if (identifier == "globals" or identifier == "locals") {
+		if (identifier == "globals" or identifier == "locals" or identifier == "outer") {
 			throw RuntimeException("can't assign to " + identifier);
 		}
 		variables.SetValue(identifier, value);
@@ -515,16 +515,20 @@ namespace MiniScript {
 	/// <param name="identifier">name of identifier to look up</param>
 	/// <returns>value of that identifier</returns>
 	Value Context::GetVar(String identifier) {
-		// check for special built-in identifiers 'locals' and 'globals'
+		// check for special built-in identifiers 'locals', 'globals', and 'outer'
 		if (identifier == "locals") return variables;
 		if (identifier == "globals") return Root()->variables;
-		
+		if (identifier == "outer") {
+			if (!outerVars.empty()) return outerVars;
+			return Root()->variables;
+		}
+
 		// check for a local variable
 		Value result;
 		if (variables.Get(identifier, &result)) return result;
 		
 		// check for a module variable
-		if (moduleVars.Count() > 0 && moduleVars.Get(identifier, &result)) return result;
+		if (!outerVars.empty() && outerVars.Get(identifier, &result)) return result;
 		
 		// OK, we don't have a local or module variable with that name.
 		// Check the global scope (if that's not us already).
@@ -648,7 +652,7 @@ namespace MiniScript {
 				long argCount = line.rhsB.IntValue();
 				FunctionStorage *fs = (FunctionStorage*)(funcVal.data.ref);
 				Context* nextContext = context->NextCallContext(fs, argCount, not self.IsNull(), line.lhs);
-				nextContext->moduleVars = fs->moduleVars;
+				nextContext->outerVars = fs->outerVars;
 				if (!valueFoundIn.empty()) nextContext->SetVar("super", super);
 				if (not self.IsNull()) nextContext->SetVar("self", self);
 				stack.Add(nextContext);

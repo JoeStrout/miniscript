@@ -797,7 +797,7 @@ namespace Miniscript {
 	/// </summary>
 	public class ValFunction : Value {
 		public Function function;
-		public ValMap moduleVars;	// local variables where the function was defined (usually, the module)
+		public ValMap outerVars;	// local variables where the function was defined (usually, the module)
 
 		public ValFunction(Function function) {
 			this.function = function;

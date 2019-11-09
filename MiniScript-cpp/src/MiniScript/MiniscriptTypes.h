@@ -46,7 +46,7 @@ namespace MiniScript {
 		List<TACLine> code;
 		
 		// Local variables where the function was defined {#8}
-		ValueDict moduleVars;
+		ValueDict outerVars;
 	};
 
 	class SeqElemStorage;
