@@ -419,7 +419,8 @@ namespace MiniScript {
 				if (loopsLeft < 0 or not d.Get(Value::magicIsA, &sequence)) {
 					// ...and if we don't have an __isa, try the generic map type if allowed
 					if (!includeMapType) throw KeyException(identifier);
-					sequence = Intrinsics::MapType();
+					sequence = context->vm->mapType;
+					if (sequence.IsNull()) sequence = Intrinsics::MapType();
 					includeMapType = false;
 				}
 //				d.forget();

@@ -80,6 +80,17 @@ reset; print((fmaybe(1) or ffalse(2) or ffalse(3)) + "; " + r);
 1; [1]
 0.5; [1, 2, 3]
 ======================================================================
+==== Watch out for bug #6 (failure of assignment with boolean operators).
+a = 1234; a = (1 or 0); print a
+a = 1234; a = (0 or 1); print a
+a = 1234; a = (1 and 0); print a
+a = 1234; a = (0 and 1); print a
+----------------------------------------------------------------------
+1
+1
+0
+0
+======================================================================
 ==== Check the new 'true' and 'false' keywords introduced in v1.1.
 print true
 print false
@@ -347,10 +358,11 @@ print(s.indexOf("cd"))	// 2
 print(s.indexOf("xy"))	// null
 l = [2,4,6,8]
 print l.hasIndex(3)		// 1 (true)
-print(l.hasIndex(4))	// 0
-print(l.hasIndex(-4))	// 1
-print(l.indexOf(6))		// 2
-print(l.indexOf(5))		// null
+print l.hasIndex(4)		// 0
+print l.hasIndex(-4)	// 1
+print l.hasIndex("X")	// 0 {GitHub #3}
+print l.indexOf(6) 		// 2
+print l.indexOf(5) 		// null
 d = {1:"one", 2:"two", "foo":42}
 print d.hasIndex(1)		// 1 (true)
 print(d.hasIndex("x"))	// 0
@@ -367,6 +379,7 @@ print(s.indexOf("l",-3))	// 9
 l = [2,4,6,4,2]
 print(l.indexOf(2,-1))		// 0
 print(l.indexOf(2,0))		// 4
+print l.indexOf("X",0)		// null {GitHub #3}
 print(l.indexOf(2,-2))		// 4
 print(l.indexOf(2,4))		// null
 d["bar"] = 42
@@ -386,6 +399,7 @@ null
 1
 0
 1
+0
 2
 null
 1
@@ -400,6 +414,7 @@ null
 9
 0
 4
+null
 4
 null
 null
@@ -424,6 +439,14 @@ if emptyMap and fullMap then print "I"
 if emptyMap or fullMap then print "J"
 if emptyString and fullString then print "K"
 if emptyString or fullString then print "L"
+print "not []: " + (not [])
+print "not {}: " + (not {})
+print "not 0: " + (not 0)
+print "not """": " + (not "")
+print "not [42]: " + (not [42])
+print "not {3:9}: " + (not {3:9})
+print "not 42: " + (not 42)
+print "not ""a"": " + (not "a")
 ----------------------------------------------------------------------
 B
 C
@@ -431,6 +454,14 @@ E
 H
 J
 L
+not []: 1
+not {}: 1
+not 0: 1
+not "": 1
+not [42]: 0
+not {3:9}: 0
+not 42: 0
+not "a": 0
 ======================================================================
 ==== hashing and dictionary key uniqueness
 ==== (Note that hash(a) should == hash(b) wherever a == b)
@@ -635,9 +666,18 @@ FUNCTION(n)
 i = 0
 while i < 20
 	i = i + 1
-	if i > 10 then; break; end if
-	if i % 3 == 0 then; continue; end if
+	if i > 10 then break
+	if i % 3 == 0 then continue
 	print i
+end while
+// Also test break before else (GitHub issue #2)
+while i > 0
+	if i < 7 then
+		break
+	else
+		print i
+	end if
+	i = i - 1
 end while
 ----------------------------------------------------------------------
 1
@@ -647,6 +687,11 @@ end while
 7
 8
 10
+11
+10
+9
+8
+7
 ======================================================================
 ==== Test the range() intrinsic.
 print range(1,10)
@@ -677,6 +722,25 @@ Hello!
 0
 1
 {"foo": "bar"}
+======================================================================
+==== Test the insert() intrinsic.
+s = "Hello Bob!"
+print s.insert(5, " there,")
+print s.insert(-2, "?")
+l = [1,2,3,4,5]
+l.insert(1, "A")
+l.insert(-2, "B")  // (second from the end)
+print l		// should be: [1, "A", 2, 3, 4, "B", 5]
+l = [1,2,3,4,5]
+l.insert(0, "C")
+l.insert(-1, "D")	// equivalent to l.push "B"
+print l		// should be: ["C", 1, 2, 3, 4, 5, "D"]
+// (Note that insert is not defined for maps, because they are unordered.)
+----------------------------------------------------------------------
+Hello there, Bob!
+Hello Bob?!
+[1, "A", 2, 3, 4, "B", 5]
+["C", 1, 2, 3, 4, 5, "D"]
 ======================================================================
 ==== Test the replace() intrinsic.
 s = "Hello Bob!"
@@ -1021,6 +1085,52 @@ print log(50, 5)
 11
 2.430677
 ======================================================================
+==== Check various edge cases with function calls and implicit results.
+func = function()
+	print "func invoked!"
+	return rnd * 10
+end function
+print "A"
+print func < 100
+print "B"
+@f2 = @func
+print @func == @f2
+print "C"
+print rnd == rnd
+print @rnd == @rnd
+print @rnd
+----------------------------------------------------------------------
+A
+func invoked!
+1
+B
+1
+C
+0
+1
+FUNCTION(seed)
+======================================================================
+==== Check that we look only in the local and global scope for
+==== identifiers, and not in any call frames in between.
+func1 = function()
+	var1 = 42
+	var2 = "ignore me"
+	func2
+end function
+func2 = function()
+	print "var1: " + var1
+	print "var2: " + var2
+	var2 = "local"
+	print "new var2: " + var2
+end function
+var1 = 12345
+var2 = "globalVar2"
+func1
+----------------------------------------------------------------------
+var1: 12345
+var2: globalVar2
+new var2: local
+======================================================================
 ==== Test isa.
 print 42 isa number
 print 42 isa string
@@ -1066,16 +1176,92 @@ Foo!
 81
 ["a", "c", "a"]
 ======================================================================
+==== Test line continuation
+x = [1, 2,  // partial line!
+3, 4]
+print x
+print "Hello " +
+"world!"
+----------------------------------------------------------------------
+[1, 2, 3, 4]
+Hello world!
+======================================================================
+==== Test binding of function context (i.e. outer scope)
+globA = "Global A"
+funcA = function()
+	AlocalA = "Local A in funcA"
+	AlocalB = 42
+	funcB = function()
+		BlocalA = "Local A in funcB"
+		print [globA, AlocalA, AlocalB, BlocalA]
+	end function
+	funcB
+end function
+funcA
+----------------------------------------------------------------------
+["Global A", "Local A in funcA", 42, "Local A in funcB"]
+======================================================================
+==== Test assigning to outer-scope variables via "outer"
+globA = "Global A"
+funcA = function()
+	AlocalA = "Local A in funcA"
+	AlocalB = 0
+	funcB = function()
+		BlocalA = "Local A in funcB"
+		outer.AlocalB = AlocalB + 1
+		print [globA, AlocalA, AlocalB, BlocalA]
+	end function
+	funcB
+	funcB
+	funcB
+end function
+funcA
+----------------------------------------------------------------------
+["Global A", "Local A in funcA", 1, "Local A in funcB"]
+["Global A", "Local A in funcA", 2, "Local A in funcB"]
+["Global A", "Local A in funcA", 3, "Local A in funcB"]
+======================================================================
+==== Test extending the intrinsic types with new methods
+string.foo = function()
+	return self + "foo"
+end function
+print "hello".foo
+
+number.squared = function()
+	return self*self
+end function
+x = 42   // (methods on numeric literals are not currently supported)
+print x.squared
+
+list.dbl = function()
+	return self + self
+end function
+print [1,2,3].dbl
+
+map.sortedKeys = function()
+	keys = self.indexes
+	keys.sort
+	return keys
+end function
+print {3:"three", 1:"one", 2:"two"}.sortedKeys
+----------------------------------------------------------------------
+hellofoo
+1764
+[1, 2, 3, 1, 2, 3]
+[1, 2, 3]
+======================================================================
 ==== Test the split intrinsic
 print split("Eat, pray, love", ", ")
 print split("...foo...bar...", "...")
 print "Eat, pray, love".split(", ", 2)
 print "foo=bar=baz=bamf".split("=", 3)
+print "Hello".split("", 3)
 ----------------------------------------------------------------------
 ["Eat", "pray", "love"]
 ["", "foo", "bar", ""]
 ["Eat", "pray, love"]
 ["foo", "bar", "baz=bamf"]
+["H", "e", "llo"]
 ======================================================================
 ==== Example: Summing an array (http://c2.com/cgi/wiki?ArraySum)
 ==== (trivial thanks to the built-in sum function)
