@@ -141,3 +141,5 @@ the next line.  Works in both REPL and script mode.  {#8}
 - Fixed a bug causing spurious errors when running command-line MiniScript with a script file containing non-ASCII characters.  {#24}
 
 - Fixed a bug with string replication in the C++ version.  {#25}
+
+- Added the ability to extend basic types (number, string, list, and map) with new methods, that can then be called on values of that type using dot syntax, just like the built-in methods.  Known limitation: you can't use dot syntax with number literals.
