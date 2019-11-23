@@ -929,7 +929,7 @@ namespace Miniscript {
 					
 					// Otherwise, if we have an __isa, try that next.
 					// (Watch out for loops an the __isa chain.)
-					if (loopsLeft < 0 && !((ValMap)sequence).map.TryGetValue(ValString.magicIsA, out sequence)) {
+					if (loopsLeft > 0 && !((ValMap)sequence).map.TryGetValue(ValString.magicIsA, out sequence)) {
 						// ...and if we don't have an __isa, try the generic map type if allowed
 						if (!includeMapType) throw new KeyException(identifier);
 						sequence = context.vm.mapType ?? Intrinsics.MapType();
