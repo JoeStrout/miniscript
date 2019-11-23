@@ -118,8 +118,8 @@ Version 1.4.1: Jul 06, 2019
 - Fixed an infinite loop that could occur if you constructed an __isa chain containing a loop.
 
 
-Version 1.4.2: (not yet released)
-=============
+Version 1.5: Nov 23, 2019
+=========================
 - Fixed a bug that would cause assignments of `and` and `or` expressions to fail under certain circumstances.  {#6}
 
 - Changed the way scoping works.  Previously, if an identifier was not found in the local scope, each calling scope would be searched in turn, all the way back to the global scope.  Now those intermediate scopes are skipped; identifiers are located in the local scope, outer scope (in the case of nested functions), or global scope only.  {#7}
