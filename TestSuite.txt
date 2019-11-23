@@ -693,6 +693,16 @@ end while
 8
 7
 ======================================================================
+==== Try (and hopefully fail) to lock up the VM with a reference
+==== cycle and an invalid identifier.
+a = {}
+b = {"__isa": a}
+a.__isa = b
+x = a.foo
+print x == null
+----------------------------------------------------------------------
+1
+======================================================================
 ==== Test the range() intrinsic.
 print range(1,10)
 print range(10,1)
