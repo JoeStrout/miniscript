@@ -274,6 +274,17 @@ plan
 banana
 ba
 ======================================================================
+==== Check that our strings comparisons are properly case-sensitive.
+print "q" >= "A" and "q" <= "Z"
+print "Q" >= "A" and "Q" <= "Z"
+print "foo" == "FOO"
+print "foo" == "foo"
+----------------------------------------------------------------------
+0
+1
+0
+1
+======================================================================
 ==== Basic map functionality.
 sortedStr = function(d)
 	result = "{"

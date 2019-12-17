@@ -372,17 +372,18 @@ namespace Miniscript {
 					case Op.NotA:
 						return ValNumber.Truth(string.IsNullOrEmpty(sA));
 					case Op.AEqualB:
-						return ValNumber.Truth(string.Compare(sA, sB) == 0);
+						return ValNumber.Truth(string.Equals(sA, sB));
 					case Op.ANotEqualB:
-						return ValNumber.Truth(string.Compare(sA, sB) != 0);
+						return ValNumber.Truth(!string.Equals(sA, sB));
 					case Op.AGreaterThanB:
-						return ValNumber.Truth(string.Compare(sA, sB) > 0);
+						return ValNumber.Truth(string.Compare(sA, sB, StringComparison.Ordinal) > 0);
 					case Op.AGreatOrEqualB:
-						return ValNumber.Truth(string.Compare(sA, sB) >= 0);
+						return ValNumber.Truth(string.Compare(sA, sB, StringComparison.Ordinal) >= 0);
 					case Op.ALessThanB:
-						return ValNumber.Truth(string.Compare(sA, sB) < 0);
+						int foo = string.Compare(sA, sB, StringComparison.Ordinal);
+						return ValNumber.Truth(foo < 0);
 					case Op.ALessOrEqualB:
-						return ValNumber.Truth(string.Compare(sA, sB) <= 0);
+						return ValNumber.Truth(string.Compare(sA, sB, StringComparison.Ordinal) <= 0);
 					case Op.LengthOfA:
 						return new ValNumber(sA.Length);
 					default:

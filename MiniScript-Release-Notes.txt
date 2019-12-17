@@ -143,3 +143,8 @@ the next line.  Works in both REPL and script mode.  {#8}
 - Fixed a bug with string replication in the C++ version.  {#25}
 
 - Added the ability to extend basic types (number, string, list, and map) with new methods, that can then be called on values of that type using dot syntax, just like the built-in methods.  Known limitation: you can't use dot syntax with number literals.
+
+
+(not yet released)
+==================
+- Fixed a bug in the C# version that caused the behavior of string sorting (i.e. `>` and related operators) to depend on system settings.  It now always sorts ordinally, i.e., by the binary values of each character (just like the C++ version).
