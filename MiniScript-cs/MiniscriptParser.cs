@@ -971,7 +971,8 @@ namespace Miniscript {
 					if (tokens.Peek().type == Token.Type.Colon) {	// e.g., foo[:4]
 						tokens.Dequeue();	// discard ':'
 						AllowLineBreak(tokens); // allow a line break after colon
-						Value index2 = ParseExpr(tokens);
+						Value index2 = null;
+						if (tokens.Peek().type != Token.Type.RSquare) index2 = ParseExpr(tokens);
 						ValTemp temp = new ValTemp(output.nextTempNum++);
 						Intrinsics.CompileSlice(output.code, val, null, index2, temp.tempNum);
 						val = temp;

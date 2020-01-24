@@ -148,3 +148,6 @@ the next line.  Works in both REPL and script mode.  {#8}
 (not yet released)
 ==================
 - Fixed a bug in the C# version that caused the behavior of string sorting (i.e. `>` and related operators) to depend on system settings.  It now always sorts ordinally, i.e., by the binary values of each character (just like the C++ version).
+
+- Improved slice operator so that both indexes may be omitted, i.e., `seq[:]` is now the same as `seq[0:seq.len]`.
+
