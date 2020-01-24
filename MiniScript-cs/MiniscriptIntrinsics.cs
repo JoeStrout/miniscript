@@ -382,6 +382,7 @@ namespace Miniscript {
 				if (self is ValMap) {
 					ValMap map = (ValMap)self;
 					List<Value> keys = new List<Value>(map.map.Keys);
+					for (int i = 0; i < keys.Count; i++) if (keys[i] is ValNull) keys[i] = null;
 					return new Intrinsic.Result(new ValList(keys));
 				} else if (self is ValString) {
 					string str = ((ValString)self).value;
@@ -426,6 +427,7 @@ namespace Miniscript {
 					if (idx >= 0) return new Intrinsic.Result(idx);
 				} else if (self is ValString) {
 					string str = ((ValString)self).value;
+					if (value == null) return Intrinsic.Result.Null;
 					string s = value.ToString();
 					int idx;
 					if (after == null) idx = str.IndexOf(s);
@@ -687,15 +689,16 @@ namespace Miniscript {
 			f.code = (context, partialResult) => {
 				Value self = context.GetVar("self");
 				Value k = context.GetVar("k");
-				if (self == null || k == null) throw new RuntimeException("argument to 'remove' must not be null");
 				if (self is ValMap) {
 					ValMap selfMap = (ValMap)self;
+					if (k == null) k = ValNull.instance;
 					if (selfMap.map.ContainsKey(k)) {
 						selfMap.map.Remove(k);
-						return new Intrinsic.Result(ValNumber.one);
+						return Intrinsic.Result.True;
 					}
-					return new Intrinsic.Result(ValNumber.zero);
+					return Intrinsic.Result.False;
 				} else if (self is ValList) {
+					if (k == null) throw new RuntimeException("argument to 'remove' must not be null");
 					ValList selfList = (ValList)self;
 					int idx = k.IntValue();
 					if (idx < 0) idx += selfList.values.Count;
@@ -703,6 +706,7 @@ namespace Miniscript {
 					selfList.values.RemoveAt(idx);
 					return Intrinsic.Result.Null;
 				} else if (self is ValString) {
+					if (k == null) throw new RuntimeException("argument to 'remove' must not be null");
 					ValString selfStr = (ValString)self;
 					string substr = k.ToString();
 					int foundPos = selfStr.value.IndexOf(substr);

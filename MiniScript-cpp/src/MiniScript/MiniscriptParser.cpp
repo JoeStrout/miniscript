@@ -894,8 +894,6 @@ namespace MiniScript {
 			AllowLineBreak(tokens); // allow a line break after a comma or open brace
 			
 			Value key = ParseExpr(tokens);
-			if (key.type == ValueType::Null) throw new CompilerException(errorContext, tokens.lineNum(),
-														 "expression required as map key");
 			RequireToken(tokens, Token::Type::Colon);
 			AllowLineBreak(tokens); // allow a line break after a colon
 			Value value = ParseExpr(tokens);

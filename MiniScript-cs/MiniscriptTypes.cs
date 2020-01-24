@@ -170,6 +170,63 @@ namespace Miniscript {
 			return Value.Compare(x, y);
 		}
 	}
+
+	/// <summary>
+	/// ValNull is an object to represent null in places where we can't use
+	/// an actual null (such as a dictionary key or value).
+	/// </summary>
+	public class ValNull : Value {
+		private ValNull() {}
+		
+		public override string ToString(TAC.Machine machine) {
+			return "null";
+		}
+		
+		public override bool IsA(Value type, TAC.Machine vm) {
+			return false;
+		}
+
+		public override int Hash(int recursionDepth=16) {
+			return -1;
+		}
+
+		public override Value Val(TAC.Context context) {
+			return null;
+		}
+
+		public virtual Value Val(TAC.Context context, out ValMap valueFoundIn) {
+			valueFoundIn = null;
+			return null;
+		}
+		
+		public virtual Value FullEval(TAC.Context context) {
+			return null;
+		}
+		
+		public override int IntValue() {
+			return 0;
+		}
+
+		public override double DoubleValue() {
+			return 0.0;
+		}
+		
+		public override bool BoolValue() {
+			return false;
+		}
+
+		public override double Equality(Value rhs, int recursionDepth=16) {
+			return (rhs == null || rhs is ValNull ? 1 : 0);
+		}
+
+		static readonly ValNull _inst = new ValNull();
+		
+		/// <summary>
+		/// Handy accessor to a shared "instance".
+		/// </summary>
+		public static ValNull instance { get { return _inst; } }
+		
+	}
 	
 	/// <summary>
 	/// ValNumber represents a numeric (double-precision floating point) value in MiniScript.
@@ -522,6 +579,7 @@ namespace Miniscript {
 		/// <param name="key">key to check for</param>
 		/// <returns>true if the map contains that key; false otherwise</returns>
 		public bool ContainsKey(Value key) {
+			if (key == null) key = ValNull.instance;
 			return map.ContainsKey(key);
 		}
 		
@@ -578,6 +636,7 @@ namespace Miniscript {
 		/// <param name="key">key to search for</param>
 		/// <returns>value associated with that key, or null if not found</returns>
 		public Value Lookup(Value key) {
+			if (key == null) key = ValNull.instance;
 			Value result = null;
 			ValMap obj = this;
 			while (obj != null) {
@@ -597,6 +656,7 @@ namespace Miniscript {
 		/// <param name="key">key to search for</param>
 		/// <returns>value associated with that key, or null if not found</returns>
 		public Value Lookup(Value key, out ValMap valueFoundIn) {
+			if (key == null) key = ValNull.instance;
 			Value result = null;
 			ValMap obj = this;
 			while (obj != null) {
@@ -721,6 +781,7 @@ namespace Miniscript {
 		/// and if found, give that a chance to handle it instead.
 		/// </summary>
 		public override void SetElem(Value index, Value value) {
+			if (index == null) index = ValNull.instance;
 			if (assignOverride == null || !assignOverride(index, value)) {
 				map[index] = value;
 			}
@@ -737,9 +798,9 @@ namespace Miniscript {
 			if (index < 0 || index >= keys.Count) {
 				throw new IndexException("index " + index + " out of range for map");
 			}
-			Value key = keys.ElementAt<Value>(index);	// (TODO: consider more efficient methods here)
+			Value key = keys.ElementAt<Value>(index);   // (TODO: consider more efficient methods here)
 			var result = new ValMap();
-			result.map[keyStr] = key;
+			result.map[keyStr] = (key is ValNull ? null : key);
 			result.map[valStr] = map[key];
 			return result;
 		}

@@ -633,6 +633,31 @@ print d.items[42]
 ----------------------------------------------------------------------
 foo!
 ======================================================================
+==== Test use of null as a dictionary key or value.
+d = {}
+d[null] = 42
+print d
+print d[null]
+maybeNull = d.indexes[0]
+print maybeNull == null
+d.remove null
+d[42] = null
+print d
+print d[42]
+print d[42] == null
+d = {null:42}
+for kv in d
+	print kv.key == null
+end for
+----------------------------------------------------------------------
+{null: 42}
+42
+1
+{42: null}
+null
+1
+1
+======================================================================
 ==== Function invocation via dot vs. lookup by name
 d = {}
 d.func = function(x=0)

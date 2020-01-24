@@ -1035,13 +1035,10 @@ namespace Miniscript {
 				AllowLineBreak(tokens); // allow a line break after a comma or open brace
 
 				Value key = ParseExpr(tokens);
-				if (key == null) throw new CompilerException(errorContext, tokens.lineNum,
-						"expression required as map key");
 				RequireToken(tokens, Token.Type.Colon);
 				AllowLineBreak(tokens); // allow a line break after a colon
 				Value value = ParseExpr(tokens);
-
-				map.map[key] = value;
+				map.map[key ?? ValNull.instance] = value;
 				
 				if (RequireEitherToken(tokens, Token.Type.Comma, Token.Type.RCurly).type == Token.Type.RCurly) break;
 			}

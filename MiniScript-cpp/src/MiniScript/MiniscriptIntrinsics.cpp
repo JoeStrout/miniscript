@@ -376,7 +376,7 @@ namespace MiniScript {
 	static IntrinsicResult intrinsic_remove(Context *context, IntrinsicResult partialResult) {
 		Value self = context->GetVar("self");
 		Value k = context->GetVar("k");
-		if (self.IsNull() or k.IsNull()) throw RuntimeException("argument to 'remove' must not be null");
+		if (self.IsNull()) throw RuntimeException("argument to 'remove' must not be null");
 		if (self.type == ValueType::Map) {
 			ValueDict selfMap = self.GetDict();
 			if (selfMap.ContainsKey(k)) {
@@ -385,6 +385,7 @@ namespace MiniScript {
 			}
 			return IntrinsicResult(Value::zero);
 		} else if (self.type == ValueType::List) {
+			if (k.IsNull()) throw RuntimeException("argument to 'remove' must not be null");
 			ValueList selfList = self.GetList();
 			long idx = k.IntValue();
 			if (idx < 0) idx += selfList.Count();
@@ -392,6 +393,7 @@ namespace MiniScript {
 			selfList.RemoveAt(idx);
 			return IntrinsicResult::Null;
 		} else if (self.type == ValueType::String) {
+			if (k.IsNull()) throw RuntimeException("argument to 'remove' must not be null");
 			String selfStr = self.GetString();
 			String substr = k.ToString();
 			long foundPosB = selfStr.IndexOfB(substr);

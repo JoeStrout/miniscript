@@ -185,7 +185,7 @@ namespace MiniScript {
 					Value result = null;
 					// Keep walking the "__isa" chain until we find the value, or can go no further.
 					while (baseVal.type == ValueType::Map) {
-						if (idxVal.IsNull()) throw KeyException("null");
+//						if (idxVal.IsNull()) throw KeyException("null");
 						ValueDict baseDict((ValueDictStorage*)(baseVal.data.ref));
 						if (baseDict.Get(idxVal, &result)) {
 //							baseDict.forget();
