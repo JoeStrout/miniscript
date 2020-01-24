@@ -152,3 +152,8 @@ the next line.  Works in both REPL and script mode.  {#8}
 - Improved slice operator so that both indexes may be omitted, i.e., `seq[:]` is now the same as `seq[0:seq.len]`.
 
 - `null` can now be used as a map key (or value), which was previously disallowed.
+
+- Comparisons between numbers and non-numbers now return true for ==, false for !=, and null for all other comparisons (in line with how other types already worked).
+
+- Operations between a string and another type now only implicitly convert the right-hand side to a string in the case of + (but not, for example, in the case of comparison operators, which now support == and != but return null for other comparisons, in line with how other types already worked).
+

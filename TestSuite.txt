@@ -537,13 +537,33 @@ print hash(d1) == hash(d2)
 ====print(d1 == d2)	// prints 0.5, because it's too hard to tell
 ====d2[1] = "bar"	// but they're now truly different
 ====print(d2 == d2)	// so this prints 0
-====----------------------------------------------------------------------
+----------------------------------------------------------------------
 ====1
 ====0.5
 ====0
 ====1
 ====0.5
 ====0
+======================================================================
+==== Mixed-type equality testing.  Should return null for any ordering
+==== comparisons, but 0/1 for equal/not-equal tests.
+print 1 == "1"  // (even if they evaluate to the same thing!)
+print "foo" == 0
+print 42 != [42]
+print {"abc":"def"} != "abcdef"
+print 1 < "42"
+print "abc" > [42]
+print [42] <= {1:2}
+print {"ichi":1} >= 0
+----------------------------------------------------------------------
+0
+0
+1
+1
+null
+null
+null
+null
 ======================================================================
 ==== Trigonometry.
 print "Pi: " + round(pi, 2)

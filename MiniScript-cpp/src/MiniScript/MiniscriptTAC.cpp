@@ -175,12 +175,24 @@ namespace MiniScript {
 			return Value::Resolve(opA, opB.ToString(), context, NULL);
 		}
 		
+		// check for special cases of comparison to null (works with any type)
 		if (op == Op::AEqualB && (opA.IsNull() || opB.IsNull())) {
 			return Value::Truth(opA == opB);
 		}
 		if (op == Op::ANotEqualB and (opA.IsNull() or opB.IsNull())) {
 			return Value::Truth(opA != opB);
 		}
+	
+		// check for implicit coersion of other types to string; this happens
+		// when either side is a string and the operator is addition.
+		if ((opA.type == ValueType::String or opB.type == ValueType::String) and op == Op::APlusB) {
+			if (opB.IsNull()) return opA;
+			String sA = opA.ToString();
+			String sB = opB.ToString();
+			if (sA.LengthB() + sB.LengthB() > Value::maxStringSize) throw LimitExceededException("string too large");
+			return Value(sA + sB);
+		}
+
 		
 		if (opA.type == ValueType::Number) {
 			double fA = opA.data.number;
@@ -264,35 +276,15 @@ namespace MiniScript {
 					default:
 						break;
 				}
-			} else if (opB.type == ValueType::String) {
-				// number (op) String
-				String sA = opA.ToString();
-				String sB = opB.ToString();
-				switch (op) {
-					case Op::APlusB:
-						return Value(sA + sB);
-					default:
-						break;
-				}
 			}
-			
+			// Handle equality testing between a number (opA) and a non-number (opB).
+			// These are always considered unequal.
+			if (op == Op::AEqualB) return Value::zero;
+			if (op == Op::ANotEqualB) return Value::one;
+
 		} else if (opA.type == ValueType::String) {
 			String sA = opA.ToString();
 			switch (op) {
-				case Op::APlusB:
-				{
-					if (opB.IsNull()) return opA;
-					String sB = opB.ToString();
-					if (sA.LengthB() + sB.LengthB() > Value::maxStringSize) throw LimitExceededException("string too large");
-					return Value(sA + sB);
-				} break;
-				case Op::AMinusB:
-				{
-					if (opB.IsNull()) return opA;
-					String sB = opB.ToString();
-					if (sA.EndsWith(sB)) sA = sA.SubstringB(0, sA.LengthB() - sB.LengthB());
-					return Value(sA);
-				} break;
 				case Op::ATimesB:
 				case Op::ADividedByB:
 				{
@@ -324,6 +316,25 @@ namespace MiniScript {
 					result.takeoverBuffer(buf, totalBytes);
 					return Value(result);
 				}
+				case Op::ElemBofA:
+				case Op::ElemBofIterA:
+				{
+					long idx = opB.IntValue();
+					long len = sA.Length();
+					CheckRange(idx, -len, len - 1, "String index");
+					if (idx < 0) idx += len;
+					return Value(sA.Substring(idx, 1));
+				}
+			}
+			if (opB.IsNull() or opB.type == ValueType::String) {
+				switch (op) {
+				case Op::AMinusB:
+				{
+					if (opB.IsNull()) return opA;
+					String sB = opB.ToString();
+					if (sA.EndsWith(sB)) sA = sA.SubstringB(0, sA.LengthB() - sB.LengthB());
+					return Value(sA);
+				} break;
 				case Op::NotA:
 					return Value::Truth(sA.empty());
 				case Op::AEqualB:
@@ -338,19 +349,18 @@ namespace MiniScript {
 					return Value::Truth(String::Compare(sA, opB.ToString()) < 0);
 				case Op::ALessOrEqualB:
 					return Value::Truth(String::Compare(sA, opB.ToString()) <= 0);
-				case Op::ElemBofA:
-				case Op::ElemBofIterA:
-				{
-					long idx = opB.IntValue();
-					long len = sA.Length();
-					CheckRange(idx, -len, len - 1, "String index");
-					if (idx < 0) idx += len;
-					return Value(sA.Substring(idx, 1));
-				}
 				case Op::LengthOfA:
 					return Value(sA.Length());
 				default:
 					break;
+				}
+			} else {
+				// RHS is neither null nor a string.
+				// We no longer automatically coerce in all these cases; about
+				// all we can do is equal or unequal testing.
+				// (Note that addition was handled way above here.)
+				if (op == Op::AEqualB) return Value::zero;
+				if (op == Op::ANotEqualB) return Value::one;
 			}
 		 } else if (opA.type == ValueType::List) {
 			 ValueList list = opA.GetList();

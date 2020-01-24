@@ -232,11 +232,21 @@ namespace Miniscript {
 					return ValSeqElem.Resolve(opA, ((ValString)opB).value, context, out ignored);
 				}
 
+				// check for special cases of comparison to null (works with any type)
 				if (op == Op.AEqualB && (opA == null || opB == null)) {
 					return ValNumber.Truth(opA == opB);
 				}
 				if (op == Op.ANotEqualB && (opA == null || opB == null)) {
 					return ValNumber.Truth(opA != opB);
+				}
+				
+				// check for implicit coersion of other types to string; this happens
+				// when either side is a string and the operator is addition.
+				if ((opA is ValString || opB is ValString) && op == Op.APlusB) {
+					string sA = opA.ToString(context.vm);
+					string sB = opB.ToString(context.vm);
+					if (sA.Length + sB.Length > ValString.maxSize) throw new LimitExceededException("string too large");
+					return new ValString(sA + sB);
 				}
 
 				if (opA is ValNumber) {
@@ -317,17 +327,11 @@ namespace Miniscript {
 						default:
 							break;
 						}
-					} else if (opB is ValString) {
-						// number (op) string
-						string sA = opA.ToString();
-						string sB = opB.ToString();
-						switch (op) {
-						case Op.APlusB:
-							return new ValString(sA + sB);
-						default:
-							break;
-						}
 					}
+					// Handle equality testing between a number (opA) and a non-number (opB).
+					// These are always considered unequal.
+					if (op == Op.AEqualB) return ValNumber.zero;
+					if (op == Op.ANotEqualB) return ValNumber.one;
 
 				} else if (opA is ValString) {
 					string sA = ((ValString)opA).value;
@@ -355,39 +359,41 @@ namespace Miniscript {
 						if (idx < 0) idx += sA.Length;
 						return new ValString(sA.Substring(idx, 1));
 					}
-					string sB = (opB == null ? null : opB.ToString(context.vm));
-					switch (op) {
-					case Op.APlusB:
-						{
-							if (opB == null) return opA;
-							if (sA.Length + sB.Length > ValString.maxSize) throw new LimitExceededException("string too large");
-							return new ValString(sA + sB);
+					if (opB == null || opB is ValString) {
+						string sB = (opB == null ? null : opB.ToString(context.vm));
+						switch (op) {
+							case Op.AMinusB: {
+									if (opB == null) return opA;
+									if (sA.EndsWith(sB)) sA = sA.Substring(0, sA.Length - sB.Length);
+									return new ValString(sA);
+								}
+							case Op.NotA:
+								return ValNumber.Truth(string.IsNullOrEmpty(sA));
+							case Op.AEqualB:
+								return ValNumber.Truth(string.Equals(sA, sB));
+							case Op.ANotEqualB:
+								return ValNumber.Truth(!string.Equals(sA, sB));
+							case Op.AGreaterThanB:
+								return ValNumber.Truth(string.Compare(sA, sB, StringComparison.Ordinal) > 0);
+							case Op.AGreatOrEqualB:
+								return ValNumber.Truth(string.Compare(sA, sB, StringComparison.Ordinal) >= 0);
+							case Op.ALessThanB:
+								int foo = string.Compare(sA, sB, StringComparison.Ordinal);
+								return ValNumber.Truth(foo < 0);
+							case Op.ALessOrEqualB:
+								return ValNumber.Truth(string.Compare(sA, sB, StringComparison.Ordinal) <= 0);
+							case Op.LengthOfA:
+								return new ValNumber(sA.Length);
+							default:
+								break;
 						}
-					case Op.AMinusB:
-						{
-							if (opB == null) return opA;
-							if (sA.EndsWith(sB)) sA = sA.Substring(0, sA.Length - sB.Length);
-							return new ValString(sA);
-						}
-					case Op.NotA:
-						return ValNumber.Truth(string.IsNullOrEmpty(sA));
-					case Op.AEqualB:
-						return ValNumber.Truth(string.Equals(sA, sB));
-					case Op.ANotEqualB:
-						return ValNumber.Truth(!string.Equals(sA, sB));
-					case Op.AGreaterThanB:
-						return ValNumber.Truth(string.Compare(sA, sB, StringComparison.Ordinal) > 0);
-					case Op.AGreatOrEqualB:
-						return ValNumber.Truth(string.Compare(sA, sB, StringComparison.Ordinal) >= 0);
-					case Op.ALessThanB:
-						int foo = string.Compare(sA, sB, StringComparison.Ordinal);
-						return ValNumber.Truth(foo < 0);
-					case Op.ALessOrEqualB:
-						return ValNumber.Truth(string.Compare(sA, sB, StringComparison.Ordinal) <= 0);
-					case Op.LengthOfA:
-						return new ValNumber(sA.Length);
-					default:
-						break;
+					} else {
+						// RHS is neither null nor a string.
+						// We no longer automatically coerce in all these cases; about
+						// all we can do is equal or unequal testing.
+						// (Note that addition was handled way above here.)
+						if (op == Op.AEqualB) return ValNumber.zero;
+						if (op == Op.ANotEqualB) return ValNumber.one;						
 					}
 				} else if (opA is ValList) {
 					List<Value> list = ((ValList)opA).values;
