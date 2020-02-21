@@ -858,10 +858,14 @@ namespace Miniscript {
 	/// </summary>
 	public class ValFunction : Value {
 		public Function function;
-		public ValMap outerVars;	// local variables where the function was defined (usually, the module)
+		public readonly ValMap outerVars;	// local variables where the function was defined (usually, the module)
 
 		public ValFunction(Function function) {
 			this.function = function;
+		}
+		public ValFunction(Function function, ValMap outerVars) {
+			this.function = function;
+            this.outerVars = outerVars;
 		}
 
 		public override string ToString(TAC.Machine vm) {
@@ -887,6 +891,11 @@ namespace Miniscript {
 			var other = (ValFunction)rhs;
 			return function == other.function ? 1 : 0;
 		}
+
+        public ValFunction BindAndCopy(ValMap contextVariables)
+        {
+            return new ValFunction(function, contextVariables);
+        }
 
 	}
 
