@@ -574,6 +574,18 @@ namespace Miniscript {
 					return;
 				}
 			}
+            // If the last line was us creating and assigning a function, then we don't add a second assign
+            // op, we instead just update that line with the proper LHS
+            if(rhs is ValFunction && output.code.Count > 0)
+            {
+                TAC.Line line = output.code[output.code.Count - 1];
+                if(line.op == TAC.Line.Op.BindAssignA)
+                {
+                    line.lhs = lhs;
+                    return;
+                }
+            }
+
 			// In any other case, do an assignment statement to our lhs.
 			output.Add(new TAC.Line(lhs, TAC.Line.Op.AssignA, rhs));
 		}
@@ -625,7 +637,7 @@ namespace Miniscript {
 			// Create a function object attached to the new parse state code.
 			func.code = pendingState.code;
 			var valFunc = new ValFunction(func);
-			output.Add(new TAC.Line(null, TAC.Line.Op.BindContextOfA, valFunc));
+			output.Add(new TAC.Line(null, TAC.Line.Op.BindAssignA, valFunc));
 			return valFunc;
 		}
 
