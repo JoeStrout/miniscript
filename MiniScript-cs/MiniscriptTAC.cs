@@ -133,7 +133,7 @@ namespace Miniscript {
 					text = string.Format("{0} := {1} isa {2}", lhs, rhsA, rhsB);
 					break;
 				case Op.BindAssignA:
-					text = string.Format("{0} := {1} {0}.outerVars=", rhsA, rhsB);
+					text = string.Format("{0} := {1}; {0}.outerVars=", rhsA, rhsB);
 					break;
 				case Op.CopyA:
 					text = string.Format("{0} := copy of {1}", lhs, rhsA);
@@ -486,8 +486,6 @@ namespace Miniscript {
 							if (context.variables == null) context.variables = new ValMap();
 							ValFunction valFunc = (ValFunction)opA;
                             return valFunc.BindAndCopy(context.variables);
-							//valFunc.outerVars = context.variables;
-							//return null;
 						}
 					case Op.NotA:
 						return opA != null && opA.BoolValue() ? ValNumber.zero : ValNumber.one;

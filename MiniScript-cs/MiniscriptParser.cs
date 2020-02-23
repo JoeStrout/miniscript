@@ -574,13 +574,12 @@ namespace Miniscript {
 					return;
 				}
 			}
+			
             // If the last line was us creating and assigning a function, then we don't add a second assign
             // op, we instead just update that line with the proper LHS
-            if(rhs is ValFunction && output.code.Count > 0)
-            {
+            if (rhs is ValFunction && output.code.Count > 0) {
                 TAC.Line line = output.code[output.code.Count - 1];
-                if(line.op == TAC.Line.Op.BindAssignA)
-                {
+                if (line.op == TAC.Line.Op.BindAssignA) {
                     line.lhs = lhs;
                     return;
                 }

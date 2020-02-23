@@ -40,7 +40,7 @@ namespace MiniScript {
 			AisaB,
 			AAndB,
 			AOrB,
-			BindContextOfA,
+			BindAssignA,
 			CopyA,
 			NotA,
 			GotoA,

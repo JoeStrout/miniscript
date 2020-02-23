@@ -174,8 +174,9 @@ namespace Miniscript {
 		
 		public static void Type(Value val, System.Type requiredType, string desc=null) {
 			if (!requiredType.IsInstanceOfType(val)) {
-				throw new TypeException(string.Format("got a {0} where a {1} was required{2}",
-					val.GetType(), requiredType, desc == null ? null : " (" + desc + ")"));
+				string typeStr = val == null ? "null" : "a " + val.GetType();
+				throw new TypeException(string.Format("got {0} where a {1} was required{2}",
+					typeStr, requiredType, desc == null ? null : " (" + desc + ")"));
 			}
 		}
 	}

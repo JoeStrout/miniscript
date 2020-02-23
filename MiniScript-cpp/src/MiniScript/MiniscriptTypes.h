@@ -47,6 +47,8 @@ namespace MiniScript {
 		
 		// Local variables where the function was defined {#8}
 		ValueDict outerVars;
+		
+		FunctionStorage *BindAndCopy(ValueDict contextVariables);
 	};
 
 	class SeqElemStorage;

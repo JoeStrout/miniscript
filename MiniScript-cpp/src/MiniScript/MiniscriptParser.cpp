@@ -408,6 +408,17 @@ namespace MiniScript {
 				return;
 			}
 		}
+		
+		// If the last line was us creating and assigning a function, then we don't add a second assign
+		// op, we instead just update that line with the proper LHS.
+		if (rhs.type == ValueType::Function && output->code.Count() > 0) {
+			TACLine& line = output->code[output->code.Count() - 1];
+			if (line.op == TACLine::Op::BindAssignA) {
+				line.lhs = lhs;
+				return;
+			}
+		}
+		
 		// In any other case, do an assignment statement to our lhs.
 		output->Add(TACLine(lhs, TACLine::Op::AssignA, rhs));
 	}
@@ -461,7 +472,7 @@ namespace MiniScript {
 		// Create a function object attached to the new parse state code.
 		func->code = pendingState.code;
 		Value valFunc = Value(func);
-		output->Add(TACLine(Value::null, TACLine::Op::BindContextOfA, valFunc));
+		output->Add(TACLine(Value::null, TACLine::Op::BindAssignA, valFunc));
 		return valFunc;
 	}
 	

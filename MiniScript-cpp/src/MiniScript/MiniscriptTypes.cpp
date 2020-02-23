@@ -32,6 +32,15 @@ namespace MiniScript {
 	Value Value::valueString("value");
 	Value Value::implicitResult = Value::Var("_");
 
+	FunctionStorage *FunctionStorage::BindAndCopy(ValueDict contextVariables) {
+		FunctionStorage *result = new FunctionStorage();
+		result->parameters = parameters;
+		result->code = code;
+		result->outerVars = contextVariables;
+		return result;
+	}
+
+	
 	String ToString(ValueType type) {
 		switch (type) {
 			case ValueType::Null:	return "Null";

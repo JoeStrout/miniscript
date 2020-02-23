@@ -892,8 +892,7 @@ namespace Miniscript {
 			return function == other.function ? 1 : 0;
 		}
 
-        public ValFunction BindAndCopy(ValMap contextVariables)
-        {
+        public ValFunction BindAndCopy(ValMap contextVariables) {
             return new ValFunction(function, contextVariables);
         }
 

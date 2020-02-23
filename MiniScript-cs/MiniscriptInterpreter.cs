@@ -85,8 +85,8 @@ namespace Miniscript {
 		/// </summary>
 		public Interpreter(string source=null, TextOutputMethod standardOutput=null, TextOutputMethod errorOutput=null) {
 			this.source = source;
-			if (standardOutput == null) standardOutput = Console.WriteLine;
-			if (errorOutput == null) errorOutput = Console.WriteLine;
+			if (standardOutput == null) standardOutput = s => Console.WriteLine(s);
+			if (errorOutput == null) errorOutput = s => Console.WriteLine(s);
 			this.standardOutput = standardOutput;
 			this.errorOutput = errorOutput;
 		}

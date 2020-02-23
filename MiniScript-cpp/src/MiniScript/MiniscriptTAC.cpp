@@ -83,8 +83,8 @@ namespace MiniScript {
 			case Op::AOrB:
 				text = lhs.ToString() + " := " + rhsA.ToString() + " or " + rhsB.ToString();
 				break;
-			case Op::BindContextOfA:
-				text = rhsA.ToString() + ".outerVars = <locals>";
+			case Op::BindAssignA:
+				text = rhsA.ToString() + " := " + rhsB.ToString() + "; " + rhsA.ToString() + ".outerVars = <locals>";
 				break;
 			case Op::CopyA:
 				text = lhs.ToString() + " := copy of " + rhsA.ToString();
@@ -458,11 +458,10 @@ namespace MiniScript {
 		} else {
 			// something else... perhaps null
 			switch (op) {
-				case Op::BindContextOfA:
+				case Op::BindAssignA:
 				{
 					FunctionStorage *fA = (FunctionStorage*)(opA.data.ref);
-					fA->outerVars = context->variables;
-					return Value::null;
+					return Value(fA->BindAndCopy(context->variables));
 				} break;
 				case Op::NotA:
 					return Value::Truth(!opA.BoolValue());
