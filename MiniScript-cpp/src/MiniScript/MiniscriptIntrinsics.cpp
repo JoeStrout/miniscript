@@ -69,6 +69,24 @@ namespace MiniScript {
 		return IntrinsicResult(atan(x.DoubleValue()));
 	}
 	
+	static IntrinsicResult intrinsic_bitAnd(Context *context, IntrinsicResult partialResult) {
+		Value i = context->GetVar("i");
+		Value j = context->GetVar("j");
+		return IntrinsicResult(i.IntValue() & j.IntValue());
+	}
+	
+	static IntrinsicResult intrinsic_bitOr(Context *context, IntrinsicResult partialResult) {
+		Value i = context->GetVar("i");
+		Value j = context->GetVar("j");
+		return IntrinsicResult(i.IntValue() | j.IntValue());
+	}
+	
+	static IntrinsicResult intrinsic_bitXor(Context *context, IntrinsicResult partialResult) {
+		Value i = context->GetVar("i");
+		Value j = context->GetVar("j");
+		return IntrinsicResult(i.IntValue() ^ j.IntValue());
+	}
+
 	static IntrinsicResult intrinsic_char(Context *context, IntrinsicResult partialResult) {
 		long codePoint = context->GetVar("codePoint").IntValue();
 		char buf[5];
@@ -835,6 +853,21 @@ namespace MiniScript {
 		f = Intrinsic::Create("atan");
 		f->AddParam("x", 0);
 		f->code = &intrinsic_atan;
+		
+		f = Intrinsic::Create("bitAnd");
+		f->AddParam("i", 0);
+		f->AddParam("j", 0);
+		f->code = &intrinsic_bitAnd;
+		
+		f = Intrinsic::Create("bitOr");
+		f->AddParam("i", 0);
+		f->AddParam("j", 0);
+		f->code = &intrinsic_bitOr;
+		
+		f = Intrinsic::Create("bitXor");
+		f->AddParam("i", 0);
+		f->AddParam("j", 0);
+		f->code = &intrinsic_bitXor;
 		
 		f = Intrinsic::Create("char");
 		f->AddParam("codePoint", 65);

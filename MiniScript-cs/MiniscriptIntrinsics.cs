@@ -292,6 +292,36 @@ namespace Miniscript {
 				if (x == 1.0) return new Intrinsic.Result(Math.Atan(y));
 				return new Intrinsic.Result(Math.Atan2(y, x));
 			};
+
+			// bitAnd(i, j)
+			f = Intrinsic.Create("bitAnd");
+			f.AddParam("i", 0);
+			f.AddParam("j", 0);
+			f.code = (context, partialResult) => {
+				int i = context.GetLocalInt("i");
+				int j = context.GetLocalInt("j");
+				return new Intrinsic.Result(i & j);
+			};
+			
+			// bitOr(i, j)
+			f = Intrinsic.Create("bitOr");
+			f.AddParam("i", 0);
+			f.AddParam("j", 0);
+			f.code = (context, partialResult) => {
+				int i = context.GetLocalInt("i");
+				int j = context.GetLocalInt("j");
+				return new Intrinsic.Result(i | j);
+			};
+			
+			// bitXor(i, j)
+			f = Intrinsic.Create("bitXor");
+			f.AddParam("i", 0);
+			f.AddParam("j", 0);
+			f.code = (context, partialResult) => {
+				int i = context.GetLocalInt("i");
+				int j = context.GetLocalInt("j");
+				return new Intrinsic.Result(i ^ j);
+			};
 			
 			// char(i)
 			f = Intrinsic.Create("char");

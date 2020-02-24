@@ -160,3 +160,5 @@ the next line.  Works in both REPL and script mode.  {#8}
 - Fixed a failure to generate a compiler error when `end if` is encountered without an open "if" block. {#33}
 
 - Fixed a cosmetic issue in the REPL where an expression like `[rnd]*3` would not fully evaulate the list elements, resulting in a confusing and unhelpful output.
+
+- Added three new intrinsics to facilitate bitwise operations: bitAnd(i,j), bitOr(i,j), and bitXor(i,j).  These treat the two arguments as integers, and return the bitwise and, or, and exclusive-or of those arguments respectively.

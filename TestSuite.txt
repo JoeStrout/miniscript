@@ -1193,6 +1193,15 @@ print log(50, 5)
 11
 2.430677
 ======================================================================
+==== Test the bitwise intrinsics.
+print bitAnd(14, 7)	// binary 1110 & 0111 = 0110
+print bitOr(14, 7)	// binary 1110 | 0111 = 1111
+print bitXor(14, 7)	// binary 1110 ^ 0111 = 1001
+----------------------------------------------------------------------
+6
+15
+9
+======================================================================
 ==== Check various edge cases with function calls and implicit results.
 func = function()
 	print "func invoked!"
