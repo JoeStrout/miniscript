@@ -956,6 +956,24 @@ for i in range(0,10)
 ----------------------------------------------------------------------
 Compiler Error: 'for' without matching 'end for' [line 3]
 ======================================================================
+==== Error reporting of mismatched "end" token (easy mistake to make).
+for i in range(0,10)
+	print i
+end if
+----------------------------------------------------------------------
+Compiler Error: 'end if' without matching 'if' [line 3]
+======================================================================
+==== Another mismatched "end" token.
+for i in range(0,10)
+	while true
+		print "..."
+		break
+	end for
+	print i
+end while
+----------------------------------------------------------------------
+Compiler Error: 'end for' without matching 'for' [line 5]
+======================================================================
 ==== Testing that objects are distinct, even when new'd in a function.
 ==== (This was a bug in an early version of MiniScript.)
 Vec = {"x":0, "y":0}

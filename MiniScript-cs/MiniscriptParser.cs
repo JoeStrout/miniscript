@@ -142,6 +142,8 @@ namespace Miniscript {
 					}
 					idx--;
 				}
+				// If we get here, we never found the expected if:MARK.  That's an error.
+				throw new CompilerException("'end if' without matching 'if'");
 			}
 		}
 		

@@ -157,3 +157,5 @@ the next line.  Works in both REPL and script mode.  {#8}
 
 - Operations between a string and another type now only implicitly convert the right-hand side to a string in the case of + (but not, for example, in the case of comparison operators, which now support == and != but return null for other comparisons, in line with how other types already worked).
 
+- Fixed a failure to generate a compiler error when "end if" is encountered without an open "if" block. {#33}
+

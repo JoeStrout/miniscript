@@ -1,6 +1,6 @@
 ﻿<Properties StartupConfiguration="{C3806B8F-9702-4B39-B6D9-9ECBC298565F}|Default">
   <MonoDevelop.Ide.ItemProperties.Miniscript PreferredExecutionTarget="MonoDevelop.Default" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="MiniscriptTAC.cs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="MiniscriptParser.cs">
     <Files>
       <File FileName="Program.cs" Line="1" Column="1" />
       <File FileName="MiniscriptInterpreter.cs" Line="229" Column="1" />
@@ -8,7 +8,7 @@
       <File FileName="MiniscriptTAC.cs" Line="489" Column="8" />
       <File FileName="Properties/AssemblyInfo.cs" Line="14" Column="20" />
       <File FileName="MiniscriptIntrinsics.cs" Line="385" Column="82" />
-      <File FileName="MiniscriptParser.cs" Line="578" Column="1" />
+      <File FileName="MiniscriptParser.cs" Line="146" Column="67" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.PinnedWatches />
