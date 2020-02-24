@@ -433,7 +433,7 @@ namespace Miniscript {
 						if (finalCount > ValList.maxSize) throw new LimitExceededException("list too large");
 						List<Value> result = new List<Value>(finalCount);
 						for (int i = 0; i < finalCount; i++) {
-							result.Add(list[i % list.Count]);
+							result.Add(context.ValueInContext(list[i % list.Count]));
 						}
 						return new ValList(result);
 					} else if (op == Op.NotA) {

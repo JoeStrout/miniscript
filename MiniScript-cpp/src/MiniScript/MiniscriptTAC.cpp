@@ -404,7 +404,7 @@ namespace MiniScript {
 				if (finalCount > Value::maxListSize) throw LimitExceededException("list too large");
 				ValueList result(finalCount);
 				for (long i = 0; i < finalCount; i++) {
-					result.Add(list[i % listCount]);
+					result.Add(list[i % listCount].Val(context));
 				}
 				return Value(result);
 			} else if (op == Op::NotA) {
