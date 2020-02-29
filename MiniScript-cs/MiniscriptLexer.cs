@@ -193,10 +193,12 @@ namespace Miniscript {
 					}
 				} else if (result.text == "else") {
 					// And similarly, conjoin an "if" after "else" (to make "else if").
-					SkipWhitespaceAndComment();
-					if (position+2 < inputLength && input.Substring(position,2) == "if") {
+					var p = position;
+					while (p < inputLength && (input[p]==' ' || input[p]=='\t')) p++;
+					if (p+1 < inputLength && input.Substring(p,2) == "if" &&
+							(p+2 >= inputLength || IsWhitespace(input[p+2]))) {
 						result.text = "else if";
-						position += 2;
+						position = p + 2;
 					}
 				}
 				return result;
