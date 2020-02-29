@@ -178,10 +178,11 @@ namespace MiniScript {
 				}
 			} else if (result.text == "else") {
 				// And similarly, conjoin an "if" after "else" (to make "else if").
-				long p = ls->positionB;
-				Token nextWord = Dequeue();
-				if (nextWord.text == "if") result.text = "else if";
-				else ls->positionB = p;
+				SkipWhitespaceAndComment();
+				if (ls->positionB+2 < ls->inputLengthB and ls->input.SubstringB(ls->positionB, 2) == "if") {
+					result.text = "else if";
+					ls->positionB += 2;
+				}
 			}
 			return result;
 		} else if (c == '"') {
