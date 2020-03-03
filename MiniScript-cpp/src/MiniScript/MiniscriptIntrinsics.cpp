@@ -65,8 +65,10 @@ namespace MiniScript {
 	}
 	
 	static IntrinsicResult intrinsic_atan(Context *context, IntrinsicResult partialResult) {
-		Value x = context->GetVar("x");
-		return IntrinsicResult(atan(x.DoubleValue()));
+		double y = context->GetVar("y").DoubleValue();
+		double x = context->GetVar("x").DoubleValue();
+		if (x == 1.0) return IntrinsicResult(atan(y));
+		return IntrinsicResult(atan2(y, x));
 	}
 	
 	static IntrinsicResult intrinsic_bitAnd(Context *context, IntrinsicResult partialResult) {
@@ -851,7 +853,8 @@ namespace MiniScript {
 		f->code = &intrinsic_asin;
 		
 		f = Intrinsic::Create("atan");
-		f->AddParam("x", 0);
+		f->AddParam("y", 0);
+		f->AddParam("x", 1);
 		f->code = &intrinsic_atan;
 		
 		f = Intrinsic::Create("bitAnd");
