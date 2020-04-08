@@ -243,6 +243,8 @@ namespace Miniscript {
 				// check for implicit coersion of other types to string; this happens
 				// when either side is a string and the operator is addition.
 				if ((opA is ValString || opB is ValString) && op == Op.APlusB) {
+					if (opA == null) return opB;
+					if (opB == null) return opA;
 					string sA = opA.ToString(context.vm);
 					string sB = opB.ToString(context.vm);
 					if (sA.Length + sB.Length > ValString.maxSize) throw new LimitExceededException("string too large");
@@ -741,7 +743,8 @@ namespace Miniscript {
 			/// <param name="arg">Argument.</param>
 			public void PushParamArgument(Value arg) {
 				if (args == null) args = new Stack<Value>();
-				args.Push(arg);
+				if (args.Count > 255) throw new RuntimeException("Argument limit exceeded");
+				args.Push(arg);				
 			}
 
 			/// <summary>
@@ -851,7 +854,11 @@ namespace Miniscript {
 			public Machine(Context globalContext, TextOutputMethod standardOutput) {
 				_globalContext = globalContext;
 				_globalContext.vm = this;
-				this.standardOutput = (standardOutput == null ? Console.WriteLine : standardOutput);
+				if (standardOutput == null) {
+					this.standardOutput = s => Console.WriteLine(s);
+				} else {
+					this.standardOutput = standardOutput;
+				}
 				stack = new Stack<Context>();
 				stack.Push(_globalContext);
 			}
@@ -883,7 +890,7 @@ namespace Miniscript {
 				try {
 					DoOneLine(line, context);
 				} catch (MiniscriptException mse) {
-					mse.location = line.location;
+					if (mse.location == null) mse.location = line.location;
 					throw mse;
 				}
 			}
@@ -911,7 +918,7 @@ namespace Miniscript {
 					context.PushParamArgument(val);
 				} else if (line.op == Line.Op.CallFunctionA) {
 					// Resolve rhsA.  If it's a function, invoke it; otherwise,
-					// just store it directly.
+					// just store it directly (but pop the call context).
 					ValMap valueFoundIn;
 					Value funcVal = line.rhsA.Val(context, out valueFoundIn);	// resolves the whole dot chain, if any
 					if (funcVal is ValFunction) {
@@ -933,6 +940,11 @@ namespace Miniscript {
 						if (self != null) nextContext.SetVar("self", self);	// (set only if bound above)
 						stack.Push(nextContext);
 					} else {
+						// The user is attempting to call something that's not a function.
+						// We'll allow that, but any number of parameters is too many.  [#35]
+						// (No need to pop them, as the exception will pop the whole call stack anyway.)
+						int argCount = line.rhsB.IntValue();
+						if (argCount > 0) throw new TooManyArgumentsException();
 						context.StoreValue(line.lhs, funcVal);
 					}
 				} else if (line.op == Line.Op.ReturnA) {

@@ -666,6 +666,11 @@ namespace MiniScript {
 				if (not self.IsNull()) nextContext->SetVar("self", self);
 				stack.Add(nextContext);
 			} else {
+				// The user is attempting to call something that's not a function.
+				// We'll allow that, but any number of parameters is too many.  [#35]
+				// (No need to pop them, as the exception will pop the whole call stack anyway.)
+				long argCount = line.rhsB.IntValue();
+				if (argCount > 0) throw new TooManyArgumentsException();
 				context->StoreValue(line.lhs, funcVal);
 			}
 		} else if (line.op == TACLine::Op::ReturnA) {

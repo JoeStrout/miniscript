@@ -1227,6 +1227,13 @@ C
 1
 FUNCTION(seed)
 ======================================================================
+==== Check that invoking a non-function with arguments throws
+==== a "too many arguments" exception (issue #35).
+x = 42
+print x(1)
+----------------------------------------------------------------------
+Runtime Error: Too Many Arguments [line 2]
+======================================================================
 ==== Check that we look only in the local and global scope for
 ==== identifiers, and not in any call frames in between.
 func1 = function()

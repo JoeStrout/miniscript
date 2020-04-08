@@ -1156,7 +1156,8 @@ namespace Miniscript {
 			Token got = (tokens.AtEnd ? Token.EOL : tokens.Dequeue());
 			if (got.type != type || (text != null && got.text != text)) {
 				Token expected = new Token(type, text);
-				throw new CompilerException(string.Format("got {0} where {1} is required", got, expected));
+				throw new CompilerException(errorContext, tokens.lineNum, 
+					string.Format("got {0} where {1} is required", got, expected));
 			}
 			return got;
 		}
@@ -1167,7 +1168,8 @@ namespace Miniscript {
 				|| ((text1 != null && got.text != text1) && (text2 != null && got.text != text2))) {
 				Token expected1 = new Token(type1, text1);
 				Token expected2 = new Token(type2, text2);
-				throw new CompilerException(string.Format("got {0} where {1} or {2} is required", got, expected1, expected2));
+				throw new CompilerException(errorContext, tokens.lineNum, 
+					string.Format("got {0} where {1} or {2} is required", got, expected1, expected2));
 			}
 			return got;
 		}

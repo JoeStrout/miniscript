@@ -116,7 +116,10 @@ namespace MiniScript {
 		/// (which should be executed in the context returned by NextCallContext).
 		/// </summary>
 		/// <param name="arg">Argument.</param>
-		void PushParamArgument(Value arg) { args.Add(arg); }
+		void PushParamArgument(Value arg) {
+			if (args.Count() > 255) throw new RuntimeException("Argument limit exceeded");
+			args.Add(arg);
+		}
 
 		/// <summary>
 		/// Get a context for the next call, which includes any parameter arguments
