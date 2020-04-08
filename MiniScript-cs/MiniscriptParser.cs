@@ -130,8 +130,7 @@ namespace Miniscript {
 
 				int idx = backpatches.Count - 1;
 				while (idx >= 0) {
-					BackPatch 
-					bp = backpatches[idx];
+					BackPatch bp = backpatches[idx];
 					if (bp.waitingFor == "if:MARK") {
 						// There's the special marker that indicates the true start of this if block.
 						backpatches.RemoveAt(idx);
@@ -139,6 +138,11 @@ namespace Miniscript {
 					} else if (bp.waitingFor == "end if" || bp.waitingFor == "else") {
 						code[bp.lineNum].rhsA = target;
 						backpatches.RemoveAt(idx);
+					} else if (backpatches[idx].waitingFor == "break") {
+						// Not the expected keyword, but "break"; this is always OK.
+					} else {
+						// Not the expected patch, and not "break"; we have a mismatched block start/end.
+						throw new CompilerException("'end if' without matching 'if'");
 					}
 					idx--;
 				}

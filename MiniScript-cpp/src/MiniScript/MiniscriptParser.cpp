@@ -92,6 +92,11 @@ namespace MiniScript {
 			} else if (bp.waitingFor == "end if" or bp.waitingFor == "else") {
 				code[bp.lineNum].rhsA = target;
 				backpatches.RemoveAt(idx);
+			} else if (backpatches[idx].waitingFor == "break") {
+				// Not the expected keyword, but "break"; this is always OK.
+			} else {
+				// Not the expected patch, and not "break"; we have a mismatched block start/end.
+				throw new CompilerException("'end if' without matching 'if'");
 			}
 			idx--;
 		}
