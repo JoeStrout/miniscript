@@ -1,8 +1,10 @@
 ﻿<Properties StartupConfiguration="{C3806B8F-9702-4B39-B6D9-9ECBC298565F}|Default">
   <MonoDevelop.Ide.ItemProperties.Miniscript PreferredExecutionTarget="MonoDevelop.Default" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="MiniscriptParser.cs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="MiniscriptTypes.cs">
     <Files>
-      <File FileName="MiniscriptParser.cs" Line="146" Column="67" />
+      <File FileName="MiniscriptParser.cs" Line="145" Column="38" />
+      <File FileName="MiniscriptLexer.cs" Line="173" Column="34" />
+      <File FileName="MiniscriptTypes.cs" Line="251" Column="14" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.PinnedWatches />

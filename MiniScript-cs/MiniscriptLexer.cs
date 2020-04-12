@@ -170,7 +170,7 @@ namespace Miniscript {
 					char lastc = c;
 					c = input[position];
 					if (IsNumeric(c) || c == '.' || c == 'E' || c == 'e' ||
-					    (c == '-' && (lastc == 'E' || lastc == 'e'))) {
+					    ((c == '-' || c == '+') && (lastc == 'E' || lastc == 'e'))) {
 						position++;
 					} else break;
 				}

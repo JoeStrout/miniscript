@@ -53,6 +53,21 @@ print 1 or null
 0
 1
 ======================================================================
+==== Parsing of numbers in various formats (including exponential).
+print 123
+print 1.23
+print 1.23e+9
+print -1.23E+9
+print 1.23E-9
+print -1.23e-9
+----------------------------------------------------------------------
+123
+1.23
+1230000000
+-1230000000
+1.230000E-09
+-1.230000E-09
+======================================================================
 ==== Logical operators, short-circuit evaluation.
 reset = function(); globals.r = []; end function
 ftrue = function(x); globals.r = r + [x]; return 1; end function

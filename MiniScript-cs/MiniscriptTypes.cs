@@ -194,12 +194,12 @@ namespace Miniscript {
 			return null;
 		}
 
-		public virtual Value Val(TAC.Context context, out ValMap valueFoundIn) {
+		public override Value Val(TAC.Context context, out ValMap valueFoundIn) {
 			valueFoundIn = null;
 			return null;
 		}
 		
-		public virtual Value FullEval(TAC.Context context) {
+		public override Value FullEval(TAC.Context context) {
 			return null;
 		}
 		
@@ -246,7 +246,9 @@ namespace Miniscript {
 				return value.ToString("0", CultureInfo.InvariantCulture);
 			} else if (value > 1E10 || value < -1E10 || (value < 1E-6 && value > -1E-6)) {
 				// very large/small numbers in exponential form
-				return value.ToString("E6", CultureInfo.InvariantCulture);
+				string s = value.ToString("E6", CultureInfo.InvariantCulture);
+				s = s.Replace("E-00", "E-0");
+				return s;
 			} else {
 				// all others in decimal form, with 1-6 digits past the decimal point
 				return value.ToString("0.0#####", CultureInfo.InvariantCulture);

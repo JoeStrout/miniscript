@@ -155,7 +155,7 @@ namespace MiniScript {
 				char lastc = c;
 				c = ls->input[ls->positionB];
 				if (IsNumeric(c) or c == '.' or c == 'E' or c == 'e' ||
-					(c == '-' and (lastc == 'E' or lastc == 'e'))) {
+					((c == '-' or c == '+') and (lastc == 'E' or lastc == 'e'))) {
 					ls->positionB++;
 				} else break;
 			}
