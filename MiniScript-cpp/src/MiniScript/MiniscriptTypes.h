@@ -125,7 +125,10 @@ namespace MiniScript {
 		// Looking up the inner value, *without* conversion.
 		// Note that these do NOT return a temp string/list/dict; they return
 		// an ordinary, fully-fledged object you can keep around as long as you like.
-		String GetString() const { Assert(type == ValueType::String or type == ValueType::Var); String s((StringStorage*)(data.ref), false); return s; }
+		String GetString() const { Assert(type == ValueType::String or type == ValueType::Var);
+			StringStorage *ss = (StringStorage*)(data.ref);
+			ss->retain();
+			return String(ss, false); }
 		ValueList GetList() const { Assert(type == ValueType::List); ValueList l((ValueListStorage*)(data.ref), false); return l; }
 		ValueDict GetDict() { Assert(type == ValueType::Map); if (not data.ref) data.ref = new ValueDictStorage(); ValueDict d((ValueDictStorage*)(data.ref)); d.retain(); return d; }
 

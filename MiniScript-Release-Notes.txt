@@ -167,3 +167,5 @@ the next line.  Works in both REPL and script mode.  {#8}
 
 - MiniScript now has a hard limit of 256 arguments in one call; exceeding this will throw a runtime error saying "Argument limit exceeded". {#35}
 
+- Fixed a recently introduced memory leak in the C++ version.
+

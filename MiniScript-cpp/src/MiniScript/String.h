@@ -167,7 +167,12 @@ namespace MiniScript {
 		friend class Value;
 		
 	private:
-		String(StringStorage* storage, bool temp=true) : ss(storage), isTemp(temp) { retain(); }
+		// Constructor to make a string directly from StringStorage.  If temp is true,
+		// then the storage will not be retained or released (useful when quickly
+		// making a String out of some other storage we know won't go away while we
+		// work with it).  If false, we still don't retain it (since the storage
+		// should already have a refCount of 1), but we will release it when done.
+		String(StringStorage* storage, bool temp=true) : ss(storage), isTemp(temp) {}
 		void retain() { if (ss and !isTemp) ss->retain(); }
 		void release() { if (ss and !isTemp) { ss->release(); ss = nullptr; } }
 		
@@ -365,7 +370,8 @@ namespace MiniScript {
 		#if DEBUG
 			assert(newbie->dataSize-1 == strlen(newbie->data));
 		#endif
-		return String(newbie, false);
+		
+		return String(newbie, false);	// LEAK
 	}
 	
 	inline String& String::Append(const String& other) {
@@ -467,7 +473,7 @@ namespace MiniScript {
 		StringStorage* newbie = new StringStorage(n1 + n2 + 1);
 		memcpy(newbie->data, ss->data, n1);
 		memcpy(newbie->data+n1, other.ss->data, n2+1);
-		return String(newbie, false);
+		return String(newbie, false);		// LEAK
 	}
 
 	String String::operator+ (const char* c) const {
@@ -479,7 +485,7 @@ namespace MiniScript {
 		StringStorage* newbie = new StringStorage(n1 + n2 + 1);
 		memcpy(newbie->data, ss->data, n1);
 		memcpy(newbie->data+n1, c, n2+1);
-		return String(newbie, false);
+		return String(newbie, false);	// LEAK
 	}
 
 	String operator+ (const char *c, const String& s) {
@@ -490,7 +496,7 @@ namespace MiniScript {
 		StringStorage* newbie = new StringStorage(n1 + n2 + 1);
 		memcpy(newbie->data, c, n1);
 		memcpy(newbie->data+n1, s.ss->data, n2+1);
-		return String(newbie, false);
+		return String(newbie, false);	// LEAK
 	}
 
 	inline String String::ToLower() const {
