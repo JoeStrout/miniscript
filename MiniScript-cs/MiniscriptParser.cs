@@ -707,7 +707,7 @@ namespace Miniscript {
 				if (jumpLines == null) jumpLines = new List<TAC.Line>();
 				jumpLines.Add(jump);
 
-				Value opB = nextLevel(tokens, asLval, statementStart);
+				Value opB = nextLevel(tokens);
 				int tempNum = output.nextTempNum++;
 				output.Add(new TAC.Line(TAC.LTemp(tempNum), TAC.Line.Op.AAndB, val, opB));
 				val = TAC.RTemp(tempNum);

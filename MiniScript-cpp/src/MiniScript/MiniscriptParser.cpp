@@ -544,7 +544,7 @@ namespace MiniScript {
 			TACLine jump = TACLine(Value::null, TACLine::Op::GotoAifNotB, Value::null, val);
 			output->Add(jump);
 			
-			Value opB = (*this.*nextLevel)(tokens, asLval, statementStart);
+			Value opB = (*this.*nextLevel)(tokens, false, false);
 			int tempNum = output->nextTempNum++;
 			output->Add(TACLine(Value::Temp(tempNum), TACLine::Op::AAndB, val, opB));
 			val = Value::Temp(tempNum);
