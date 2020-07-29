@@ -457,10 +457,10 @@ namespace MiniScript {
 			}
 			return IntrinsicResult(self);
 		} else if (self.type == ValueType::String) {
-		    String str = self.ToString();
+			String str = self.ToString();
 			String oldstr = oldval.ToString();
+			if (oldstr.empty()) throw RuntimeException("replace: oldval argument is empty");
 			String newstr = newval.ToString();
-			if(oldstr == "") return IntrinsicResult(self);
 			long idx = 0;
 			while (true) {
 				idx = str.IndexOfB(oldstr, idx);

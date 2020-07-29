@@ -854,6 +854,7 @@ print replace(s, "Bob", "Frank")
 s = "Mello Yellow"
 print replace(s, "ell", "ipp")
 print s.replace("ell", "ipp", 1)
+print replace("", "x", "y")
 l = [1, 2, 5, 2, "foo", 2, "bar"]
 l.replace(2, 22)
 print l
@@ -878,6 +879,7 @@ Helloo Boob!
 Hello Frank!
 Mippo Yippow
 Mippo Yellow
+
 [1, 22, 5, 22, "foo", 22, "bar"]
 [1, 22, 5, 22, "foible", 22, "bar"]
 [1, 3, 5, 3, "foible", 22, "bar"]

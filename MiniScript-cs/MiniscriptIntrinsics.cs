@@ -1021,8 +1021,9 @@ namespace Miniscript {
 					return new Intrinsic.Result(self);
 				} else if (self is ValString) {
 					string str = self.ToString();
-					string oldstr = oldval.ToString();
-					string newstr = newval.ToString();
+					string oldstr = oldval == null ? "" : oldval.ToString();
+					if (string.IsNullOrEmpty(oldstr)) throw new RuntimeException("replace: oldval argument is empty");
+					string newstr = newval == null ? "" : newval.ToString();
 					int idx = 0;
 					while (true) {
 						idx = str.IndexOf(oldstr, idx);
