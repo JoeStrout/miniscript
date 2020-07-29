@@ -457,9 +457,10 @@ namespace MiniScript {
 			}
 			return IntrinsicResult(self);
 		} else if (self.type == ValueType::String) {
-			String str = self.GetString();
+		    String str = self.ToString();
 			String oldstr = oldval.ToString();
 			String newstr = newval.ToString();
+			if(oldstr == "") return IntrinsicResult(self);
 			long idx = 0;
 			while (true) {
 				idx = str.IndexOfB(oldstr, idx);
