@@ -127,12 +127,9 @@ namespace MiniScript {
 		// an ordinary, fully-fledged object you can keep around as long as you like.
 		String GetString() const { Assert(type == ValueType::String or type == ValueType::Var);
 			StringStorage *ss = (StringStorage*)(data.ref);
-      if (data.ref) {
-  			ss->retain();
-  			return String(ss, false);
-      }
-      return String("");
-    }
+			if (!data.ref) return String();
+			ss->retain();
+			return String(ss, false); }
 		ValueList GetList() const { Assert(type == ValueType::List); ValueList l((ValueListStorage*)(data.ref), false); return l; }
 		ValueDict GetDict() { Assert(type == ValueType::Map); if (not data.ref) data.ref = new ValueDictStorage(); ValueDict d((ValueDictStorage*)(data.ref)); d.retain(); return d; }
 
