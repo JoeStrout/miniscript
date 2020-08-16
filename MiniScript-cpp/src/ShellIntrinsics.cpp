@@ -540,7 +540,6 @@ static IntrinsicResult intrinsic_writeLines(Context *context, IntrinsicResult pa
 }
 
 static bool disallowAssignment(ValueDict& dict, Value key, Value value) {
-	printf("Disallowing assignment %s=%s", key.ToString().c_str(), value.ToString().c_str());
 	return true;
 }
 
