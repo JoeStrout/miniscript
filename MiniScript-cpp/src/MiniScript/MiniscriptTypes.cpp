@@ -366,6 +366,9 @@ namespace MiniScript {
 	
 	/// <summary>
 	/// Set an element associated with the given index within this Value.
+	/// This is where we take the opportunity to look for an assignment
+	/// override function, and if found, give that a chance to handle it
+	/// instead.
 	/// </summary>
 	/// <param name="index">index/key for the value to set</param>
 	/// <param name="value">value to set</param>
@@ -375,15 +378,14 @@ namespace MiniScript {
 			ValueList list = GetList();
 			if (i < 0) i += list.Count();
 			if (i < 0 or i >= list.Count()) {
-//				list.forget();
 				throw IndexException(String("Index Error (list index " + String::Format(i) + " out of range)"));
 			}
 			list[i] = value;
-//			list.forget();
 		} else if (type == ValueType::Map) {
 			ValueDict dict = GetDict();
-			dict.SetValue(index, value);
-//			dict.forget();
+			if (!dict.ApplyAssignOverride(index, value)) {
+				dict.SetValue(index, value);
+			}
 		}
 	}
 

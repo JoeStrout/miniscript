@@ -539,6 +539,10 @@ static IntrinsicResult intrinsic_writeLines(Context *context, IntrinsicResult pa
 	return IntrinsicResult((int)written);
 }
 
+static bool disallowAssignment(ValueDict& dict, Value key, Value value) {
+	printf("Disallowing assignment %s=%s", key.ToString().c_str(), value.ToString().c_str());
+	return true;
+}
 
 static IntrinsicResult intrinsic_File(Context *context, IntrinsicResult partialResult) {
 	static ValueDict fileModule;
@@ -559,6 +563,7 @@ static IntrinsicResult intrinsic_File(Context *context, IntrinsicResult partialR
 		fileModule.SetValue("open", i_fopen->GetFunc());
 		fileModule.SetValue("readLines", i_readLines->GetFunc());
 		fileModule.SetValue("writeLines", i_writeLines->GetFunc());
+		fileModule.SetAssignOverride(disallowAssignment);
 	}
 	
 	return IntrinsicResult(fileModule);

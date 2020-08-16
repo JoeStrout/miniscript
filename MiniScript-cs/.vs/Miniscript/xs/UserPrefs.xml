@@ -1,12 +1,13 @@
 ﻿<Properties StartupConfiguration="{C3806B8F-9702-4B39-B6D9-9ECBC298565F}|Default">
   <MonoDevelop.Ide.ItemProperties.Miniscript PreferredExecutionTarget="MonoDevelop.Default" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="MiniscriptIntrinsics.cs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="MiniscriptTAC.cs">
     <Files>
       <File FileName="MiniscriptParser.cs" Line="183" Column="2" />
       <File FileName="MiniscriptLexer.cs" Line="173" Column="34" />
-      <File FileName="MiniscriptTypes.cs" Line="242" Column="24" />
-      <File FileName="MiniscriptIntrinsics.cs" Line="1026" Column="44" />
+      <File FileName="MiniscriptTypes.cs" Line="783" Column="61" />
+      <File FileName="MiniscriptIntrinsics.cs" Line="1021" Column="29" />
       <File FileName="MiniscriptErrors.cs" Line="91" Column="2" />
+      <File FileName="MiniscriptTAC.cs" Line="607" Column="19" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.PinnedWatches />

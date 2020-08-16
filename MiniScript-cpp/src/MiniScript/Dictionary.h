@@ -17,6 +17,8 @@ namespace MiniScript {
 	// samples: 101, 521, 1009
 	#define TABLE_SIZE 251
 
+	template <class K, class V, unsigned int HASH(const K&)> class Dictionary;
+	
 	template <class K, class V>
 	class HashMapEntry
 	{
@@ -54,6 +56,8 @@ namespace MiniScript {
 		long mSize;
 		HashMapEntry<K, V> *mTable[TABLE_SIZE];
 
+		void *assignOverride;
+		
 		template <class K2, class V2, unsigned int HASH(const K2&)> friend class Dictionary;
 		template <class K2, class V2> friend class DictIterator;
 		friend class Value;
@@ -124,15 +128,26 @@ namespace MiniScript {
 		/// ITERATION
 		DictIterator<K,V> GetIterator() const { return DictIterator<K,V>(ds); }
 		
+		/// ASSIGNMENT OVERRIDE
+		typedef bool (*AssignOverrideCallback)(Dictionary<K,V,HASH> &dict, K key, V value);
+		void SetAssignOverride(AssignOverrideCallback callback) { ensureStorage(); ds->assignOverride = (void*)callback; }
+		bool ApplyAssignOverride(K key, V value) {
+			if (ds == NULL or ds->assignOverride == NULL) return false;
+			AssignOverrideCallback cb = (AssignOverrideCallback)(ds->assignOverride);
+			return cb(*this, key, value);
+		}
+		
 		/// DEBUGGING
 		inline int BinEntries(int binNum) const;
 		
+	protected:
+		Dictionary(DictionaryStorage<K, V>* storage, bool temp=true) : ds(storage), isTemp(temp) { retain(); }
+
 	private:
 		friend class Value;
 		
 		inline int hashKey(const K& key) const;
 
-		Dictionary(DictionaryStorage<K, V>* storage, bool temp=true) : ds(storage), isTemp(temp) { retain(); }
 		
 		void forget() { ds = nullptr; }
 		void retain() { if (ds && !isTemp) ds->retain(); }

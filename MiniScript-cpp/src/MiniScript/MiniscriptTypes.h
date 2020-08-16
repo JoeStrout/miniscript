@@ -27,10 +27,10 @@ namespace MiniScript {
 	
 	typedef List<Value> ValueList;
 	typedef ListStorage<Value> ValueListStorage;
-	typedef Dictionary<Value, Value, HashValue> ValueDict;
 	typedef DictionaryStorage<Value, Value> ValueDictStorage;
 	typedef DictIterator<Value, Value> ValueDictIterator;
-	
+	typedef Dictionary<Value, Value, HashValue> ValueDict;
+
 	/// <summary>
 	/// FunctionStorage: our internal representation of a MiniScript function.  This includes
 	/// its parameters and its compiled code.  (It does not include a name -- functions don't

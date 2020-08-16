@@ -513,7 +513,9 @@ namespace MiniScript {
 		if (identifier == "globals" or identifier == "locals" or identifier == "outer") {
 			throw RuntimeException("can't assign to " + identifier);
 		}
-		variables.SetValue(identifier, value);
+		if (!variables.ApplyAssignOverride(identifier, value)) {
+			variables.SetValue(identifier, value);
+		}
 	}
 	
 	/// <summary>
