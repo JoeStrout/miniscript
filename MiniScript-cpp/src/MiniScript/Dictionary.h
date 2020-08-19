@@ -40,7 +40,7 @@ namespace MiniScript {
 	template <class K, class V>
 	class DictionaryStorage : public RefCountedStorage {
 	private:
-		DictionaryStorage() : RefCountedStorage(), mSize(0) { for (int i=0; i<TABLE_SIZE; i++) mTable[i] = nullptr; }
+		DictionaryStorage() : RefCountedStorage(), mSize(0), assignOverride(NULL) { for (int i=0; i<TABLE_SIZE; i++) mTable[i] = nullptr; }
 		~DictionaryStorage() { RemoveAll(); }
 
 		void RemoveAll() {
