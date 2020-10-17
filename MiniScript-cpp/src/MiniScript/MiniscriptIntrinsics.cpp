@@ -545,24 +545,6 @@ namespace MiniScript {
 		int valueIndex;
 	};
 	
-	bool sort_KeyedValue(const KeyedValue& a, const KeyedValue& b) {
-		if (a.sortKey.type != b.sortKey.type) return (a.valueIndex < b.valueIndex);
-		if (a.sortKey.type == ValueType::Number) {
-			double d1 = a.sortKey.DoubleValue();
-			double d2 = b.sortKey.DoubleValue();
-			if (d1 == d2) return (a.valueIndex < b.valueIndex);
-			return d1 < d2;
-		}
-		if (a.sortKey.type == ValueType::String) {
-			String s1 = a.sortKey.GetString();
-			String s2 = b.sortKey.GetString();
-			int comp = s1.Compare(s2);
-			if (comp == 0) return (a.valueIndex < b.valueIndex);
-			return comp < 0;
-		}
-		return (a.valueIndex < b.valueIndex);
-	}
-	
 	bool sort_lesser(const Value& a, const Value& b) {
 		// Always sort null to the end of the list.
 		if (a.type == ValueType::Null) return false;
@@ -580,16 +562,30 @@ namespace MiniScript {
 		return false;
 	}
 
+	bool sort_greater(const Value& a, const Value& b) {
+		return sort_lesser(b, a);
+	}
+
+	bool sort_KeyedValue(const KeyedValue& a, const KeyedValue& b) {
+		return sort_lesser(a.sortKey, b.sortKey);
+	}
+
+	bool sort_KeyedValueDesc(const KeyedValue& a, const KeyedValue& b) {
+		return sort_lesser(b.sortKey, a.sortKey);
+	}
+
 	static IntrinsicResult intrinsic_sort(Context *context, IntrinsicResult partialResult) {
 		Value self = context->GetVar("self");
 		if (self.type != ValueType::List) return IntrinsicResult(self);
 		ValueList list = self.GetList();
 		if (list.Count() < 2) return IntrinsicResult(list);
 		
+		bool ascending = context->GetVar("ascending").BoolValue();
+		
 		Value byKey = context->GetVar("byKey");
 		if (byKey.IsNull()) {
 			// Simple case: sorting values as themselves.
-			std::stable_sort(&list[0], &list[0] + list.Count(), &sort_lesser);
+			std::stable_sort(&list[0], &list[0] + list.Count(), ascending ? &sort_lesser : &sort_greater);
 			return IntrinsicResult(list);
 		}
 		// Harder case: sorting values by a given map key or function.
@@ -613,7 +609,7 @@ namespace MiniScript {
 			} else arr[i].sortKey = item;
 		}
 		// Sort our valueKey array
-		std::sort(arr, arr + list.Count(), &sort_KeyedValue);
+		std::sort(arr, arr + list.Count(), ascending ? &sort_KeyedValue : &sort_KeyedValueDesc);
 		// Build our output (and release the temp array)
 		for (int i=0; i<list.Count(); i++) list[i] = arr[i].value;
 		delete[] arr;
@@ -1018,6 +1014,7 @@ namespace MiniScript {
 		f = Intrinsic::Create("sort");
 		f->AddParam("self", 0);
 		f->AddParam("byKey");
+		f->AddParam("ascending", 1);
 		f->code = &intrinsic_sort;
 		
 		f = Intrinsic::Create("split");

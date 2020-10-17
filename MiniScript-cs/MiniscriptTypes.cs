@@ -172,11 +172,22 @@ namespace Miniscript {
 			return 0;
 		}
 	}
-	
-	public class ValueSorter : IComparer<Value> {
+
+	public class ValueSorter : IComparer<Value>
+	{
 		public static ValueSorter instance = new ValueSorter();
-		public int Compare(Value x, Value y) {
+		public int Compare(Value x, Value y)
+		{
 			return Value.Compare(x, y);
+		}
+	}
+
+	public class ValueReverseSorter : IComparer<Value>
+	{
+		public static ValueReverseSorter instance = new ValueReverseSorter();
+		public int Compare(Value x, Value y)
+		{
+			return Value.Compare(y, x);
 		}
 	}
 

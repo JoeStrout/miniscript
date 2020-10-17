@@ -1151,21 +1151,27 @@ namespace Miniscript {
 			//	they are lists and byKey is an integer index.)
 			// self (list): list to sort
 			// byKey (optional): if given, sort each element by indexing with this key
-			// Returns: null
+			// ascending (optional, default true): if false, sort in descending order
+			// Returns: self (which has been sorted in place)
 			// Example: a = [5,3,4,1,2]; a.sort		results in a == [1, 2, 3, 4, 5]
 			// See also: shuffle
 			f = Intrinsic.Create("sort");
 			f.AddParam("self");
 			f.AddParam("byKey");
+			f.AddParam("ascending", ValNumber.one);
 			f.code = (context, partialResult) => {
 				Value self = context.GetVar("self");
 				ValList list = self as ValList;
 				if (list == null || list.values.Count < 2) return new Intrinsic.Result(self);
-				
+
+				IComparer<Value> sorter;
+				if (context.GetVar("ascending").BoolValue()) sorter = ValueSorter.instance;
+				else sorter = ValueReverseSorter.instance;
+
 				Value byKey = context.GetVar("byKey");
 				if (byKey == null) {
 					// Simple case: sort the values as themselves
-					list.values = list.values.OrderBy((arg) => arg, ValueSorter.instance).ToList();
+					list.values = list.values.OrderBy((arg) => arg, sorter).ToList();
 				} else {
 					// Harder case: sort by a key.
 					int count = list.values.Count;
@@ -1188,7 +1194,7 @@ namespace Miniscript {
 						}
 					}
 					// Now sort our list of keyed values, by key
-					var sortedArr = arr.OrderBy((arg) => arg.sortKey, ValueSorter.instance);
+					var sortedArr = arr.OrderBy((arg) => arg.sortKey, sorter);
 					// And finally, convert that back into our list
 					int idx=0;
 					foreach (KeyedValue kv in sortedArr) {
