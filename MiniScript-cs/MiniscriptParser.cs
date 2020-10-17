@@ -180,7 +180,7 @@ namespace Miniscript {
 			else outputStack.Clear();
 			outputStack.Push(output);
 		}
-		
+
 		/// <summary>
 		/// Partially reset, abandoning backpatches, but keeping already-
 		/// compiled code.  This would be used in a REPL, when the user
@@ -192,6 +192,7 @@ namespace Miniscript {
 			output = outputStack.Peek();
 			output.backpatches.Clear();
 			output.jumpPoints.Clear();
+			output.nextTempNum = 0;
 		}
 
 		public bool NeedMoreInput() {

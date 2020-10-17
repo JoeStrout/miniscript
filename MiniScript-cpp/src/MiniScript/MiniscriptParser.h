@@ -124,6 +124,10 @@ namespace MiniScript {
 		
 		Parser() { Reset(); }
 		
+		/// <summary>
+		/// Completely clear out and reset our parse state, throwing out
+		/// any code and intermediate results.
+		/// </summary>
 		void Reset() {
 			outputStack.Clear();
 			outputStack.Add(ParseState());
@@ -131,7 +135,20 @@ namespace MiniScript {
 			pendingState.Clear();
 			pending = false;
 		}
-		
+
+		/// <summary>
+		/// Partially reset, abandoning backpatches, but keeping already-
+		/// compiled code.  This would be used in a REPL, when the user
+		/// may want to reset and continue after a botched loop or function.
+		/// </summary>
+		void PartialReset() {
+			while (outputStack.Count() > 1) outputStack.Pop();
+			output = &outputStack[0];
+			output->backpatches.Clear();
+			output->jumpPoints.Clear();
+			output->nextTempNum = 0;
+		}
+
 		bool NeedMoreInput() {
 			return (not partialInput.empty() or outputStack.Count() > 1 or output->backpatches.Count() > 0);
 		}

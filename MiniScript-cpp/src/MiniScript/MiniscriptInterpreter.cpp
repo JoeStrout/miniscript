@@ -106,7 +106,12 @@ namespace MiniScript {
 		if (not vm) {
 			vm = parser->CreateVM(standardOutput);
 			vm->interpreter = this;
-		}
+        } else if (vm->Done() && !parser->NeedMoreInput()) {
+            // Since the machine and parser are both done, we don't really need the previously-compiled
+            // code.  So let's clear it out, as a memory optimization.
+            vm->GetTopContext()->ClearCodeAndTemps();
+			parser->PartialReset();
+        }
 		if (sourceLine == "#DUMP") {
 			//ToDo:			vm->DumpTopContext();
 			return;
@@ -136,6 +141,8 @@ namespace MiniScript {
 			// Attempt to recover from an error by jumping to the end of the code.
 			vm->GetTopContext()->JumpToEnd();
 		}
+        
+        
 	}
 
 	

@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Bucket
+   uuid = "67C751C6-E0A5-417C-B2F7-F335D262DE9F"
    type = "1"
    version = "2.0">
    <Breakpoints>
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
+            uuid = "20FA7F07-7391-435D-ADE7-A95F9F935987"
             shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
@@ -15,7 +17,7 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "64"
             endingLineNumber = "64"
-            landmarkName = "Value::ToString(Machine *vm)"
+            landmarkName = "Value::ToString(vm)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>

@@ -1120,6 +1120,21 @@ print lst.pull + " -> " + lst
 1 -> [2]
 2 -> []
 ======================================================================
+==== List sort.
+lst = [5, 12, 3, 45, 9]  // sorts numerically
+print lst.sort
+lst = [5, "3", 42]  // sorts alphabetically
+print lst.sort
+lst = [2, null, 1]
+print lst.sort
+lst = ["b", null, "a"]
+print lst.sort
+----------------------------------------------------------------------
+[3, 5, 9, 12, 45]
+["3", 5, 42]
+[1, 2, null]
+["a", "b", null]
+======================================================================
 ==== Map push, pop (like a set)
 ==== Note that this is a bit hard to test because of arbitrary order issues.
 sortedStr = function(d)

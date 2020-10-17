@@ -1,14 +1,26 @@
 ﻿<Properties StartupConfiguration="{C3806B8F-9702-4B39-B6D9-9ECBC298565F}|Default">
   <MonoDevelop.Ide.ItemProperties.Miniscript PreferredExecutionTarget="MonoDevelop.Default" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="MiniscriptTAC.cs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="MiniscriptParser.cs">
     <Files>
-      <File FileName="MiniscriptParser.cs" Line="183" Column="2" />
-      <File FileName="MiniscriptLexer.cs" Line="173" Column="34" />
-      <File FileName="MiniscriptTypes.cs" Line="783" Column="61" />
-      <File FileName="MiniscriptIntrinsics.cs" Line="1021" Column="29" />
-      <File FileName="MiniscriptErrors.cs" Line="91" Column="2" />
-      <File FileName="MiniscriptTAC.cs" Line="607" Column="19" />
+      <File FileName="MiniscriptParser.cs" Line="163" Column="3" />
+      <File FileName="MiniscriptLexer.cs" />
+      <File FileName="MiniscriptTypes.cs" />
+      <File FileName="MiniscriptIntrinsics.cs" />
+      <File FileName="MiniscriptErrors.cs" />
+      <File FileName="MiniscriptTAC.cs" />
+      <File FileName="MiniscriptInterpreter.cs" />
     </Files>
+    <Pads>
+      <Pad Id="ProjectPad">
+        <State name="__root__">
+          <Node name="Miniscript" expanded="True">
+            <Node name="Miniscript" expanded="True">
+              <Node name="MiniscriptParser.cs" selected="True" />
+            </Node>
+          </Node>
+        </State>
+      </Pad>
+    </Pads>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.PinnedWatches />
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug|x86" />

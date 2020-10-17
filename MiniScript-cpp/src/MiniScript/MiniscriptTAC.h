@@ -94,6 +94,12 @@ namespace MiniScript {
 			return c;
 		}
 		
+        void ClearCodeAndTemps() {
+            code.Clear();
+            lineNum = 0;
+            temps.Clear();
+        }
+        
 		void StoreValue(Value lhs, Value value);
 
 		void SetTemp(int tempNum, Value value) {

@@ -210,7 +210,12 @@ namespace Miniscript {
 			if (vm == null) {
 				vm = parser.CreateVM(standardOutput);
 				vm.interpreter = new WeakReference(this);
-			}
+			} else if (vm.done && !parser.NeedMoreInput()) {
+				// Since the machine and parser are both done, we don't really need the
+				// previously-compiled code.  So let's clear it out, as a memory optimization.
+				vm.GetTopContext().ClearCodeAndTemps();
+				parser.PartialReset();
+            }
 			if (sourceLine == "#DUMP") {
 				vm.DumpTopContext();
 				return;

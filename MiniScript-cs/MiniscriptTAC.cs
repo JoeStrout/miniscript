@@ -568,7 +568,13 @@ namespace Miniscript {
 			public Context(List<Line> code) {
 				this.code = code;
 			}
-			
+
+			public void ClearCodeAndTemps() {
+		 		code.Clear();
+				lineNum = 0;
+				if (temps != null) temps.Clear();
+			}
+
 			/// <summary>
 			/// Reset this context to the first line of code, clearing out any 
 			/// temporary variables, and optionally clearing out all variables.
@@ -862,7 +868,7 @@ namespace Miniscript {
 				stack = new Stack<Context>();
 				stack.Push(_globalContext);
 			}
-			
+
 			public void Stop() {
 				while (stack.Count > 1) stack.Pop();
 				stack.Peek().JumpToEnd();

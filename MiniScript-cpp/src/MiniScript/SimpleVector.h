@@ -442,7 +442,7 @@ inline void SimpleVector<T>::resizeBuffer(long n)
 	mBuf = newbuf;
 	mBufItems = n;
 	if (mQtyItems > mBufItems) mQtyItems = mBufItems;
-}
+ }
 
 template <class T>
 inline void SimpleVector<T>::resize(long n)
