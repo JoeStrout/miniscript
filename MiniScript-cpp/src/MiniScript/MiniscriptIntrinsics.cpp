@@ -564,13 +564,19 @@ namespace MiniScript {
 	}
 	
 	bool sort_lesser(const Value& a, const Value& b) {
-		if (a.type != b.type) return false;
-		if (a.type == ValueType::Number) {
+		// Always sort null to the end of the list.
+		if (a.type == ValueType::Null) return false;
+		if (b.type == ValueType::Null) return true;
+		// If either argument is a string, do a string comparison
+		if (a.type == ValueType::String) {
+			if (b.type == ValueType::String) return a.GetString() < b.GetString();
+			else return a.GetString() < const_cast<Value&>(b).ToString();
+		} else if (b.type == ValueType::String) return const_cast<Value&>(a).ToString() < b.GetString();
+		// If both arguments are numbers, compare numerically.
+		if (a.type == ValueType::Number && b.type == ValueType::Number) {
 			return a.DoubleValue() < b.DoubleValue();
 		}
-		if (a.type == ValueType::String) {
-			return a.GetString() < b.GetString();
-		}
+		// Otherwise, consider all values equal, for sorting purposes.
 		return false;
 	}
 

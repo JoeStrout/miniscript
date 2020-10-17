@@ -144,12 +144,21 @@ namespace Miniscript {
 			return false;
 		}
 
+		/// <summary>
+		/// Compare two Values for sorting purposes.
+		/// </summary>
 		public static int Compare(Value x, Value y) {
+			// Always sort null to the end of the list.
+			if (x == null) {
+				if (y == null) return 0;
+				return 1;
+            }
+			if (y == null) return -1;
 			// If either argument is a string, do a string comparison
 			if (x is ValString || y is ValString) {
-					var sx = x.ToString();
-					var sy = y.ToString();
-					return sx.CompareTo(sy);
+				var sx = x.ToString();
+				var sy = y.ToString();
+				return sx.CompareTo(sy);
 			}
 			// If both arguments are numbers, compare numerically
 			if (x is ValNumber && y is ValNumber) {
