@@ -35,7 +35,7 @@ namespace MiniScript {
 #endif
 		}
 		virtual ~StringStorage() {
-			if (data) delete data;
+			if (data) delete[] data;
 #if(DEBUG)
 			instanceCount--;
 #endif
