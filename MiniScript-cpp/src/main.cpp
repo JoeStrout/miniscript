@@ -285,7 +285,6 @@ int main(int argc, const char * argv[]) {
 			PrepareShellArgs(argc, argv, i);
 			return DoREPL();
 		} else if (not arg.StartsWith("-")) {
-			PrintHeaderInfo();
 			PrepareShellArgs(argc, argv, i);
 			return DoScriptFile(arg);
 		} else {
