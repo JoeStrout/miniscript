@@ -72,6 +72,7 @@ namespace MiniScript {
 			rs->result = value;
 			rs->done = done;
 		}
+		~IntrinsicResult() { release(); }
 		
 		bool Done() { return not rs or rs->done; }
 		Value Result() { return rs ? rs->result : Value::null; }
