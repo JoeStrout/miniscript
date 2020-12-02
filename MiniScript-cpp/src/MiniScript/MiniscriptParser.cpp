@@ -911,11 +911,11 @@ namespace MiniScript {
 		} else while (true) {
 			AllowLineBreak(tokens); // allow a line break after a comma or open brace
 			
-      // Allow the map to close with a } on its own line. 
-      if(tokens.Peek().type == Token::Type::RCurly) {
-        tokens.Dequeue();
-        break;
-      }
+			// Allow the map to close with a } on its own line. 
+			if(tokens.Peek().type == Token::Type::RCurly) {
+				tokens.Dequeue();
+				break;
+			}
 
 			Value key = ParseExpr(tokens);
 			RequireToken(tokens, Token::Type::Colon);
@@ -947,11 +947,11 @@ namespace MiniScript {
 		} else while (true) {
 			AllowLineBreak(tokens); // allow a line break after a comma or open bracket
 
-      // Allow the map to close with a } on its own line. 
-      if(tokens.Peek().type == Token::Type::RSquare) {
-        tokens.Dequeue();
-        break;
-      }
+			// Allow the map to close with a } on its own line. 
+			if(tokens.Peek().type == Token::Type::RSquare) {
+				tokens.Dequeue();
+				break;
+			}
 
 			Value elem = ParseExpr(tokens);
 			list.Add(elem);
