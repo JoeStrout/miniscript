@@ -946,7 +946,13 @@ namespace MiniScript {
 			tokens.Dequeue();
 		} else while (true) {
 			AllowLineBreak(tokens); // allow a line break after a comma or open bracket
-			
+
+      // Allow the map to close with a } on its own line. 
+      if(tokens.Peek().type == Token::Type::RSquare) {
+        tokens.Dequeue();
+        break;
+      }
+
 			Value elem = ParseExpr(tokens);
 			list.Add(elem);
 			if (RequireEitherToken(tokens, Token::Type::Comma, Token::Type::RSquare).type == Token::Type::RSquare) break;
