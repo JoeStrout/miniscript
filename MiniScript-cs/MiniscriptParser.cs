@@ -1052,6 +1052,12 @@ namespace Miniscript {
 			} else while (true) {
 				AllowLineBreak(tokens); // allow a line break after a comma or open brace
 
+        // Allow the map to close with a } on its own line. 
+        if(tokens.Peek().type == Token.Type.RCurly) {
+          tokens.Dequeue();
+          break;
+        }
+
 				Value key = ParseExpr(tokens);
 				RequireToken(tokens, Token.Type.Colon);
 				AllowLineBreak(tokens); // allow a line break after a colon
