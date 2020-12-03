@@ -59,7 +59,7 @@ namespace MiniScript {
 		Value result;		// final result if done; in-progress data if not done
 		
 	private:
-		IntrinsicResultStorage() {}
+		IntrinsicResultStorage() : done(true) {}
 		virtual ~IntrinsicResultStorage() {}
 		friend class IntrinsicResult;
 	};
@@ -72,6 +72,9 @@ namespace MiniScript {
 			rs->result = value;
 			rs->done = done;
 		}
+		IntrinsicResult(const IntrinsicResult& other) {	((IntrinsicResult&)other).ensureStorage(); rs = other.rs; retain(); }
+		IntrinsicResult& operator= (const IntrinsicResult& other) {	((IntrinsicResult&)other).ensureStorage(); other.rs->refCount++; release(); rs = other.rs; return *this; }
+
 		~IntrinsicResult() { release(); }
 		
 		bool Done() { return not rs or rs->done; }

@@ -357,7 +357,7 @@ print rnd >= 0
 print rnd < 1
 print str(42.0)
 print val("40.2")
-t1 = time; wait(0.1); e = time - t1
+t1 = time; wait 0.1; e = time - t1
 if e >= 0.1 then print "wait OK" else print "wait broken"
 print len("hello")
 print len([1,2,3,4])
@@ -1351,9 +1351,21 @@ x = [1, 2,  // partial line!
 print x
 print "Hello " +
 "world!"
+x = [
+	1,
+	2,
+]
+print x
+d = {
+	"a":1,
+	"b":2,
+}
+print d.a + " and " + d.b
 ----------------------------------------------------------------------
 [1, 2, 3, 4]
 Hello world!
+[1, 2]
+1 and 2
 ======================================================================
 ==== Test binding of function context (i.e. outer scope)
 globA = "Global A"

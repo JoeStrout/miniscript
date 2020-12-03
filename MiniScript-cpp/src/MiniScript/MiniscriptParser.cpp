@@ -903,7 +903,7 @@ namespace MiniScript {
 		if (tokens.Peek().type != Token::Type::LCurly) return (*this.*nextLevel)(tokens, asLval, statementStart);
 		tokens.Dequeue();
 		// NOTE: we must be sure this map gets created at runtime, not here at parse time.
-		// Since it is an immutable object, we need to return a different one each time
+		// Since it is a mutable object, we need to return a different one each time
 		// this code executes (in a loop, function, etc.).  So, we use Op.CopyA below!
 		ValueDict map;
 		if (tokens.Peek().type == Token::Type::RCurly) {
@@ -911,8 +911,8 @@ namespace MiniScript {
 		} else while (true) {
 			AllowLineBreak(tokens); // allow a line break after a comma or open brace
 			
-			// Allow the map to close with a } on its own line. 
-			if(tokens.Peek().type == Token::Type::RCurly) {
+			// Allow the map to close with a } on its own line.
+			if (tokens.Peek().type == Token::Type::RCurly) {
 				tokens.Dequeue();
 				break;
 			}
@@ -938,7 +938,7 @@ namespace MiniScript {
 		if (tokens.Peek().type != Token::Type::LSquare) return (*this.*nextLevel)(tokens, asLval, statementStart);
 		tokens.Dequeue();
 		// NOTE: we must be sure this list gets created at runtime, not here at parse time.
-		// Since it is an immutable object, we need to return a different one each time
+		// Since it is a mutable object, we need to return a different one each time
 		// this code executes (in a loop, function, etc.).  So, we use Op.CopyA below!
 		ValueList list;
 		list.EnsureStorage();
@@ -947,8 +947,8 @@ namespace MiniScript {
 		} else while (true) {
 			AllowLineBreak(tokens); // allow a line break after a comma or open bracket
 
-			// Allow the map to close with a } on its own line. 
-			if(tokens.Peek().type == Token::Type::RSquare) {
+			// Allow the list to close with a ] on its own line.
+			if (tokens.Peek().type == Token::Type::RSquare) {
 				tokens.Dequeue();
 				break;
 			}

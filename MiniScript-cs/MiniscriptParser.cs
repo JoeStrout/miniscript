@@ -1044,7 +1044,7 @@ namespace Miniscript {
 			if (tokens.Peek().type != Token.Type.LCurly) return nextLevel(tokens, asLval, statementStart);
 			tokens.Dequeue();
 			// NOTE: we must be sure this map gets created at runtime, not here at parse time.
-			// Since it is an immutable object, we need to return a different one each time
+			// Since it is a mutable object, we need to return a different one each time
 			// this code executes (in a loop, function, etc.).  So, we use Op.CopyA below!
 			ValMap map = new ValMap();
 			if (tokens.Peek().type == Token.Type.RCurly) {
@@ -1053,7 +1053,7 @@ namespace Miniscript {
 				AllowLineBreak(tokens); // allow a line break after a comma or open brace
 
 				// Allow the map to close with a } on its own line. 
-				if(tokens.Peek().type == Token.Type.RCurly) {
+				if (tokens.Peek().type == Token.Type.RCurly) {
 					tokens.Dequeue();
 					break;
 				}
@@ -1078,7 +1078,7 @@ namespace Miniscript {
 			if (tokens.Peek().type != Token.Type.LSquare) return nextLevel(tokens, asLval, statementStart);
 			tokens.Dequeue();
 			// NOTE: we must be sure this list gets created at runtime, not here at parse time.
-			// Since it is an immutable object, we need to return a different one each time
+			// Since it is a mutable object, we need to return a different one each time
 			// this code executes (in a loop, function, etc.).  So, we use Op.CopyA below!
 			ValList list = new ValList();
 			if (tokens.Peek().type == Token.Type.RSquare) {
@@ -1086,8 +1086,8 @@ namespace Miniscript {
 			} else while (true) {
 				AllowLineBreak(tokens); // allow a line break after a comma or open bracket
 
-				// Allow the map to close with a ] on its own line. 
-				if(tokens.Peek().type == Token.Type.RSquare) {
+				// Allow the list to close with a ] on its own line. 
+				if (tokens.Peek().type == Token.Type.RSquare) {
 					tokens.Dequeue();
 					break;
 				}

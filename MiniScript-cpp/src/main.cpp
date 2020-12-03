@@ -153,7 +153,7 @@ static void PrintToTestOutput(String s) {
 
 static void DoOneIntegrationTest(List<String> sourceLines, long sourceLineNum,
 				 List<String> expectedOutput, long outputLineNum) {
-	//std::cout << "Running test starting at line " << sourceLineNum << std::endl;
+//	std::cout << "Running test starting at line " << sourceLineNum << std::endl;
 	
 	Interpreter miniscript(sourceLines);
 	miniscript.standardOutput = &PrintToTestOutput;
