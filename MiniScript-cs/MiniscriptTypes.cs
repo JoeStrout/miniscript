@@ -573,6 +573,8 @@ namespace Miniscript {
 		public delegate bool AssignOverrideFunc(Value key, Value value);
 		public AssignOverrideFunc assignOverride;
 
+		public delegate void OnCopyFunc(ValMap copy);
+
 		public ValMap() {
 			this.map = new Dictionary<Value, Value>(RValueEqualityComparer.instance);
 		}
@@ -717,14 +719,23 @@ namespace Miniscript {
 			// This is used when a map literal appears in the source, to
 			// ensure that each time that code executes, we get a new, distinct
 			// mutable object, rather than the same object multiple times.
-			var result = new ValMap();
-			foreach (Value k in map.Keys) {
+			var result = new ValMap();			
+			foreach (Value k in map.Keys) {				
 				Value key = k;		// stupid C#!
-				Value value = map[key];
+				Value value = map[key];				
 				if (key is ValTemp || key is ValVar) key = key.Val(context);
 				if (value is ValTemp || value is ValVar) value = value.Val(context);
 				result.map[key] = value;
 			}
+
+			// check to see if there is an OnCopy Callback 
+			var onCopy = (result.Lookup(new ValString("OnCopy")));
+			if (onCopy != null)
+			{
+				OnCopyFunc func = (onCopy as ValWrapper<OnCopyFunc>).UnWrapp();
+				func(result);
+			}
+
 			return result;
 		}
 
@@ -1103,6 +1114,43 @@ namespace Miniscript {
 			}
 		}
 	}
-	
+
+	public class ValWrapper<T> : Value
+	{
+		public object content;
+
+		public ValWrapper(object content)
+		{
+			this.content = content;
+		}
+
+		public override string ToString(TAC.Machine vm)
+		{
+			return content.ToString();
+		}
+
+		public override int Hash(int recursionDepth = 16)
+		{
+			return content.GetHashCode();
+		}
+
+		public override double Equality(Value rhs, int recursionDepth = 16)
+		{
+			return rhs is ValWrapper<T> && ((ValWrapper<T>)rhs).content == content ? 1 : 0;
+		}
+
+		public T UnWrapp()
+		{
+			if (this.content.GetType() == typeof(T))
+			{
+				return (T)this.content;
+			}
+			else
+			{
+				System.Diagnostics.Debug.Print("UnWrapp<>() type Error!");
+				return default(T);
+			}
+		}
+	}
 }
 
