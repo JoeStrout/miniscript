@@ -1147,8 +1147,7 @@ namespace Miniscript {
 			}
 			else
 			{
-				System.Diagnostics.Debug.Print("UnWrapp<>() type Error!");
-				return default(T);
+				throw new TypeException("UnWrapp<>() type Error!");
 			}
 		}
 	}
