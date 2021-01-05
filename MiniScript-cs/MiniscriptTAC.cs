@@ -662,7 +662,10 @@ namespace Miniscript {
 				return defaultValue;
 			}
 
-			
+			public SourceLoc GetSourceLoc() {
+				if (lineNum < 0 || lineNum >= code.Count) return null;
+				return code[lineNum].location;
+			}
 			
 			/// <summary>
 			/// Get the value of a variable available in this context (including
@@ -996,6 +999,14 @@ namespace Miniscript {
 				Intrinsic.shortNames.TryGetValue(val, out result);
 				return result;
 			}
+			
+			public List<SourceLoc> GetStack() {
+				var result = new List<SourceLoc>();
+				foreach (var context in stack) {
+					result.Add(context.GetSourceLoc());
+				}
+				return result;
+			}
 		}
 
 		public static void Dump(List<Line> lines) {
@@ -1023,6 +1034,7 @@ namespace Miniscript {
 		public static ValNumber IntrinsicByName(string name) {
 			return new ValNumber(Intrinsic.GetByName(name).id);
 		}
+		
 	}
 }
 
