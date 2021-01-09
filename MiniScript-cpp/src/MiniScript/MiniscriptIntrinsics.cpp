@@ -30,7 +30,8 @@ namespace MiniScript {
 	List<Intrinsic*> Intrinsic::all;
 	Dictionary<String, Intrinsic*, hashString> Intrinsic::nameMap;
 	IntrinsicResult IntrinsicResult::Null;	// represents a completed, null result
-	
+	IntrinsicResult IntrinsicResult::EmptyString(Value("")); // represents an empty string result
+
 	bool Intrinsics::initialized = false;
 	
 	

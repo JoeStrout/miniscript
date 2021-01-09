@@ -49,7 +49,16 @@ bool exitASAP = false;
 int exitResult = 0;
 ValueList shellArgs;
 
-static Dictionary<Value, FILE*, HashValue> openFileMap;
+static Value _handle("_handle");
+
+// RefCountedStorage class to wrap a FILE*
+class FileHandleStorage : public RefCountedStorage {
+public:
+	FileHandleStorage(FILE *file) : f(file) {}
+	virtual ~FileHandleStorage() { if (f) fclose(f); }
+
+	FILE *f;
+};
 
 // hidden (unnamed) intrinsics, only accessible via other methods (such as the File module)
 Intrinsic *i_getcwd = NULL;
@@ -379,32 +388,47 @@ static IntrinsicResult intrinsic_fopen(Context *context, IntrinsicResult partial
 	if (handle == NULL) return IntrinsicResult::Null;
 	
 	ValueDict instance;
-	instance.SetValue("__isa", FileHandleClass());
+	instance.SetValue(Value::magicIsA, FileHandleClass());
+	
+	Value fileWrapper = Value::NewHandle(new FileHandleStorage(handle));
+	instance.SetValue(_handle, fileWrapper);
+	
 	Value result(instance);
-	openFileMap.SetValue(result, handle);
+	instance.SetValue(result, fileWrapper);
 	
 	return IntrinsicResult(result);
 }
 
 static IntrinsicResult intrinsic_fclose(Context *context, IntrinsicResult partialResult) {
 	Value self = context->GetVar("self");
-	FILE *handle;
-	if (!openFileMap.Get(self, &handle)) return IntrinsicResult(Value::zero);
+	Value fileWrapper = self.Lookup(_handle);
+	if (fileWrapper.IsNull() or fileWrapper.type != ValueType::Handle) return IntrinsicResult::Null;
+	FileHandleStorage *storage = (FileHandleStorage*)fileWrapper.data.ref;
+	FILE *handle = storage->f;
+	if (handle == NULL) return IntrinsicResult(Value::zero);
 	fclose(handle);
-	openFileMap.Remove(self);
+	storage->f = NULL;
 	return IntrinsicResult(Value::one);
 }
 
 static IntrinsicResult intrinsic_isOpen(Context *context, IntrinsicResult partialResult) {
 	Value self = context->GetVar("self");
-	return IntrinsicResult(Value::Truth(openFileMap.ContainsKey(self)));
+	Value fileWrapper = self.Lookup(_handle);
+	if (fileWrapper.IsNull() or fileWrapper.type != ValueType::Handle) return IntrinsicResult::Null;
+	FileHandleStorage *storage = (FileHandleStorage*)fileWrapper.data.ref;
+	return IntrinsicResult(Value::Truth(storage->f != NULL));
 }
 
 static IntrinsicResult intrinsic_fwrite(Context *context, IntrinsicResult partialResult) {
 	Value self = context->GetVar("self");
 	String data = context->GetVar("data").ToString();
-	FILE *handle;
-	if (!openFileMap.Get(self, &handle)) return IntrinsicResult(Value::zero);
+
+	Value fileWrapper = self.Lookup(_handle);
+	if (fileWrapper.IsNull() or fileWrapper.type != ValueType::Handle) return IntrinsicResult::Null;
+	FileHandleStorage *storage = (FileHandleStorage*)fileWrapper.data.ref;
+	FILE *handle = storage->f;
+	if (handle == NULL) return IntrinsicResult(Value::zero);
+
 	size_t written = fwrite(data.c_str(), 1, data.sizeB(), handle);
 	return IntrinsicResult((int)written);
 }
@@ -412,8 +436,11 @@ static IntrinsicResult intrinsic_fwrite(Context *context, IntrinsicResult partia
 static IntrinsicResult intrinsic_fwriteLine(Context *context, IntrinsicResult partialResult) {
 	Value self = context->GetVar("self");
 	String data = context->GetVar("data").ToString();
-	FILE *handle;
-	if (!openFileMap.Get(self, &handle)) return IntrinsicResult(Value::zero);
+	Value fileWrapper = self.Lookup(_handle);
+	if (fileWrapper.IsNull() or fileWrapper.type != ValueType::Handle) return IntrinsicResult::Null;
+	FileHandleStorage *storage = (FileHandleStorage*)fileWrapper.data.ref;
+	FILE *handle = storage->f;
+	if (handle == NULL) return IntrinsicResult(Value::zero);
 	size_t written = fwrite(data.c_str(), 1, data.sizeB(), handle);
 	written += fwrite("\n", 1, 1, handle);
 	return IntrinsicResult((int)written);
@@ -424,9 +451,12 @@ static IntrinsicResult intrinsic_fread(Context *context, IntrinsicResult partial
 	long bytesToRead = context->GetVar("byteCount").IntValue();
 	if (bytesToRead == 0) return IntrinsicResult(Value::emptyString);
 
-	FILE *handle;
-	if (!openFileMap.Get(self, &handle)) return IntrinsicResult::Null;
-
+	Value fileWrapper = self.Lookup(_handle);
+	if (fileWrapper.IsNull() or fileWrapper.type != ValueType::Handle) return IntrinsicResult::Null;
+	FileHandleStorage *storage = (FileHandleStorage*)fileWrapper.data.ref;
+	FILE *handle = storage->f;
+	if (handle == NULL) return IntrinsicResult(Value::zero);
+	
 	// If bytesToRead < 0, read to EOF.
 	// Otherwise, read bytesToRead bytes (1k at a time).
 	char buf[1024];
@@ -442,23 +472,36 @@ static IntrinsicResult intrinsic_fread(Context *context, IntrinsicResult partial
 static IntrinsicResult intrinsic_fposition(Context *context, IntrinsicResult partialResult) {
 	Value self = context->GetVar("self");
 	
-	FILE *handle;
-	if (!openFileMap.Get(self, &handle)) return IntrinsicResult::Null;
+	Value fileWrapper = self.Lookup(_handle);
+	if (fileWrapper.IsNull() or fileWrapper.type != ValueType::Handle) return IntrinsicResult::Null;
+	FileHandleStorage *storage = (FileHandleStorage*)fileWrapper.data.ref;
+	FILE *handle = storage->f;
+	if (handle == NULL) return IntrinsicResult::Null;
+
 	return IntrinsicResult(ftell(handle));
 }
 
 static IntrinsicResult intrinsic_feof(Context *context, IntrinsicResult partialResult) {
 	Value self = context->GetVar("self");
 	
-	FILE *handle;
-	if (!openFileMap.Get(self, &handle)) return IntrinsicResult::Null;
+	Value fileWrapper = self.Lookup(_handle);
+	if (fileWrapper.IsNull() or fileWrapper.type != ValueType::Handle) return IntrinsicResult::Null;
+	FileHandleStorage *storage = (FileHandleStorage*)fileWrapper.data.ref;
+	FILE *handle = storage->f;
+	if (handle == NULL) return IntrinsicResult::Null;
+
+	// Note: feof returns true only after attempting to read PAST the end of the file.
+	// Not after the last successful read.  See: https://stackoverflow.com/questions/34888776
 	return IntrinsicResult(Value::Truth(feof(handle) != 0));
 }
 
 static IntrinsicResult intrinsic_freadLine(Context *context, IntrinsicResult partialResult) {
 	Value self = context->GetVar("self");
-	FILE *handle;
-	if (!openFileMap.Get(self, &handle)) return IntrinsicResult::Null;
+	Value fileWrapper = self.Lookup(_handle);
+	if (fileWrapper.IsNull() or fileWrapper.type != ValueType::Handle) return IntrinsicResult::Null;
+	FileHandleStorage *storage = (FileHandleStorage*)fileWrapper.data.ref;
+	FILE *handle = storage->f;
+	if (handle == NULL) return IntrinsicResult::Null;
 
 	char buf[1024];
 	char *str = fgets(buf, sizeof(buf), handle);

@@ -52,6 +52,7 @@ namespace MiniScript {
 			case ValueType::Function: return "Function";
 			case ValueType::Var: return "Var";
 			case ValueType::SeqElem: return "SeqElem";
+			case ValueType::Handle: return "Handle";
 		}
 		return "Unknown";
 	}
@@ -99,6 +100,9 @@ namespace MiniScript {
 			String s = se->sequence.ToString(vm) + "[" + se->index.ToString(vm) + "]";
 			if (noInvoke) s = String("@") + s;
 			return s;
+		}
+		if (type == ValueType::Handle) {
+			return "Handle";
 		}
 		return String();
 	}
@@ -150,6 +154,7 @@ namespace MiniScript {
 				
 			case ValueType::Var:
 			case ValueType::Temp:
+			case ValueType::Handle:
 				return ToString(vm);
 
 			default:
@@ -258,6 +263,12 @@ namespace MiniScript {
 				return result;
 			}
 
+			case ValueType::Handle:
+			{
+				// Any handle at all is true.
+				return (data.ref != NULL);
+			}
+				
 			default:
 				return false;
 		}
@@ -540,6 +551,9 @@ namespace MiniScript {
 			SeqElemStorage* lhses = (SeqElemStorage*)lhs.data.ref;
 			SeqElemStorage* rhses = (SeqElemStorage*)rhs.data.ref;
 			return (lhses->sequence == rhses->sequence and lhses->index == rhses->index) ? 1 : 0;
+		} else if (lhs.type == ValueType::Handle) {
+			// Handles are equal only if they are the exact same object.
+			return (rhs.type == ValueType::Handle and lhs.data.ref == rhs.data.ref) ? 1 : 0;
 		}
 		return (lhs == rhs) ? 1 : 0;
 	}
@@ -639,9 +653,14 @@ namespace MiniScript {
 				return IntHash((int)(long)data.ref);
 
 			case ValueType::SeqElem:
+			{
 				SeqElemStorage *se = (SeqElemStorage*)data.ref;
 				if (!se) return 0;
 				return se->index.Hash() ^ se->sequence.Hash();
+			} break;
+				
+			case ValueType::Handle:
+				return IntHash((int)(long)data.ref);
 		}
 		return 0;
 	}

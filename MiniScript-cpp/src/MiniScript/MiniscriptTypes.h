@@ -63,7 +63,8 @@ namespace MiniScript {
 		Map,
 		Function,
 		Var,
-		SeqElem
+		SeqElem,
+		Handle		// (any opaque RefCountedData subclass needed by the host app)
 	};
 	
 	String ToString(ValueType type);
@@ -95,6 +96,7 @@ namespace MiniScript {
 		static Value Temp(const int tempNum) { return Value(tempNum, ValueType::Temp); }
 		static Value Var(const String& ident) { return Value(ident, ValueType::Var); }
 		static Value SeqElem(const Value& seq, const Value& idx);
+		static Value NewHandle(RefCountedStorage* data) { Value v; v.type = ValueType::Handle; v.data.ref = data; return v; }
 		static Value Truth(bool b) { return b ? one : zero; }
 		static Value Truth(double b);
 
