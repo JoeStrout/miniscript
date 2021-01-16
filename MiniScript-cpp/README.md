@@ -13,7 +13,9 @@ You can probably also follow the Linux procedure, if you prefer command-line too
 
 ## Building for Linux
 
-Use `make` to build the miniscript executable.  You can also `make install` to install it in /usr/local/bin, or `make clean` to clean up.
+Prerequisites: You will need make, gcc, and g++ installed.
+
+Then use `make` to build the miniscript executable.  You can also `make install` to install it in /usr/local/bin, or `make clean` to clean up.  
 
 
 ## Building for Windows
