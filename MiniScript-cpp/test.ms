@@ -13,7 +13,7 @@ writer = file.open("fileToWrite.txt", "w")
 // And let's just copy the lines from one to the other, with modification.
 while true
 	line = reader.readLine
-	if line == null then exit
+	if line == null then break
 	print "Copying: " + line + " -> " + line.upper
 	writer.writeLine line.upper
 end while

@@ -22,12 +22,14 @@
 
 #include <stdio.h>
 #if _WIN32 || _WIN64
+	#define WINDOWS 1
 	#include <windows.h>
 	#include <Shlwapi.h>
 	#include <Fileapi.h>
 	#include <direct.h>
 	#include <time.h>
 	#define getcwd _getcwd
+	#define setenv _setenv
 #else
 	#include <fcntl.h>
 	#include <unistd.h>
@@ -42,6 +44,11 @@
 		#include <sys/sendfile.h>
 	#endif
 #endif
+
+extern "C" {
+	// list of environment variables provided by C standard library:
+	extern char **environ;
+}
 
 using namespace MiniScript;
 
@@ -628,6 +635,33 @@ static ValueDict& FileHandleClass() {
 	return result;
 }
 
+static IntrinsicResult intrinsic_env(Context *context, IntrinsicResult partialResult) {
+	static ValueDict envMap;
+	if (envMap.Count() == 0) {
+		// The stdlib-supplied `environ` is a null-terminated array of char* (C strings).
+		// Each such C string is of the form NAME=VALUE.  So we need to split on the
+		// first '=' to separate this into keys and values for our env map.
+		for (char **current = environ; *current; current++) {
+			char* eqPos = strchr(*current, '=');
+			if (!eqPos) continue;	// (should never happen, but just in case)
+			String varName(*current, eqPos - *current);
+			String valueStr(eqPos+1);
+			envMap.SetValue(varName, valueStr);
+		}
+	}
+	return IntrinsicResult(envMap);
+}
+
+static bool assignEnvVar(ValueDict& dict, Value key, Value value) {
+	#if WINDOWS
+		_putenv_s(key.ToString().c_str(), value.ToString().c_str());
+	#else
+		setenv(key.ToString().c_str(), value.ToString().c_str(), 1);
+	#endif
+	return false;	// allow standard assignment to also apply.
+}
+
+
 /// Add intrinsics that are not part of core MiniScript, but which make sense
 /// in this command-line environment.
 void AddShellIntrinsics() {
@@ -639,6 +673,9 @@ void AddShellIntrinsics() {
 	
 	f = Intrinsic::Create("shellArgs");
 	f->code = &intrinsic_shellArgs;
+	
+	f = Intrinsic::Create("env");
+	f->code = &intrinsic_env;
 	
 	f = Intrinsic::Create("input");
 	f->AddParam("prompt", "");
