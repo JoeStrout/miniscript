@@ -288,8 +288,7 @@ namespace Miniscript {
 
 		public void REPL(string line) {
 			Parse(line);
-			TAC.Dump(output.code);
-
+		
 			TAC.Machine vm = CreateVM(null);
 			while (!vm.done) vm.Step();
 		}
@@ -1151,6 +1150,7 @@ namespace Miniscript {
 			} else if (tok.type == Token.Type.String) {
 				return new ValString(tok.text);
 			} else if (tok.type == Token.Type.Identifier) {
+				if (tok.text == "self") return ValVar.self;
 				return new ValVar(tok.text);
 			} else if (tok.type == Token.Type.Keyword) {
 				switch (tok.text) {
@@ -1204,7 +1204,7 @@ namespace Miniscript {
 				Console.WriteLine(e.ToString() + " while parsing:");
 				Console.WriteLine(src);
 			}
-			if (dumpTac && parser.output != null) TAC.Dump(parser.output.code);
+			if (dumpTac && parser.output != null) TAC.Dump(parser.output.code, -1);
 		}
 
 		public static void RunUnitTests() {

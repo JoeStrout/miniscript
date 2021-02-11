@@ -178,7 +178,8 @@ namespace Miniscript {
 					throw new RuntimeException("unknown opcode: " + op);
 					
 				}
-//				if (comment != null) text = text + "\t// " + comment;
+				//if (comment != null) text = text + "\t// " + comment;
+				if (location != null) text = text + "\t// " + location;
 				return text;
 			}
 
@@ -536,7 +537,8 @@ namespace Miniscript {
 			public List<Line> code;			// TAC lines we're executing
 			public int lineNum;				// next line to be executed
 			public ValMap variables;		// local variables for this call frame
-			public ValMap outerVars;		// variables of the context where this function was defined
+			public ValMap outerVars;        // variables of the context where this function was defined
+			public Value self;				// value of self in this context
 			public Stack<Value> args;		// pushed arguments for upcoming calls
 			public Context parent;			// parent (calling) context
 			public Value resultStorage;		// where to store the return value (in the calling context)
@@ -591,6 +593,10 @@ namespace Miniscript {
 			}
 
 			public void SetTemp(int tempNum, Value value) {
+				// OFI: let each context record how many temps it will need, so we
+				// can pre-allocate this list with that many and avoid having to
+				// grow it later.  Also OFI: do lifetime analysis on these temps
+				// and reuse ones we don't need anymore.
 				if (temps == null) temps = new List<Value>();
 				while (temps.Count <= tempNum) temps.Add(null);
 				temps[tempNum] = value;
@@ -609,6 +615,7 @@ namespace Miniscript {
 				if (identifier == "globals" || identifier == "locals") {
 					throw new RuntimeException("can't assign to " + identifier);
 				}
+				if (identifier == "self") self = value;
 				if (variables == null) variables = new ValMap();
 				if (variables.assignOverride == null || !variables.assignOverride(new ValString(identifier), value)) {
 					variables[identifier] = value;
@@ -632,6 +639,7 @@ namespace Miniscript {
 			public int GetLocalInt(string identifier, int defaultValue = 0) {
 				Value result;
 				if (variables != null && variables.TryGetValue(identifier, out result)) {
+					if (result == null) return 0;	// variable found, but its value was null!
 					return result.IntValue();
 				}
 				return defaultValue;
@@ -640,6 +648,7 @@ namespace Miniscript {
 			public bool GetLocalBool(string identifier, bool defaultValue = false) {
 				Value result;
 				if (variables != null && variables.TryGetValue(identifier, out result)) {
+					if (result == null) return false;	// variable found, but its value was null!
 					return result.BoolValue();
 				}
 				return defaultValue;
@@ -648,6 +657,7 @@ namespace Miniscript {
 			public float GetLocalFloat(string identifier, float defaultValue = 0) {
 				Value result;
 				if (variables != null && variables.TryGetValue(identifier, out result)) {
+					if (result == null) return 0;	// variable found, but its value was null!
 					return result.FloatValue();
 				}
 				return defaultValue;
@@ -675,7 +685,8 @@ namespace Miniscript {
 			/// <param name="identifier">name of identifier to look up</param>
 			/// <returns>value of that identifier</returns>
 			public Value GetVar(string identifier) {
-				// check for special built-in identifiers 'locals' and 'globals'
+				// check for special built-in identifiers 'locals', 'globals', etc.
+				if (identifier == "self") return self;
 				if (identifier == "locals") {
 					if (variables == null) variables = new ValMap();
 					return variables;
@@ -706,8 +717,8 @@ namespace Miniscript {
 				// Check the global scope (if that's not us already).
 				if (parent != null) {
 					Context globals = root;
-					if (globals.variables != null && globals.variables.ContainsKey(identifier)) {
-						return globals.variables[identifier];
+					if (globals.variables != null && globals.variables.TryGetValue(identifier, out result)) {
+						return result;
 					}
 				}
 
@@ -777,8 +788,7 @@ namespace Miniscript {
 				// into local variables corrersponding to parameter names.
 				// As a special case, skip over the first parameter if it is named 'self'
 				// and we were invoked with dot syntax.
-				int selfParam = (gotSelf && func.parameters.Count > 0 && func.parameters[0].name == "self"
-				 ? 1 : 0);
+				int selfParam = (gotSelf && func.parameters.Count > 0 && func.parameters[0].name == "self" ? 1 : 0);
 				for (int i = 0; i < argCount; i++) {
 					// Careful -- when we pop them off, they're in reverse order.
 					Value argument = args.Pop();
@@ -786,7 +796,9 @@ namespace Miniscript {
 					if (paramNum >= func.parameters.Count) {
 						throw new TooManyArgumentsException();
 					}
-					result.SetVar(func.parameters[paramNum].name, argument);
+					string param = func.parameters[paramNum].name;
+					if (param == "self") result.self = argument;
+					else result.SetVar(param, argument);
 				}
 				// And fill in the rest with default values
 				for (int paramNum = argCount+selfParam; paramNum < func.parameters.Count; paramNum++) {
@@ -796,11 +808,12 @@ namespace Miniscript {
 				return result;
 			}
 
+			/// <summary>
+			/// This function prints the three-address code to the console, for debugging purposes.
+			/// </summary>
 			public void Dump() {
 				Console.WriteLine("CODE:");
-				for (int i = 0; i < code.Count; i++) {
-					Console.WriteLine("{0} {1:00}: {2}", i == lineNum ? ">" : " ", i, code[i]);
-				}
+				TAC.Dump(code, lineNum);
 
 				Console.WriteLine("\nVARS:");
 				if (variables == null) {
@@ -899,7 +912,16 @@ namespace Miniscript {
 				try {
 					DoOneLine(line, context);
 				} catch (MiniscriptException mse) {
-					if (mse.location == null) mse.location = line.location;
+					if (mse.location == null) {
+						UnityEngine.Debug.Log("Looking for location for " + mse.ToString() + "...");
+						foreach (Context c in stack) {
+							UnityEngine.Debug.Log($"Checking line {c.lineNum} of {c.code.Count}...");
+							if (c.lineNum >= c.code.Count) continue;
+							mse.location = c.code[c.lineNum].location;
+							UnityEngine.Debug.Log("Found " + mse.location);
+							if (mse.location != null) break;
+						}
+					}
 					throw mse;
 				}
 			}
@@ -915,7 +937,7 @@ namespace Miniscript {
 				int argCount = 0;
 				Value self = null;	// "self" is always null for a manually pushed call
 				Context nextContext = stack.Peek().NextCallContext(func.function, argCount, self != null, null);
-				if (self != null) nextContext.SetVar("self", self);
+				if (self != null) nextContext.self = self;
 				nextContext.resultStorage = resultStorage;
 				stack.Push(nextContext);				
 			}
@@ -938,7 +960,7 @@ namespace Miniscript {
 							// bind "self" to the object used to invoke the call, except
 							// when invoking via "super"
 							Value seq = ((ValSeqElem)(line.rhsA)).sequence;
-							if (seq is ValVar && ((ValVar)seq).identifier == "super") self = context.GetVar("self");
+							if (seq is ValVar && ((ValVar)seq).identifier == "super") self = context.self;
 							else self = context.ValueInContext(seq);
 						}
 						ValFunction func = (ValFunction)funcVal;
@@ -946,7 +968,7 @@ namespace Miniscript {
 						Context nextContext = context.NextCallContext(func.function, argCount, self != null, line.lhs);
 						nextContext.outerVars = func.outerVars;
 						if (valueFoundIn != null) nextContext.SetVar("super", super);
-						if (self != null) nextContext.SetVar("self", self);	// (set only if bound above)
+						if (self != null) nextContext.self = self;	// (set only if bound above)
 						stack.Push(nextContext);
 					} else {
 						// The user is attempting to call something that's not a function.
@@ -1009,10 +1031,15 @@ namespace Miniscript {
 			}
 		}
 
-		public static void Dump(List<Line> lines) {
+		public static void Dump(List<Line> lines, int lineNumToHighlight, int indent=0) {
 			int lineNum = 0;
 			foreach (Line line in lines) {
-				Console.WriteLine((lineNum++).ToString() + ". " + line);
+				string s = (lineNum == lineNumToHighlight ? "> " : "  ") + (lineNum++) + ". ";
+				Console.WriteLine(s + line);
+				if (line.op == Line.Op.BindAssignA) {
+					ValFunction func = (ValFunction)line.rhsA;
+					Dump(func.function.code, -1, indent+1);
+				}
 			}
 		}
 
@@ -1020,6 +1047,7 @@ namespace Miniscript {
 			return new ValTemp(tempNum);
 		}
 		public static ValVar LVar(string identifier) {
+			if (identifier == "self") return ValVar.self;
 			return new ValVar(identifier);
 		}
 		public static ValTemp RTemp(int tempNum) {

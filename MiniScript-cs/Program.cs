@@ -147,7 +147,6 @@ class MainClass {
 			Print("Quick test not found, skipping...\n");
 		}
 
-
 		if (args.Length > 0) {
 			RunFile(args[0]);
 			return;

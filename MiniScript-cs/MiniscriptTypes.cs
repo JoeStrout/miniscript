@@ -672,7 +672,7 @@ namespace Miniscript {
 		
 		/// <summary>
 		/// Look up a value in this dictionary, walking the __isa chain to find
-		/// it in a parent object if necessary; return both the value found an
+		/// it in a parent object if necessary; return both the value found and
 		/// (via the output parameter) the map it was found in.
 		/// </summary>
 		/// <param name="key">key to search for</param>
@@ -959,11 +959,13 @@ namespace Miniscript {
 		}
 
 		public override Value Val(TAC.Context context) {
+			if (this == self) return context.self;
 			return context.GetVar(identifier);
 		}
 
 		public override Value Val(TAC.Context context, out ValMap valueFoundIn) {
 			valueFoundIn = null;
+			if (this == self) return context.self;
 			return context.GetVar(identifier);
 		}
 
@@ -982,6 +984,9 @@ namespace Miniscript {
 
 		// Special name for the implicit result variable we assign to on expression statements:
 		public static ValVar implicitResult = new ValVar("_");
+
+		// Special var for 'self'
+		public static ValVar self = new ValVar("self");
 	}
 
 	public class ValSeqElem : Value {
@@ -1052,12 +1057,16 @@ namespace Miniscript {
 		}
 		
 		public override Value Val(TAC.Context context, out ValMap valueFoundIn) {
+			Value baseSeq = sequence;
+			if (sequence == ValVar.self) {
+				baseSeq = context.self;
+			}
 			valueFoundIn = null;
 			Value idxVal = index == null ? null : index.Val(context);
-			if (idxVal is ValString) return Resolve(sequence, ((ValString)idxVal).value, context, out valueFoundIn);
+			if (idxVal is ValString) return Resolve(baseSeq, ((ValString)idxVal).value, context, out valueFoundIn);
 			// Ok, we're searching for something that's not a string;
 			// this can only be done in maps and lists (and lists, only with a numeric index).
-			Value baseVal = sequence.Val(context);
+			Value baseVal = baseSeq.Val(context);
 			if (baseVal is ValMap) {
 				Value result = ((ValMap)baseVal).Lookup(idxVal, out valueFoundIn);
 				if (valueFoundIn == null) throw new KeyException(idxVal.CodeForm(context.vm, 1));
