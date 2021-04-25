@@ -1223,7 +1223,7 @@ namespace Miniscript {
 			TestValidParse("while true; if true then; break; else; print 1; end if; end while");
 			TestValidParse("x = 0 or\n1");
 			TestValidParse("x = [1, 2, \n 3]");
-			TestValidParse("range 1,\n10, 2", true);
+			TestValidParse("range 1,\n10, 2");
 		}
 	}
 }

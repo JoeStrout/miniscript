@@ -912,13 +912,11 @@ namespace Miniscript {
 				try {
 					DoOneLine(line, context);
 				} catch (MiniscriptException mse) {
+					if (mse.location == null) mse.location = line.location;
 					if (mse.location == null) {
-						UnityEngine.Debug.Log("Looking for location for " + mse.ToString() + "...");
 						foreach (Context c in stack) {
-							UnityEngine.Debug.Log($"Checking line {c.lineNum} of {c.code.Count}...");
 							if (c.lineNum >= c.code.Count) continue;
 							mse.location = c.code[c.lineNum].location;
-							UnityEngine.Debug.Log("Found " + mse.location);
 							if (mse.location != null) break;
 						}
 					}
