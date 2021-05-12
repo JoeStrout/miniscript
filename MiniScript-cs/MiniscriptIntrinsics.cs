@@ -359,8 +359,8 @@ namespace Miniscript {
 			//	bit is set in exactly one (not zero or both) of the arguments.
 			// i (number, default 0): first integer argument
 			// j (number, default 0): second integer argument
-			// Returns: bitwise `and` of i and j
-			// Example: bitAnd(14, 7)		returns 9
+			// Returns: bitwise `xor` of i and j
+			// Example: bitXor(14, 7)		returns 9
 			// See also: bitAnd; bitOr
 			f = Intrinsic.Create("bitXor");
 			f.AddParam("i", 0);
