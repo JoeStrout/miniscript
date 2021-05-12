@@ -35,9 +35,6 @@ namespace Miniscript {
 	public class MiniscriptException: Exception {
 		public SourceLoc location;
 
-		public MiniscriptException() {
-		}
-
 		public MiniscriptException(string message) : base(message) {
 		}
 
@@ -111,8 +108,6 @@ namespace Miniscript {
 	}
 
 	public class KeyException : RuntimeException {
-		private KeyException() {}		// don't use this version
-
 		public KeyException(string key) : base("Key Not Found: '" + key + "' not found in map") {
 		}
 
@@ -154,8 +149,6 @@ namespace Miniscript {
 	}
 
 	public class UndefinedIdentifierException : RuntimeException {
-		private UndefinedIdentifierException() {}		// don't call this version!
-
 		public UndefinedIdentifierException(string ident) : base(
 			"Undefined Identifier: '" + ident + "' is unknown in this context") {
 		}
