@@ -1261,6 +1261,7 @@ print "C"
 print rnd == rnd
 print @rnd == @rnd
 print @rnd
+print round(12345, -3)
 ----------------------------------------------------------------------
 A
 func invoked!
@@ -1271,6 +1272,7 @@ C
 0
 1
 FUNCTION(seed)
+12000
 ======================================================================
 ==== Check that invoking a non-function with arguments throws
 ==== a "too many arguments" exception (issue #35).

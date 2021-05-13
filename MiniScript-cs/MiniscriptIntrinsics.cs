@@ -1043,7 +1043,7 @@ namespace Miniscript {
 			//	a negative number for decimalPlaces, then rounds to a power of 10:
 			//	-1 rounds to the nearest 10, -2 rounds to the nearest 100, etc.
 			// x (number): number to round
-			// decimalePlaces (number, defaults to 0): how many places past the decimal point to round to
+			// decimalPlaces (number, defaults to 0): how many places past the decimal point to round to
 			// Example: round(pi, 2)		returns 3.14
 			// Example: round(12345, -3)		returns 12000
 			f = Intrinsic.Create("round");
@@ -1052,7 +1052,13 @@ namespace Miniscript {
 			f.code = (context, partialResult) => {
 				double num = context.GetVar("x").DoubleValue();
 				int decimalPlaces = context.GetVar("decimalPlaces").IntValue();
-				return new Intrinsic.Result(Math.Round(num, decimalPlaces));
+				if (decimalPlaces >= 0) {
+					num = Math.Round(num, decimalPlaces);
+				} else {
+					double pow10 = Math.Pow(10, -decimalPlaces);
+					num = Math.Round(num / pow10) * pow10;
+				}
+				return new Intrinsic.Result(num);
 			};
 
 
