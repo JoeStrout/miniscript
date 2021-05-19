@@ -1581,6 +1581,7 @@ namespace Miniscript {
 				_mapType["len"] = Intrinsic.GetByName("len").GetFunc();
 				_mapType["pop"] = Intrinsic.GetByName("pop").GetFunc();
 				_mapType["push"] = Intrinsic.GetByName("push").GetFunc();
+				_mapType["pull"] = Intrinsic.GetByName("pull").GetFunc();
 				_mapType["shuffle"] = Intrinsic.GetByName("shuffle").GetFunc();
 				_mapType["sum"] = Intrinsic.GetByName("sum").GetFunc();
                 _mapType["remove"] = Intrinsic.GetByName("remove").GetFunc();
