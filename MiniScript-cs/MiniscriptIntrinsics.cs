@@ -971,7 +971,7 @@ namespace Miniscript {
 			// maxCount (number, optional): if given, replace no more than this many
 			// Returns: modified list or map, or new string, with replacements done
 			// Example: "Happy Pappy".replace("app", "ol")		returns "Holy Poly"
-			// Example: [1,2,3,2,5].replace(2, 42)		returns (and mutates to) [2, 42, 3, 42, 5]
+			// Example: [1,2,3,2,5].replace(2, 42)		returns (and mutates to) [1, 42, 3, 42, 5]
 			// Example: d = {1: "one"}; d.replace("one", "ichi")		returns (and mutates to) {1: "ichi"}
 			f = Intrinsic.Create("replace");
 			f.AddParam("self");
