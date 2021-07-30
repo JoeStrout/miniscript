@@ -178,7 +178,7 @@ namespace MiniScript {
 		/// <returns>value associated with that key, or null if not found</returns>
 		Value Lookup(Value key) {
 			Value result = null;
-			Value& obj = *this;
+			Value obj = *this;
 			while (obj.type == ValueType::Map) {
 				ValueDict d = obj.GetDict();
 				if (d.Get(key, &result)) return result;

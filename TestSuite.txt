@@ -1369,6 +1369,18 @@ Hello world!
 [1, 2]
 1 and 2
 ======================================================================
+==== Test map entry lookups, both inherited and direct.
+A = {"one":1, "two":2}
+B = new A
+B.two = "202"
+print B.two
+print B.one
+print B.two
+----------------------------------------------------------------------
+202
+1
+202
+======================================================================
 ==== Test binding of function context (i.e. outer scope)
 globA = "Global A"
 funcA = function()

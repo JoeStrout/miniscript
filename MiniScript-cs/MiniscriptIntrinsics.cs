@@ -1053,6 +1053,7 @@ namespace Miniscript {
 				double num = context.GetVar("x").DoubleValue();
 				int decimalPlaces = context.GetVar("decimalPlaces").IntValue();
 				if (decimalPlaces >= 0) {
+					if (decimalPlaces > 15) decimalPlaces = 15;
 					num = Math.Round(num, decimalPlaces);
 				} else {
 					double pow10 = Math.Pow(10, -decimalPlaces);
