@@ -30,7 +30,7 @@ namespace MiniScript {
 	JumpPoint ParseState::CloseJumpPoint(String keyword) {
 		long idx = jumpPoints.Count() - 1;
 		if (idx < 0 || jumpPoints[idx].keyword != keyword) {
-			throw new CompilerException(String("'end ") + keyword + "' without matching '" + keyword + "'");
+			CompilerException(String("'end ") + keyword + "' without matching '" + keyword + "'").raise();
 		}
 		JumpPoint result = jumpPoints[idx];
 		jumpPoints.RemoveAt(idx);
@@ -64,7 +64,7 @@ namespace MiniScript {
 				patchIt = alsoBreak;
 			} else {
 				// Not the expected patch, and not "break"; we have a mismatched block start/end.
-				throw new CompilerException("'" + keywordFound + "' skips expected '" + backpatches[idx].waitingFor + "'");
+				CompilerException("'" + keywordFound + "' skips expected '" + backpatches[idx].waitingFor + "'").raise();
 			}
 			if (patchIt) {
 				code[backpatches[idx].lineNum].rhsA = target;
@@ -72,7 +72,7 @@ namespace MiniScript {
 			}
 		}
 		// Make sure we found one...
-		if (!done) throw new CompilerException("'" + keywordFound + "' without matching block starter");
+		if (!done) CompilerException("'" + keywordFound + "' without matching block starter").raise();
 	}
 
 	/// <summary>
@@ -96,12 +96,12 @@ namespace MiniScript {
 				// Not the expected keyword, but "break"; this is always OK.
 			} else {
 				// Not the expected patch, and not "break"; we have a mismatched block start/end.
-				throw new CompilerException("'end if' without matching 'if'");
+				CompilerException("'end if' without matching 'if'").raise();
 			}
 			idx--;
 		}
 		// If we get here, we never found the expected if:MARK.  That's an error.
-		throw new CompilerException("'end if' without matching 'if'");
+		CompilerException("'end if' without matching 'if'").raise();
 	}
 	
 	static void AllowLineBreak(Lexer tokens) {
@@ -147,8 +147,8 @@ namespace MiniScript {
 		if (not replMode and NeedMoreInput()) {
 			// Whoops, we need more input but we don't have any.  This is an error.
 			if (outputStack.Count() > 1) {
-				throw new CompilerException(errorContext, tokens.lineNum() + 1,
-											"'function' without matching 'end function'");
+				CompilerException(errorContext, tokens.lineNum() + 1,
+					"'function' without matching 'end function'").raise();
 			} else if (output->backpatches.Count() > 0) {
 				BackPatch bp = output->backpatches[output->backpatches.Count() - 1];
 				String msg;
@@ -156,7 +156,7 @@ namespace MiniScript {
 				else if (bp.waitingFor == "end if") msg = "'if' without matching 'end if'";
 				else if (bp.waitingFor == "end while") msg = "'while' without matching 'end while'";
 				else msg = "unmatched block opener";
-				throw new CompilerException(errorContext, tokens.lineNum() + 1, msg);
+				CompilerException(errorContext, tokens.lineNum() + 1, msg).raise();
 			}
 		}
 	}
@@ -186,7 +186,7 @@ namespace MiniScript {
 				} else {
 					CompilerException* e = new CompilerException("'end function' without matching block starter");
 					e->location = location;
-					throw e;
+					throw;
 				}
 				continue;
 			}
@@ -195,9 +195,9 @@ namespace MiniScript {
 			long outputStart = output->code.Count();
 			try {
 				ParseStatement(tokens);
-			} catch (MiniscriptException* mse) {
-				if (mse->location.lineNum == 0) mse->location = location;
-				throw mse;
+			} catch (MiniscriptException& mse) {
+				if (mse.location.lineNum == 0) mse.location = location;
+				throw;
 			}
 			// Fill in the location info for all the TAC lines we just generated.
 			for (long i = outputStart; i < output->code.Count(); i++) {
@@ -290,8 +290,8 @@ namespace MiniScript {
 				RequireToken(tokens, Token::Type::Keyword, "in");
 				Value stuff = ParseExpr(tokens);
 				if (stuff.type == ValueType::Null) {
-					throw new CompilerException(errorContext, tokens.lineNum(),
-												"sequence expression expected for 'for' loop");
+					CompilerException(errorContext, tokens.lineNum(),
+						"sequence expression expected for 'for' loop").raise();
 				}
 
 				// Create an index variable to iterate over the sequence, initialized to -1.
@@ -327,14 +327,14 @@ namespace MiniScript {
 			} else if (keyword == "continue") {
 				// Jump unconditionally back to the current open jump point.
 				if (output->jumpPoints.Count() == 0) {
-					throw new CompilerException(errorContext, tokens.lineNum(),
-												"'continue' without open loop block");
+					CompilerException(errorContext, tokens.lineNum(),
+					  "'continue' without open loop block").raise();
 				}
 				JumpPoint jump = output->jumpPoints.Last();
 				output->Add(TACLine(TACLine::Op::GotoA, jump.lineNum));
 			} else {
-					throw new CompilerException(errorContext, tokens.lineNum(),
-												"unexpected keyword '" + keyword + "' at start of line");
+					CompilerException(errorContext, tokens.lineNum(),
+						"unexpected keyword '" + keyword + "' at start of line").raise();
 			}
 		} else {
 			ParseAssignment(tokens, allowExtra);
@@ -451,8 +451,8 @@ namespace MiniScript {
 			//			identifier
 			//	or...	identifier = expr
 			Token id = tokens.Dequeue();
-			if (id.type != Token::Type::Identifier) throw new CompilerException(errorContext, tokens.lineNum(),
-											String("got ") + id.ToString() + " where an identifier is required");
+			if (id.type != Token::Type::Identifier) CompilerException(errorContext, tokens.lineNum(),
+						String("got ") + id.ToString() + " where an identifier is required").raise();
 			Value defaultValue;
 			if (tokens.Peek().type == Token::Type::OpAssign) {
 				tokens.Dequeue();	// skip '='
@@ -468,8 +468,8 @@ namespace MiniScript {
 		// Now, we need to parse the function body into its own parsing context.
 		// But don't push it yet -- we're in the middle of parsing some expression
 		// or statement in the current context, and need to finish that.
-		if (pending) throw new CompilerException(errorContext, tokens.lineNum(),
-													  "can't start two functions in one statement");
+		if (pending) CompilerException(errorContext, tokens.lineNum(),
+				  "can't start two functions in one statement").raise();
 		pendingState = ParseState();
 		pendingState.code = List<TACLine>(16);	// Important to ensure we have storage, which will get shared with that in outputStack.
 		pendingState.nextTempNum = 1;			// (since 0 is used to hold return value)
@@ -984,7 +984,7 @@ namespace MiniScript {
 				ok = sscanf(tok.text.c_str(), "%lf", &retval);
 			}
 			if (ok == 1) return Value(retval);
-			throw new CompilerException("invalid numeric literal: " + tok.text);
+			CompilerException("invalid numeric literal: " + tok.text).raise();
 		} else if (tok.type == Token::Type::String) {
 			return Value(tok.text);
 		} else if (tok.type == Token::Type::Identifier) {
@@ -994,7 +994,8 @@ namespace MiniScript {
 			if (tok.text == "true") return Value::one;
 			if (tok.text == "false") return Value::zero;
 		}
-		throw new CompilerException(String("got ") + tok.ToString() + " where number, string, or identifier is required");
+		CompilerException(String("got ") + tok.ToString() + " where number, string, or identifier is required").raise();
+		return Value::null;
 	}
 
 	Value Parser::FullyEvaluate(Value val) {
@@ -1028,7 +1029,7 @@ namespace MiniScript {
 	
 	/// <summary>
 	/// The given token type and text is required. So, consume the next token,
-	/// and if it doesn't match, throw new an error.
+	/// and if it doesn't match, throw an error.
 	/// </summary>
 	/// <param name="tokens">Token queue.</param>
 	/// <param name="type">Required token type.</param>
@@ -1037,7 +1038,7 @@ namespace MiniScript {
 		Token got = (tokens.atEnd() ? Token::EOL : tokens.Dequeue());
 		if (got.type != type or (!text.empty() and got.text != text)) {
 			Token expected(type, text);
-			throw new CompilerException(String("got ") + got.ToString() + " where " + expected.ToString() + " is required");
+			CompilerException(String("got ") + got.ToString() + " where " + expected.ToString() + " is required").raise();
 		}
 		return got;
 	}
@@ -1048,7 +1049,7 @@ namespace MiniScript {
 				or ((!text1.empty() and got.text != text1) and (!text2.empty() and got.text != text2))) {
 			Token expected1(type1, text1);
 			Token expected2(type2, text2);
-			throw new CompilerException(String("got ") + got.ToString() + " where " + expected1.ToString() + " or " + expected2.ToString() + " is required");
+			CompilerException(String("got ") + got.ToString() + " where " + expected1.ToString() + " or " + expected2.ToString() + " is required").raise();
 		}
 		return got;
 	}
@@ -1068,7 +1069,7 @@ namespace MiniScript {
 		Parser parser;
 		try {
 			parser.Parse(src);
-		} catch (MiniscriptException e) {
+		} catch (MiniscriptException& e) {
 			std::cerr << e.Description().c_str() << " while parsing:" << std::endl;
 			std::cerr << src.c_str() << std::endl;
 		}

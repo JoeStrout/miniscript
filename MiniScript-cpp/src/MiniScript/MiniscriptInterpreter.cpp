@@ -38,9 +38,8 @@ namespace MiniScript {
 			parser->Parse(source);
 			vm = parser->CreateVM(standardOutput);
 			vm->interpreter = this;
-		} catch (const MiniscriptException* mse) {
+		} catch (const MiniscriptException& mse) {
 			ReportError(mse);
-			delete mse;
 		}
 	}
 	
@@ -52,9 +51,8 @@ namespace MiniScript {
 		try {
 			Compile();
 			if (vm) vm->Step();
-		} catch (const MiniscriptException* mse) {
+		} catch (const MiniscriptException& mse) {
 			ReportError(mse);
-			delete mse;
 		}
 	}
 	
@@ -87,9 +85,8 @@ namespace MiniScript {
 				vm->Step();		// update the machine
 				if (returnEarly and not vm->GetTopContext()->partialResult.Done()) return;	// waiting for something
 			}
-		} catch (const MiniscriptException* mse) {
+		} catch (const MiniscriptException& mse) {
 			ReportError(mse);
-			delete mse;
 			vm->GetTopContext()->JumpToEnd();
 		}
 	}
@@ -135,9 +132,8 @@ namespace MiniScript {
 				}
 			}
 			
-		} catch (const MiniscriptException* mse) {
+		} catch (const MiniscriptException& mse) {
 			ReportError(mse);
-			delete mse;
 			// Attempt to recover from an error by jumping to the end of the code.
 			vm->GetTopContext()->JumpToEnd();
 		}
@@ -157,8 +153,8 @@ namespace MiniScript {
 		return parser and parser->NeedMoreInput();
 	}
 	
-	void Interpreter::ReportError(const MiniscriptException* mse) {
-		if (errorOutput) (*errorOutput)(mse->Description());
+	void Interpreter::ReportError(const MiniscriptException& mse) {
+		if (errorOutput) (*errorOutput)(mse.Description());
 	}
 
 }

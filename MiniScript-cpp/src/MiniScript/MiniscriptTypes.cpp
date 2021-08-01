@@ -193,13 +193,13 @@ namespace MiniScript {
 					Value result = null;
 					// Keep walking the "__isa" chain until we find the value, or can go no further.
 					while (baseVal.type == ValueType::Map) {
-//						if (idxVal.IsNull()) throw KeyException("null");
+//						if (idxVal.IsNull()) KeyException("null").raise();
 						ValueDict baseDict((ValueDictStorage*)(baseVal.data.ref));
 						if (baseDict.Get(idxVal, &result)) {
 							return result;
 						}
 						if (not baseDict.Get(Value::magicIsA, &baseVal)) {
-							throw KeyException(idxVal.ToString(context->vm));
+							KeyException(idxVal.ToString(context->vm)).raise();
 						}
 						baseVal = baseVal.Val(context);	// ToDo: is this really needed?
 					}
@@ -213,14 +213,14 @@ namespace MiniScript {
 					long i = (long)idxVal.data.number;
 					if (i < 0) i += len;
 					if (i < 0 or i >= len) {
-						throw IndexException(String("Index Error (string index ") + i + " out of range");
+						IndexException(String("Index Error (string index ") + i + " out of range").raise();
 					}
 					Value result = baseStr.Substring(i, 1);
 					return result;
 				}
 				
-				throw TypeException("Type Exception: can't index into this type");
-
+				TypeException("Type Exception: can't index into this type").raise();
+				return Value::null;
 			} break;
 			default:
 				// Most types evaluate to themselves
@@ -389,7 +389,7 @@ namespace MiniScript {
 			ValueList list = GetList();
 			if (i < 0) i += list.Count();
 			if (i < 0 or i >= list.Count()) {
-				throw IndexException(String("Index Error (list index " + String::Format(i) + " out of range)"));
+				IndexException(String("Index Error (list index " + String::Format(i) + " out of range)")).raise();
 			}
 			list[i] = value;
 		} else if (type == ValueType::Map) {
@@ -426,7 +426,7 @@ namespace MiniScript {
 				if (loopsLeft < 0) return null;		// (unless we've hit the loop limit)
 				if (not d.Get(Value::magicIsA, &sequence)) {
 					// ...and if we don't have an __isa, try the generic map type if allowed
-					if (!includeMapType) throw KeyException(identifier);
+					if (!includeMapType) KeyException(identifier).raise();
 					sequence = context->vm->mapType;
 					if (sequence.IsNull()) sequence = Intrinsics::MapType();
 					includeMapType = false;
@@ -451,7 +451,7 @@ namespace MiniScript {
 				sequence = Intrinsics::FunctionType();
 				includeMapType = false;
 			} else {
-				throw TypeException("Type Error (while attempting to look up " + identifier + ")");
+				TypeException("Type Error (while attempting to look up " + identifier + ")").raise();
 			}
 			loopsLeft--;
 		}
@@ -566,7 +566,7 @@ namespace MiniScript {
 	/// <param name="index">0-based index of key/value pair to get.</param>
 	/// <returns>new map containing "key" and "value" with the requested key/value pair</returns>
 	Value Value::GetKeyValuePair(Value map, long index) {
-		if (index < 0) throw IndexException(String("index " ) + String::Format(index) + " out of range for map");
+		if (index < 0) IndexException(String("index " ) + String::Format(index) + " out of range for map").raise();
 		if (map.type != ValueType::Map) return Value::null;
 		ValueDict dict = map.GetDict();
 		// For now, we'll just iterate from the beginning every time.  This is horribly
@@ -585,7 +585,8 @@ namespace MiniScript {
 		}
 		// Out of bounds (index too high).
 //		dict.forget();
-		throw IndexException(String("index " ) + String::Format(index) + " out of range for map");
+		IndexException(String("index " ) + String::Format(index) + " out of range for map").raise();
+		return Value::null;
 	}
 
 	unsigned int HashValue(const Value& v) {

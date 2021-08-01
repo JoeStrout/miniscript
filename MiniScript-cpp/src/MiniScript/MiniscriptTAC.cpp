@@ -126,7 +126,7 @@ namespace MiniScript {
 				text = lhs.ToString() + " := len(" + rhsA.ToString() + ")";
 				break;
 			default:
-				throw MiniscriptException(String("unknown opcode: ") + String::Format((int)op));
+				MiniscriptException(String("unknown opcode: ") + String::Format((int)op)).raise();
 				
 		}
 		//				if (comment != null) text = text + "\t// " + comment;
@@ -189,7 +189,7 @@ namespace MiniScript {
 			if (opB.IsNull()) return opA;
 			String sA = opA.ToString();
 			String sB = opB.ToString();
-			if (sA.LengthB() + sB.LengthB() > Value::maxStringSize) throw LimitExceededException("string too large");
+			if (sA.LengthB() + sB.LengthB() > Value::maxStringSize) LimitExceededException("string too large").raise();
 			return Value(sA + sB);
 		}
 
@@ -302,7 +302,7 @@ namespace MiniScript {
 					int extraChars = (int)(sA.Length() * (factor - repeats));
 					String extraStr = sA.Substring(0, extraChars);
 					size_t totalBytes = lenB * repeats + extraStr.LengthB();
-					if (totalBytes > Value::maxStringSize) throw LimitExceededException("string too large");
+					if (totalBytes > Value::maxStringSize) LimitExceededException("string too large").raise();
 					char *buf = new char[totalBytes+1];
 					if (buf == NULL) return Value::null;
 					char *ptr = buf;
@@ -383,7 +383,7 @@ namespace MiniScript {
 				ValueList list2 = opB.GetList();
 				long count1 = list.Count();
 				long count2 = list2.Count();
-				if (count1 + count2 > Value::maxListSize) throw LimitExceededException("list too large");
+				if (count1 + count2 > Value::maxListSize) LimitExceededException("list too large").raise();
 				ValueList result(count1 + count2);
 				for (long i=0; i<count1; i++) result.Add(list[i].Val(context));
 				for (long i=0; i<count2; i++) result.Add(list2[i].Val(context));
@@ -401,7 +401,7 @@ namespace MiniScript {
 				if (factor <= 0) return ValueList();
 				long listCount = list.Count();
 				long finalCount = (long)(listCount * factor);
-				if (finalCount > Value::maxListSize) throw LimitExceededException("list too large");
+				if (finalCount > Value::maxListSize) LimitExceededException("list too large").raise();
 				ValueList result(finalCount);
 				for (long i = 0; i < finalCount; i++) {
 					result.Add(list[i % listCount].Val(context));
@@ -498,20 +498,20 @@ namespace MiniScript {
 		} else if (lhs.type == ValueType::SeqElem) {
 			SeqElemStorage *seqElem = (SeqElemStorage*)(lhs.data.ref);
 			Value seq = seqElem->sequence.Val(this);
-			if (seq.IsNull()) throw RuntimeException("can't set indexed element of null");
-			if (not seq.CanSetElem()) throw RuntimeException("can't set an indexed element in this type");
+			if (seq.IsNull()) RuntimeException("can't set indexed element of null").raise();
+			if (not seq.CanSetElem()) RuntimeException("can't set an indexed element in this type").raise();
 			Value index = seqElem->index;
 			if (index.type == ValueType::Var or index.type == ValueType::SeqElem or
 				index.type == ValueType::Temp) index = index.Val(this);
 			seq.SetElem(index, value);
 		} else {
-			if (!lhs.IsNull()) throw RuntimeException("not an lvalue");
+			if (!lhs.IsNull()) RuntimeException("not an lvalue").raise();
 		}
 	}
 
 	void Context::SetVar(String identifier, Value value) {
 		if (identifier == "globals" or identifier == "locals" or identifier == "outer") {
-			throw RuntimeException("can't assign to " + identifier);
+			RuntimeException("can't assign to " + identifier).raise();
 		}
 		if (!variables.ApplyAssignOverride(identifier, value)) {
 			variables.SetValue(identifier, value);
@@ -553,7 +553,8 @@ namespace MiniScript {
 		if (intrinsic != nullptr) return intrinsic->GetFunc();
 		
 		// No luck there either?  Undefined identifier.
-		throw new UndefinedIdentifierException(identifier);
+		UndefinedIdentifierException(identifier).raise();
+		return Value::null;
 	}
 
 	/// <summary>
@@ -583,7 +584,7 @@ namespace MiniScript {
 			Value argument = args.Pop();
 			long paramNum = argCount - 1 - i + selfParam;
 			if (paramNum >= func->parameters.Count()) {
-				throw TooManyArgumentsException();
+				TooManyArgumentsException().raise();
 			}
 			result->SetVar(func->parameters[paramNum].name, argument);
 		}
@@ -629,9 +630,9 @@ namespace MiniScript {
 		TACLine& line = context->code[context->lineNum++];
 		try {
 			DoOneLine(line, context);
-		} catch (MiniscriptException* mse) {
-			mse->location = line.location;
-			throw mse;
+		} catch (MiniscriptException& mse) {
+			mse.location = line.location;
+			throw;
 		}
 	}
 	
@@ -672,7 +673,7 @@ namespace MiniScript {
 				// We'll allow that, but any number of parameters is too many.  [#35]
 				// (No need to pop them, as the exception will pop the whole call stack anyway.)
 				long argCount = line.rhsB.IntValue();
-				if (argCount > 0) throw new TooManyArgumentsException();
+				if (argCount > 0) TooManyArgumentsException().raise();
 				context->StoreValue(line.lhs, funcVal);
 			}
 		} else if (line.op == TACLine::Op::ReturnA) {

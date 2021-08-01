@@ -91,7 +91,7 @@ static int DoREPL() {
 				}
 				interp.REPL(buf);
 			#endif
-		} catch (MiniscriptException mse) {
+		} catch (MiniscriptException& mse) {
 			std::cerr << "Runtime Exception: " << mse.message << std::endl;
 			interp.vm->Stop();
 		}
@@ -118,7 +118,7 @@ static int DoCommand(String cmd) {
 	while (!interp.Done()) {
 		try {
 			interp.RunUntilDone();
-		} catch (MiniscriptException mse) {
+		} catch (MiniscriptException& mse) {
 			std::cerr << "Runtime Exception: " << mse.message << std::endl;
 			interp.vm->Stop();
 			return -1;

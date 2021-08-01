@@ -131,7 +131,7 @@ namespace MiniScript {
 
 		
 	protected:
-		virtual void ReportError(const MiniscriptException* mse);
+		virtual void ReportError(const MiniscriptException& mse);
 
 	private:
 		String source;

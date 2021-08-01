@@ -123,7 +123,7 @@ namespace MiniScript {
 		/// </summary>
 		/// <param name="arg">Argument.</param>
 		void PushParamArgument(Value arg) {
-			if (args.Count() > 255) throw new RuntimeException("Argument limit exceeded");
+			if (args.Count() > 255) RuntimeException("Argument limit exceeded").raise();
 			args.Add(arg);
 		}
 

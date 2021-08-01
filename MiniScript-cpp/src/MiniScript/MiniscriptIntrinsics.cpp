@@ -212,8 +212,8 @@ namespace MiniScript {
 		Value self = context->GetVar("self");
 		Value index = context->GetVar("index");
 		Value value = context->GetVar("value");
-		if (index.IsNull()) throw RuntimeException("insert: index argument required");
-		if (index.type != ValueType::Number) throw new RuntimeException("insert: number required for index argument");
+		if (index.IsNull()) RuntimeException("insert: index argument required").raise();
+		if (index.type != ValueType::Number) RuntimeException("insert: number required for index argument").raise();
 		long idx = index.IntValue();
 		if (self.type == ValueType::List) {
 			ValueList list = self.GetList();
@@ -229,7 +229,8 @@ namespace MiniScript {
 			s = s.Substring(0, idx) + value.ToString() + s.Substring(idx);
 			return IntrinsicResult(s);
 		} else {
-			throw new RuntimeException("insert called on invalid type");
+			RuntimeException("insert called on invalid type").raise();
+			return IntrinsicResult::Null;
 		}
 	};
 
@@ -380,9 +381,9 @@ namespace MiniScript {
 		double toVal = p1.DoubleValue();
 		double step = (toVal >= fromVal ? 1 : -1);
 		if (p2.type == ValueType::Number) step = p2.DoubleValue();
-		if (step == 0) throw RuntimeException("range() error (step==0)");
+		if (step == 0) RuntimeException("range() error (step==0)").raise();
 		int count = (int)((toVal - fromVal) / step) + 1;
-		if (count > Value::maxListSize) throw LimitExceededException("list too large");
+		if (count > Value::maxListSize) LimitExceededException("list too large").raise();
 		try {
 			ValueList values(count);
 			for (double v = fromVal; step > 0 ? (v <= toVal) : (v >= toVal); v += step) {
@@ -390,14 +391,15 @@ namespace MiniScript {
 			}
 			return IntrinsicResult(values);
 		} catch (std::bad_alloc e) {
-			throw LimitExceededException("range() error");
+			LimitExceededException("range() error").raise();
+			return IntrinsicResult::Null;
 		}
 	}
 	
 	static IntrinsicResult intrinsic_remove(Context *context, IntrinsicResult partialResult) {
 		Value self = context->GetVar("self");
 		Value k = context->GetVar("k");
-		if (self.IsNull()) throw RuntimeException("argument to 'remove' must not be null");
+		if (self.IsNull()) RuntimeException("argument to 'remove' must not be null").raise();
 		if (self.type == ValueType::Map) {
 			ValueDict selfMap = self.GetDict();
 			if (selfMap.ContainsKey(k)) {
@@ -406,7 +408,7 @@ namespace MiniScript {
 			}
 			return IntrinsicResult(Value::zero);
 		} else if (self.type == ValueType::List) {
-			if (k.IsNull()) throw RuntimeException("argument to 'remove' must not be null");
+			if (k.IsNull()) RuntimeException("argument to 'remove' must not be null").raise();
 			ValueList selfList = self.GetList();
 			long idx = k.IntValue();
 			if (idx < 0) idx += selfList.Count();
@@ -414,14 +416,15 @@ namespace MiniScript {
 			selfList.RemoveAt(idx);
 			return IntrinsicResult::Null;
 		} else if (self.type == ValueType::String) {
-			if (k.IsNull()) throw RuntimeException("argument to 'remove' must not be null");
+			if (k.IsNull()) RuntimeException("argument to 'remove' must not be null").raise();
 			String selfStr = self.GetString();
 			String substr = k.ToString();
 			long foundPosB = selfStr.IndexOfB(substr);
 			if (foundPosB < 0) return IntrinsicResult(self);
 			return IntrinsicResult(selfStr.ReplaceB(foundPosB, substr.LengthB(), String()));
 		}
-		throw TypeException("Type Error: 'remove' requires map, list, or string");
+		TypeException("Type Error: 'remove' requires map, list, or string").raise();
+		return IntrinsicResult::Null;
 	}
 	
 	static IntrinsicResult intrinsic_replace(Context *context, IntrinsicResult partialResult) {
@@ -429,7 +432,7 @@ namespace MiniScript {
 		Value oldval = context->GetVar("oldval");
 		Value newval = context->GetVar("newval");
 		Value maxCountVal = context->GetVar("maxCount");
-		if (self.IsNull()) throw RuntimeException("argument to 'replace' must not be null");
+		if (self.IsNull()) RuntimeException("argument to 'replace' must not be null").raise();
 		long maxCount = -1;
 		if (!maxCountVal.IsNull()) {
 			maxCount = maxCountVal.IntValue();
@@ -460,7 +463,7 @@ namespace MiniScript {
 		} else if (self.type == ValueType::String) {
 			String str = self.ToString();
 			String oldstr = oldval.ToString();
-			if (oldstr.empty()) throw RuntimeException("replace: oldval argument is empty");
+			if (oldstr.empty()) RuntimeException("replace: oldval argument is empty").raise();
 			String newstr = newval.ToString();
 			long idx = 0;
 			while (true) {
@@ -473,7 +476,8 @@ namespace MiniScript {
 			}
 			return IntrinsicResult(str);
 		}
-		throw TypeException("Type Error: 'replace' requires map, list, or string");
+		TypeException("Type Error: 'replace' requires map, list, or string").raise();
+		return IntrinsicResult::Null;
 	}
 	
 	static IntrinsicResult intrinsic_round(Context *context, IntrinsicResult partialResult) {

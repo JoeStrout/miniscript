@@ -174,7 +174,7 @@ namespace MiniScript {
 					result.text = result.text + " " + nextWord.text;
 				} else {
 					// Oops, didn't find another keyword.  User error.
-					throw new LexerException("'end' without following keyword ('if', 'function', etc.)");
+					LexerException("'end' without following keyword ('if', 'function', etc.)").raise();
 				}
 			} else if (result.text == "else") {
 				// And similarly, conjoin an "if" after "else" (to make "else if").
@@ -207,7 +207,7 @@ namespace MiniScript {
 					}
 				}
 			}
-			if (!gotEndQuote) throw new LexerException("missing closing quote (\")");
+			if (!gotEndQuote) LexerException("missing closing quote (\")").raise();
 			result.text = ls->input.SubstringB(startPosB, ls->positionB - startPosB - 1);
 			if (haveDoubledQuotes) result.text = result.text.Replace("\"\"", "\"");
 			return result;
