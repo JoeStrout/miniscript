@@ -223,6 +223,7 @@ namespace MiniScript {
 		static bool Equal(ListStorage<Value> *lhs, ListStorage<Value> *rhs);
 		static bool Equal(DictionaryStorage<Value, Value> *lhs, DictionaryStorage<Value, Value> *rhs);
 		static bool Equal(SeqElemStorage *lhs, SeqElemStorage *rhs);
+		static bool RefEqual(const Value& lhs, const Value& rhs);
 	};
 	
 	class FuncParam {
@@ -275,6 +276,9 @@ namespace MiniScript {
 				if (data.ref == rhs.data.ref) return true;
 				if (!data.ref || !rhs.data.ref) return false;
 				return Equal((SeqElemStorage*)data.ref, (SeqElemStorage*)rhs.data.ref);
+			
+			case ValueType::Handle:
+				return (data.ref == rhs.data.ref);
 		}
 		return false;
 	}

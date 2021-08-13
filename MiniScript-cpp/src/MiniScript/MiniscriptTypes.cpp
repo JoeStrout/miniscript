@@ -466,27 +466,27 @@ namespace MiniScript {
 	bool Value::IsA(Value type, Machine *vm) {
 		switch (this->type) {
 			case ValueType::Number:
-				return type == vm->numberType;
+				return RefEqual(type, vm->numberType);
 				
 			case ValueType::String:
-				return type == vm->stringType;
+				return RefEqual(type, vm->stringType);
 				
 			case ValueType::List:
-				return type == vm->listType;
+				return RefEqual(type, vm->listType);
 				
 			case ValueType::Function:
-				return type == vm->functionType;
+				return RefEqual(type, vm->functionType);
 				
 			case ValueType::Map:
 			{
 				// if the given type is the map base type, we're definitely that
-				if (type == vm->mapType) return true;
+				if (RefEqual(type, vm->mapType)) return true;
 				// otherwise, walk the __isa chain
 				ValueDict d = GetDict();
 				Value p;
 				if (!d.Get(magicIsA, &p)) return false;
 				while (true) {
-					if (p == type) return true;
+					if (RefEqual(p, type)) return true;
 					if (p.type != ValueType::Map) return false;
 					d = p.GetDict();
 					if (!d.Get(magicIsA, &p)) return false;
@@ -499,6 +499,21 @@ namespace MiniScript {
 
 	}
 
+	bool Value::RefEqual(const Value& lhs, const Value& rhs) {
+		if (lhs.type != rhs.type) return false;
+		if (lhs.IsNull()) {
+			return rhs.IsNull();
+		} else if (lhs.type == ValueType::Number) {
+			return (lhs.data.number == rhs.data.number);
+		} else if (lhs.type == ValueType::String) {
+			// We treat string as if it is a value type (since they're immutable).
+			return (lhs.GetString() == rhs.GetString());
+		} else {
+			// all other types are reference types: considered equal, for the sake
+			// of this method, only if they are the SAME reference.
+			return lhs.data.ref == rhs.data.ref;
+		}
+	}
 	
 	double Value::Equality(const Value& lhs, const Value& rhs, int recursionDepth) {
 		if (lhs.IsNull()) {
