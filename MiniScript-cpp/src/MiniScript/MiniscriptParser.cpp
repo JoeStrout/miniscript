@@ -593,6 +593,7 @@ namespace MiniScript {
 		if (tokens.Peek().type == Token::Type::Keyword && tokens.Peek().text == "isa") {
 			tokens.Dequeue();		// discard the isa operator
 			AllowLineBreak(tokens); // allow a line break after a binary operator
+			val = FullyEvaluate(val);
 			Value opB = (*this.*nextLevel)(tokens, false, false);
 			int tempNum = output->nextTempNum++;
 			output->Add(TACLine(Value::Temp(tempNum), TACLine::Op::AisaB, val, opB));
