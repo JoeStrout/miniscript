@@ -268,7 +268,7 @@ namespace Miniscript {
 			f = Intrinsic.Create("abs");
 			f.AddParam("x", 0);
 			f.code = (context, partialResult) => {
-				return new Intrinsic.Result(Math.Abs(context.GetVar("x").DoubleValue()));
+				return new Intrinsic.Result(Math.Abs(context.GetLocalDouble("x")));
 			};
 
 			// acos
@@ -280,7 +280,7 @@ namespace Miniscript {
 			f = Intrinsic.Create("acos");
 			f.AddParam("x", 0);
 			f.code = (context, partialResult) => {
-				return new Intrinsic.Result(Math.Acos(context.GetVar("x").DoubleValue()));
+				return new Intrinsic.Result(Math.Acos(context.GetLocalDouble("x")));
 			};
 
 			// asin
@@ -292,7 +292,7 @@ namespace Miniscript {
 			f = Intrinsic.Create("asin");
 			f.AddParam("x", 0);
 			f.code = (context, partialResult) => {
-				return new Intrinsic.Result(Math.Asin(context.GetVar("x").DoubleValue()));
+				return new Intrinsic.Result(Math.Asin(context.GetLocalDouble("x")));
 			};
 
 			// atan
@@ -311,8 +311,8 @@ namespace Miniscript {
 			f.AddParam("y", 0);
 			f.AddParam("x", 1);
 			f.code = (context, partialResult) => {
-				double y = context.GetVar("y").DoubleValue();
-				double x = context.GetVar("x").DoubleValue();
+				double y = context.GetLocalDouble("y");
+				double x = context.GetLocalDouble("x");
 				if (x == 1.0) return new Intrinsic.Result(Math.Atan(y));
 				return new Intrinsic.Result(Math.Atan2(y, x));
 			};
@@ -395,7 +395,7 @@ namespace Miniscript {
 			f = Intrinsic.Create("ceil");
 			f.AddParam("x", 0);
 			f.code = (context, partialResult) => {
-				return new Intrinsic.Result(Math.Ceiling(context.GetVar("x").DoubleValue()));
+				return new Intrinsic.Result(Math.Ceiling(context.GetLocalDouble("x")));
 			};
 			
 			// code
@@ -423,7 +423,7 @@ namespace Miniscript {
 			f = Intrinsic.Create("cos");
 			f.AddParam("radians", 0);
 			f.code = (context, partialResult) => {
-				return new Intrinsic.Result(Math.Cos(context.GetVar("radians").DoubleValue()));
+				return new Intrinsic.Result(Math.Cos(context.GetLocalDouble("radians")));
 			};
 
 			// floor
@@ -436,7 +436,7 @@ namespace Miniscript {
 			f = Intrinsic.Create("floor");
 			f.AddParam("x", 0);
 			f.code = (context, partialResult) => {
-				return new Intrinsic.Result(Math.Floor(context.GetVar("x").DoubleValue()));
+				return new Intrinsic.Result(Math.Floor(context.GetLocalDouble("x")));
 			};
 
 			// funcRef
@@ -466,7 +466,7 @@ namespace Miniscript {
 			f = Intrinsic.Create("hash");
 			f.AddParam("obj");
 			f.code = (context, partialResult) => {
-				Value val = context.GetVar("obj");
+				Value val = context.GetLocal("obj");
 				return new Intrinsic.Result(val.Hash());
 			};
 
@@ -488,7 +488,7 @@ namespace Miniscript {
 			f.AddParam("index");
 			f.code = (context, partialResult) => {
 				Value self = context.self;
-				Value index = context.GetVar("index");
+				Value index = context.GetLocal("index");
 				if (self is ValList) {
 					if (!(index is ValNumber)) return Intrinsic.Result.False;	// #3
 					List<Value> list = ((ValList)self).values;
@@ -554,8 +554,8 @@ namespace Miniscript {
 			f.AddParam("after");
 			f.code = (context, partialResult) => {
 				Value self = context.self;
-				Value value = context.GetVar("value");
-				Value after = context.GetVar("after");
+				Value value = context.GetLocal("value");
+				Value after = context.GetLocal("after");
 				if (self is ValList) {
 					List<Value> list = ((ValList)self).values;
 					int idx;
@@ -613,8 +613,8 @@ namespace Miniscript {
 			f.AddParam("value");
 			f.code = (context, partialResult) => {
 				Value self = context.self;
-				Value index = context.GetVar("index");
-				Value value = context.GetVar("value");
+				Value index = context.GetLocal("index");
+				Value value = context.GetLocal("value");
 				if (index == null) throw new RuntimeException("insert: index argument required");
 				if (!(index is ValNumber)) throw new RuntimeException("insert: number required for index argument");
 				int idx = index.IntValue();
@@ -647,7 +647,7 @@ namespace Miniscript {
 			f.AddParam("delimiter", " ");
 			f.code = (context, partialResult) => {
 				Value val = context.self;
-				string delim = context.GetVar("delimiter").ToString();
+				string delim = context.GetLocalString("delimiter");
 				if (!(val is ValList)) return new Intrinsic.Result(val);
 				ValList src = (val as ValList);
 				List<string> list = new List<string>(src.values.Count);
@@ -708,8 +708,8 @@ namespace Miniscript {
 			f.AddParam("x", 0);
 			f.AddParam("base", 10);
 			f.code = (context, partialResult) => {
-				double x = context.GetVar("x").DoubleValue();
-				double b = context.GetVar("base").DoubleValue();
+				double x = context.GetLocalDouble("x");
+				double b = context.GetLocalDouble("base");
 				double result;
 				if (Math.Abs(b - 2.718282) < 0.000001) result = Math.Log(x);
 				else result = Math.Log(x) / Math.Log(b);
@@ -785,7 +785,7 @@ namespace Miniscript {
 			f = Intrinsic.Create("print");
 			f.AddParam("s", ValString.empty);
 			f.code = (context, partialResult) => {
-				Value s = context.GetVar("s");
+				Value s = context.GetLocal("s");
 				if (s != null) context.vm.standardOutput(s.ToString());
 				else context.vm.standardOutput("null");
 				return Intrinsic.Result.Null;
@@ -861,7 +861,7 @@ namespace Miniscript {
 			f.AddParam("value");
 			f.code = (context, partialResult) => {
 				Value self = context.self;
-				Value value = context.GetVar("value");
+				Value value = context.GetLocal("value");
 				if (self is ValList) {
 					List<Value> list = ((ValList)self).values;
 					list.Add(value);
@@ -886,9 +886,9 @@ namespace Miniscript {
 			f.AddParam("to", 0);
 			f.AddParam("step");
 			f.code = (context, partialResult) => {
-				Value p0 = context.GetVar("from");
-				Value p1 = context.GetVar("to");
-				Value p2 = context.GetVar("step");
+				Value p0 = context.GetLocal("from");
+				Value p1 = context.GetLocal("to");
+				Value p2 = context.GetLocal("step");
 				double fromVal = p0.DoubleValue();
 				double toVal = p1.DoubleValue();
 				double step = (toVal >= fromVal ? 1 : -1);
@@ -931,7 +931,7 @@ namespace Miniscript {
 			f.AddParam("k");
 			f.code = (context, partialResult) => {
 				Value self = context.self;
-				Value k = context.GetVar("k");
+				Value k = context.GetLocal("k");
 				if (self is ValMap) {
 					ValMap selfMap = (ValMap)self;
 					if (k == null) k = ValNull.instance;
@@ -981,9 +981,9 @@ namespace Miniscript {
 			f.code = (context, partialResult) => {
 				Value self = context.self;
 				if (self == null) throw new RuntimeException("argument to 'replace' must not be null");
-				Value oldval = context.GetVar("oldval");
-				Value newval = context.GetVar("newval");
-				Value maxCountVal = context.GetVar("maxCount");
+				Value oldval = context.GetLocal("oldval");
+				Value newval = context.GetLocal("newval");
+				Value maxCountVal = context.GetLocal("maxCount");
 				int maxCount = -1;
 				if (maxCountVal != null) {
 					maxCount = maxCountVal.IntValue();
@@ -1050,8 +1050,8 @@ namespace Miniscript {
 			f.AddParam("x", 0);
 			f.AddParam("decimalPlaces", 0);
 			f.code = (context, partialResult) => {
-				double num = context.GetVar("x").DoubleValue();
-				int decimalPlaces = context.GetVar("decimalPlaces").IntValue();
+				double num = context.GetLocalDouble("x");
+				int decimalPlaces = context.GetLocalInt("decimalPlaces");
 				if (decimalPlaces >= 0) {
 					if (decimalPlaces > 15) decimalPlaces = 15;
 					num = Math.Round(num, decimalPlaces);
@@ -1075,7 +1075,7 @@ namespace Miniscript {
 			f.AddParam("seed");
 			f.code = (context, partialResult) => {
 				if (random == null) random = new Random();
-				Value seed = context.GetVar("seed");
+				Value seed = context.GetLocal("seed");
 				if (seed != null) random = new Random(seed.IntValue());
 				return new Intrinsic.Result(random.NextDouble());
 			};
@@ -1088,7 +1088,7 @@ namespace Miniscript {
 			f = Intrinsic.Create("sign");
 			f.AddParam("x", 0);
 			f.code = (context, partialResult) => {
-				return new Intrinsic.Result(Math.Sign(context.GetVar("x").DoubleValue()));
+				return new Intrinsic.Result(Math.Sign(context.GetLocalDouble("x")));
 			};
 
 			// sin
@@ -1099,7 +1099,7 @@ namespace Miniscript {
 			f = Intrinsic.Create("sin");
 			f.AddParam("radians", 0);
 			f.code = (context, partialResult) => {
-				return new Intrinsic.Result(Math.Sin(context.GetVar("radians").DoubleValue()));
+				return new Intrinsic.Result(Math.Sin(context.GetLocalDouble("radians")));
 			};
 				
 			// slice
@@ -1118,9 +1118,9 @@ namespace Miniscript {
 			f.AddParam("from", 0);
 			f.AddParam("to");
 			f.code = (context, partialResult) => {
-				Value seq = context.GetVar("seq");
-				int fromIdx = context.GetVar("from").IntValue();
-				Value toVal = context.GetVar("to");
+				Value seq = context.GetLocal("seq");
+				int fromIdx = context.GetLocalInt("from");
+				Value toVal = context.GetLocal("to");
 				int toIdx = 0;
 				if (toVal != null) toIdx = toVal.IntValue();
 				if (seq is ValList) {
@@ -1175,7 +1175,7 @@ namespace Miniscript {
 				if (context.GetVar("ascending").BoolValue()) sorter = ValueSorter.instance;
 				else sorter = ValueReverseSorter.instance;
 
-				Value byKey = context.GetVar("byKey");
+				Value byKey = context.GetLocal("byKey");
 				if (byKey == null) {
 					// Simple case: sort the values as themselves
 					list.values = list.values.OrderBy((arg) => arg, sorter).ToList();
@@ -1227,8 +1227,8 @@ namespace Miniscript {
 			f.AddParam("maxCount", -1);
 			f.code = (context, partialResult) => {
 				string self = context.self.ToString();
-				string delim = context.GetVar("delimiter").ToString();
-				int maxCount = context.GetVar("maxCount").IntValue();
+				string delim = context.GetLocalString("delimiter");
+				int maxCount = context.GetLocalInt("maxCount");
 				ValList result = new ValList();
 				int pos = 0;
 				while (pos < self.Length) {
@@ -1252,7 +1252,7 @@ namespace Miniscript {
 			f = Intrinsic.Create("sqrt");
 			f.AddParam("x", 0);
 			f.code = (context, partialResult) => {
-				return new Intrinsic.Result(Math.Sqrt(context.GetVar("x").DoubleValue()));
+				return new Intrinsic.Result(Math.Sqrt(context.GetLocalDouble("x")));
 			};
 
 			// str
@@ -1263,8 +1263,10 @@ namespace Miniscript {
 			// See also: val
 			f = Intrinsic.Create("str");
 			f.AddParam("x", ValString.empty);
-			f.code = (context, partialResult) => {
-				return new Intrinsic.Result(context.GetVar("x").ToString());
+			f.code = (context, partialResult) => {		
+				var x = context.GetLocal("x");
+				if (x == null) return new Intrinsic.Result(ValString.empty);
+				return new Intrinsic.Result(x.ToString());
 			};
 
 			// string type
@@ -1351,7 +1353,7 @@ namespace Miniscript {
 			f = Intrinsic.Create("tan");
 			f.AddParam("radians", 0);
 			f.code = (context, partialResult) => {
-				return new Intrinsic.Result(Math.Tan(context.GetVar("radians").DoubleValue()));
+				return new Intrinsic.Result(Math.Tan(context.GetLocalDouble("radians")));
 			};
 
 			// time
@@ -1400,32 +1402,32 @@ namespace Miniscript {
 				return Intrinsic.Result.Null;
 			};
 
-            // values
+			// values
 			//	Returns the values of a dictionary, or the characters of a string.
-            //  (Returns any other value as-is.)
+			//  (Returns any other value as-is.)
 			//	May be called with function syntax or dot syntax.
 			// self (any): object to get the values of.
 			// Example: d={1:"one", 2:"two"}; d.values		returns ["one", "two"]
 			// Example: "abc".values		returns ["a", "b", "c"]
 			// See also: indexes
 			f = Intrinsic.Create("values");
-            f.AddParam("self");
-            f.code = (context, partialResult) => {
-                Value self = context.self;
-                if (self is ValMap) {
-                    ValMap map = (ValMap)self;
-                    List<Value> values = new List<Value>(map.map.Values);
-                    return new Intrinsic.Result(new ValList(values));
-                } else if (self is ValString) {
-                    string str = ((ValString)self).value;
-                    List<Value> values = new List<Value>(str.Length);
-                    for (int i = 0; i < str.Length; i++) {
-                        values.Add(TAC.Str(str[i].ToString()));
-                    }
-                    return new Intrinsic.Result(new ValList(values));
-                }
-                return new Intrinsic.Result(self);
-            };
+			f.AddParam("self");
+			f.code = (context, partialResult) => {
+				Value self = context.self;
+				if (self is ValMap) {
+					ValMap map = (ValMap)self;
+					List<Value> values = new List<Value>(map.map.Values);
+					return new Intrinsic.Result(new ValList(values));
+				} else if (self is ValString) {
+					string str = ((ValString)self).value;
+					List<Value> values = new List<Value>(str.Length);
+					for (int i = 0; i < str.Length; i++) {
+						values.Add(TAC.Str(str[i].ToString()));
+					}
+					return new Intrinsic.Result(new ValList(values));
+				}
+				return new Intrinsic.Result(self);
+			};
 
 			// version
 			//	Get a map with information about the version of MiniScript and
@@ -1440,7 +1442,7 @@ namespace Miniscript {
 			f.code = (context, partialResult) => {
 				if (context.vm.versionMap == null) {
 					var d = new ValMap();
-					d["miniscript"] = new ValString("1.5");
+					d["miniscript"] = new ValString("1.5.1");
 			
 					// Getting the build date is annoyingly hard in C#.
 					// This will work if the assembly.cs file uses the version format: 1.0.*
@@ -1471,7 +1473,7 @@ namespace Miniscript {
 				double now = context.vm.runTime;
 				if (partialResult == null) {
 					// Just starting our wait; calculate end time and return as partial result
-					double interval = context.GetVar("seconds").DoubleValue();
+					double interval = context.GetLocalDouble("seconds");
 					return new Intrinsic.Result(new ValNumber(now + interval), false);
 				} else {
 					// Continue until current time exceeds the time in the partial result
@@ -1536,9 +1538,9 @@ namespace Miniscript {
 				_listType["shuffle"] = Intrinsic.GetByName("shuffle").GetFunc();
 				_listType["sort"] = Intrinsic.GetByName("sort").GetFunc();
 				_listType["sum"] = Intrinsic.GetByName("sum").GetFunc();
-                _listType["remove"] = Intrinsic.GetByName("remove").GetFunc();
-                _listType["replace"] = Intrinsic.GetByName("replace").GetFunc();
-                _listType["values"] = Intrinsic.GetByName("values").GetFunc();
+				_listType["remove"] = Intrinsic.GetByName("remove").GetFunc();
+				_listType["replace"] = Intrinsic.GetByName("replace").GetFunc();
+				_listType["values"] = Intrinsic.GetByName("values").GetFunc();
 			}
 			return _listType;
 		}
@@ -1560,10 +1562,10 @@ namespace Miniscript {
 				_stringType["lower"] = Intrinsic.GetByName("lower").GetFunc();
 				_stringType["val"] = Intrinsic.GetByName("val").GetFunc();
 				_stringType["remove"] = Intrinsic.GetByName("remove").GetFunc();
-                _stringType["replace"] = Intrinsic.GetByName("replace").GetFunc();
+				_stringType["replace"] = Intrinsic.GetByName("replace").GetFunc();
 				_stringType["split"] = Intrinsic.GetByName("split").GetFunc();
-                _stringType["upper"] = Intrinsic.GetByName("upper").GetFunc();
-                _stringType["values"] = Intrinsic.GetByName("values").GetFunc();
+				_stringType["upper"] = Intrinsic.GetByName("upper").GetFunc();
+				_stringType["values"] = Intrinsic.GetByName("values").GetFunc();
 			}
 			return _stringType;
 		}
@@ -1585,9 +1587,9 @@ namespace Miniscript {
 				_mapType["pull"] = Intrinsic.GetByName("pull").GetFunc();
 				_mapType["shuffle"] = Intrinsic.GetByName("shuffle").GetFunc();
 				_mapType["sum"] = Intrinsic.GetByName("sum").GetFunc();
-                _mapType["remove"] = Intrinsic.GetByName("remove").GetFunc();
-                _mapType["replace"] = Intrinsic.GetByName("replace").GetFunc();
-                _mapType["values"] = Intrinsic.GetByName("values").GetFunc();
+				_mapType["remove"] = Intrinsic.GetByName("remove").GetFunc();
+				_mapType["replace"] = Intrinsic.GetByName("replace").GetFunc();
+				_mapType["values"] = Intrinsic.GetByName("values").GetFunc();
 			}
 			return _mapType;
 		}
@@ -1607,4 +1609,3 @@ namespace Miniscript {
 		
 	}
 }
-

@@ -442,29 +442,33 @@ namespace MiniScript {
 		if (tok.type != Token::Type::Keyword or tok.text != "function") return (*this.*nextLevel)(tokens, asLval, statementStart);
 		tokens.Dequeue();
 		
-		RequireToken(tokens, Token::Type::LParen);
-		
-		FunctionStorage *func = new FunctionStorage();
-		
-		while (tokens.Peek().type != Token::Type::RParen) {
-			// parse a parameter: a comma-separated list of
-			//			identifier
-			//	or...	identifier = expr
-			Token id = tokens.Dequeue();
-			if (id.type != Token::Type::Identifier) CompilerException(errorContext, tokens.lineNum(),
-						String("got ") + id.ToString() + " where an identifier is required").raise();
-			Value defaultValue;
-			if (tokens.Peek().type == Token::Type::OpAssign) {
-				tokens.Dequeue();	// skip '='
-				defaultValue = ParseExpr(tokens);
+		FunctionStorage *func = nullptr;
+		tok = tokens.Peek();
+		if (tok.type != Token::Type::EOL) {
+			RequireToken(tokens, Token::Type::LParen);
+			func = new FunctionStorage();
+			while (tokens.Peek().type != Token::Type::RParen) {
+				// parse a parameter: a comma-separated list of
+				//			identifier
+				//	or...	identifier = expr
+				Token id = tokens.Dequeue();
+				if (id.type != Token::Type::Identifier) CompilerException(errorContext, tokens.lineNum(),
+							String("got ") + id.ToString() + " where an identifier is required").raise();
+				Value defaultValue;
+				if (tokens.Peek().type == Token::Type::OpAssign) {
+					tokens.Dequeue();	// skip '='
+					defaultValue = ParseExpr(tokens);
+				}
+				func->parameters.Add(FuncParam(id.text, defaultValue));
+				if (tokens.Peek().type == Token::Type::RParen) break;
+				RequireToken(tokens, Token::Type::Comma);
 			}
-			func->parameters.Add(FuncParam(id.text, defaultValue));
-			if (tokens.Peek().type == Token::Type::RParen) break;
-			RequireToken(tokens, Token::Type::Comma);
+			
+			RequireToken(tokens, Token::Type::RParen);
+		} else {
+			func = new FunctionStorage();
 		}
-		
-		RequireToken(tokens, Token::Type::RParen);
-		
+
 		// Now, we need to parse the function body into its own parsing context.
 		// But don't push it yet -- we're in the middle of parsing some expression
 		// or statement in the current context, and need to finish that.

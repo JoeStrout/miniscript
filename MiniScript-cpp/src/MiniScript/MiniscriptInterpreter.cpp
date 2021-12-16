@@ -80,8 +80,12 @@ namespace MiniScript {
 			}
 			double startTime = vm->RunTime();
 			vm->yielding = false;
+			int checkRuntimeIn = 15;		// (because vm->RunTime() is expensive on many machines)
 			while (not vm->Done() && !vm->yielding) {
-				if (vm->RunTime() - startTime > timeLimit) return;	// time's up for now!
+				if (checkRuntimeIn-- == 0) {
+					if (vm->RunTime() - startTime > timeLimit) return;	// time's up for now!
+					checkRuntimeIn = 15;
+				}
 				vm->Step();		// update the machine
 				if (returnEarly and not vm->GetTopContext()->partialResult.Done()) return;	// waiting for something
 			}

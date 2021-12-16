@@ -323,10 +323,10 @@ namespace Miniscript {
 							return ValNumber.Truth(fA <= fB);
 						case Op.AAndB:
 							if (!(opB is ValNumber)) fB = opB != null && opB.BoolValue() ? 1 : 0;
-							return new ValNumber(Clamp01(fA * fB));
+							return new ValNumber(AbsClamp01(fA * fB));
 						case Op.AOrB:
 							if (!(opB is ValNumber)) fB = opB != null && opB.BoolValue() ? 1 : 0;
-							return new ValNumber(Clamp01(fA + fB - fA * fB));
+							return new ValNumber(AbsClamp01(fA + fB - fA * fB));
 						default:
 							break;
 						}
@@ -505,20 +505,15 @@ namespace Miniscript {
 					else fB = opB != null && opB.BoolValue() ? 1 : 0;
 					double result;
 					if (op == Op.AAndB) {
-						result = fA * fB;
+						result = AbsClamp01(fA * fB);
 					} else {
-						result = 1.0 - (1.0 - AbsClamp01(fA)) * (1.0 - AbsClamp01(fB));
+						result = AbsClamp01(fA + fB - fA * fB);
 					}
 					return new ValNumber(result);
 				}
 				return null;
 			}
 
-			static double Clamp01(double d) {
-				if (d < 0) return 0;
-				if (d > 1) return 1;
-				return d;
-			}
 			static double AbsClamp01(double d) {
 				if (d < 0) d = -d;
 				if (d > 1) return 1;
@@ -659,6 +654,15 @@ namespace Miniscript {
 				if (variables != null && variables.TryGetValue(identifier, out result)) {
 					if (result == null) return 0;	// variable found, but its value was null!
 					return result.FloatValue();
+				}
+				return defaultValue;
+			}
+
+			public double GetLocalDouble(string identifier, double defaultValue = 0) {
+				Value result;
+				if (variables != null && variables.TryGetValue(identifier, out result)) {
+					if (result == null) return 0;	// variable found, but its value was null!
+					return result.DoubleValue();
 				}
 				return defaultValue;
 			}
@@ -920,7 +924,7 @@ namespace Miniscript {
 							if (mse.location != null) break;
 						}
 					}
-					throw mse;
+					throw;
 				}
 			}
 			

@@ -17,8 +17,8 @@
 #include <math.h>
 
 namespace MiniScript {
-	
-	const String VERSION = "1.5";
+
+	const String VERSION = "1.5.1";
 
 	long Value::maxStringSize = 0xFFFFFF;		// about 16MB
 	long Value::maxListSize   = 0xFFFFFF;		// about 16M elements

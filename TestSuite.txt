@@ -53,6 +53,21 @@ print 1 or null
 0
 1
 ======================================================================
+==== Logical operators (beyond the standard 0-1 range).
+print -1 and 0
+print 0 and -1
+print -1 or 0
+print 0 or -1
+print 5 and 10
+print 5 or 10
+----------------------------------------------------------------------
+0
+0
+1
+1
+1
+1
+======================================================================
 ==== Parsing of numbers in various formats (including exponential).
 print 123
 print 1.23
@@ -598,10 +613,14 @@ sin(-pi/4): -0.707
 tan(1): 1.557
 ======================================================================
 ==== User-defined functions (including params, with and without default values).
-ultimateAnswer = function()
+ultimateAnswer = function
 	return 2 + 4*10
 end function
 print ultimateAnswer
+answerWithParens = function()
+	return 2 + 4*10
+end function
+print answerWithParens
 f = function(x, y)
 	return x*2 + y
 end function
@@ -619,6 +638,7 @@ print g(5)
 print g(5, 6)
 h(42)
 ----------------------------------------------------------------------
+42
 42
 12
 40

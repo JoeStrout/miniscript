@@ -17,14 +17,8 @@
 
 namespace MiniScript {
 
-	static inline double Clamp01(double d) {
-		if (d < 0) return 0;
-		if (d > 1) return 1;
-		return d;
-	}
-
 	static inline double AbsClamp01(double d) {
-		if (d < 0) d = -d;
+		if (d < 0 || d == -0) d = -d;
 		if (d > 1) return 1;
 		return d;
 	}
@@ -269,10 +263,10 @@ namespace MiniScript {
 						return Value::Truth(fA <= fB);
 					case Op::AAndB:
 						if (!(opB.type == ValueType::Number)) fB = opB.BoolValue() ? 1 : 0;
-						return Value(Clamp01(fA * fB));
+						return Value(AbsClamp01(fA * fB));
 					case Op::AOrB:
 						if (!(opB.type == ValueType::Number)) fB = opB.BoolValue() ? 1 : 0;
-						return Value(Clamp01(fA + fB - fA * fB));
+						return Value(AbsClamp01(fA + fB - fA * fB));
 					default:
 						break;
 				}
@@ -479,9 +473,9 @@ namespace MiniScript {
 			else fB = opB.BoolValue() ? 1 : 0;
 			double result;
 			if (op == Op::AAndB) {
-				result = fA * fB;
+				result = AbsClamp01(fA * fB);
 			} else {
-				result = 1.0 - (1.0 - AbsClamp01(fA)) * (1.0 - AbsClamp01(fB));
+				result = AbsClamp01(fA + fB - fA * fB);
 			}
 			return Value(result);
 		}
