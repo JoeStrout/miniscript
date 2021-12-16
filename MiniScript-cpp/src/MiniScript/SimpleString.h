@@ -11,6 +11,7 @@
 #include <string.h>
 #include <assert.h>
 #include <cctype>
+#include <cstring>
 #include "RefCountedStorage.h"
 
 namespace MiniScript {

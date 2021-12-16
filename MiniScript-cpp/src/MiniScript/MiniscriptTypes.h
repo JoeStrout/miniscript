@@ -9,7 +9,7 @@
 #ifndef MINISCRIPTTYPES_H
 #define MINISCRIPTTYPES_H
 
-#include "String.h"
+#include "SimpleString.h"
 #include "List.h"
 #include "Dictionary.h"
 

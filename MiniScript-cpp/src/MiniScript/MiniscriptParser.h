@@ -9,7 +9,7 @@
 #ifndef MINISCRIPTPARSER_H
 #define MINISCRIPTPARSER_H
 
-#include "String.h"
+#include "SimpleString.h"
 #include "List.h"
 #include "Dictionary.h"
 #include "MiniscriptTAC.h"

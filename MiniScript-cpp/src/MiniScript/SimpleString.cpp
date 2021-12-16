@@ -1,12 +1,8 @@
 /*
  *  SimpleString.cpp
- *  drawgame
- *
- *  Created by April on 12/23/10.
- *  Copyright 2010 Luminary Apps. All rights reserved.
  *
  */
-#include "String.h"
+#include "SimpleString.h"
 #include "UnicodeUtil.h"
 #include "UnitTest.h"
 #include <stdio.h>

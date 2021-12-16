@@ -9,7 +9,7 @@
 #ifndef MINISCRIPTLEXER_H
 #define MINISCRIPTLEXER_H
 
-#include "String.h"
+#include "SimpleString.h"
 #include "List.h"
 
 namespace MiniScript {

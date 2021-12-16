@@ -25,7 +25,7 @@ class SimpleVector {
   public:
 	// constructors
 	inline SimpleVector();						// sets size to 0
-	inline SimpleVector(long n);			// allocates n slots
+	inline SimpleVector(long n);				// allocates n slots
 	inline SimpleVector(const SimpleVector<T>&);	// copy-constructor (copies data)
 
 	// assignment-op
@@ -59,7 +59,7 @@ class SimpleVector {
 	inline T& peek_back();						// get last item, don't remove from vector
 
 	// other ways to delete items
-	inline void deleteIdx(long idx);		// delete an item by its index
+	inline void deleteIdx(long idx);			// delete an item by its index
 	inline void deleteAll();					// delete all items
 
 	// containment inspectors
@@ -67,14 +67,14 @@ class SimpleVector {
 	inline bool Contains(const T& item);
 	
 	// buffer management
-	inline void resizeBuffer(long n);		// allocate n slots, keeping current data and qty
-    inline void resize(long n);           // resize buffer AND change size()
+	inline void resizeBuffer(long n);	// allocate n slots, keeping current data and qty
+    inline void resize(long n);         // resize buffer AND change size()
 
 	unsigned long mBlockItems;		// number of items to allocate when we expand; or if 0,
 									// then expand by simply doubling the buffer size
     
     // major mutators               
-    inline void reverse();                 // reverses the elements in the array in place.
+    inline void reverse();          // reverses the elements in the array in place.
     
     
   protected:
@@ -127,6 +127,7 @@ template <class T>
 inline SimpleVector<T>& SimpleVector<T>::operator=(const SimpleVector<T>& vec)
 {
 	if (mBuf) delete[] mBuf;
+	mBuf = nullptr;
 	mBlockItems = vec.mBlockItems;
 	mBufItems = vec.mBufItems;
 	mQtyItems = vec.mQtyItems;
@@ -138,7 +139,6 @@ inline SimpleVector<T>& SimpleVector<T>::operator=(const SimpleVector<T>& vec)
 			throw memFullErr;
 		}
 	#else
-		mBuf = nullptr;
 		if (mBufItems > 0) {
 			mBuf = new T[mBufItems];
 			Assert(mBuf);
@@ -406,7 +406,7 @@ template <class T>
 inline void SimpleVector<T>::deleteAll()
 {
 	delete[] mBuf;
-	mBuf = 0;
+	mBuf = nullptr;
 	mBufItems = mQtyItems = 0;
 }
 

@@ -10,7 +10,7 @@
 #define MINISCRIPTERRORS_H
 
 #include <exception>
-#include "String.h"
+#include "SimpleString.h"
 #include "MiniscriptTypes.h"
 
 namespace MiniScript {

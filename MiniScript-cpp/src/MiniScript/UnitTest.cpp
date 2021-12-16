@@ -18,7 +18,7 @@
 #include "QA.h"
 #include <stdio.h>
 #include <iostream>
-#include "String.h"
+#include "SimpleString.h"
 
 namespace MiniScript {
 	

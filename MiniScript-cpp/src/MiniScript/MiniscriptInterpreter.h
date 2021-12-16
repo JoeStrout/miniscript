@@ -9,7 +9,7 @@
 #ifndef MINISCRIPTINTERPRETER_H
 #define MINISCRIPTINTERPRETER_H
 
-#include "String.h"
+#include "SimpleString.h"
 #include "MiniscriptTAC.h"
 
 namespace MiniScript {

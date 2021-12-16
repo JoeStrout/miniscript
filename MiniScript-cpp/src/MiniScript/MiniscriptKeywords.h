@@ -9,7 +9,7 @@
 #ifndef MINISCRIPTKEYWORDS_H
 #define MINISCRIPTKEYWORDS_H
 
-#include "String.h"
+#include "SimpleString.h"
 
 namespace MiniScript {
 

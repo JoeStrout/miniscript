@@ -23,11 +23,13 @@ namespace MiniScript {
 	class HashMapEntry
 	{
 	public:
-		HashMapEntry() { next = nullptr; }
+		HashMapEntry() : next(nullptr) {}
 		~HashMapEntry() { if (next) delete next; }
 		
 		HashMapEntry *Clone() {
 			HashMapEntry *result = new HashMapEntry();
+			result->key = key;
+			result->value = value;
 			if (next) result->next = next->Clone();
 			return result;
 		}

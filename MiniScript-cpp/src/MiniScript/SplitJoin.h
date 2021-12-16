@@ -10,7 +10,7 @@
 #define SPLITJOIN_H
 
 #include "List.h"
-#include "String.h"
+#include "SimpleString.h"
 
 namespace MiniScript {
 
