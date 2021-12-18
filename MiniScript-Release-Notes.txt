@@ -145,8 +145,8 @@ the next line.  Works in both REPL and script mode.  {#8}
 - Added the ability to extend basic types (number, string, list, and map) with new methods, that can then be called on values of that type using dot syntax, just like the built-in methods.  Known limitation: you can't use dot syntax with number literals.
 
 
-(not yet released)
-==================
+Version 1.5.1: Dec 18, 2021
+===========================
 - Fixed a bug in the C# version that caused the behavior of string sorting (i.e. `>` and related operators) to depend on system settings.  It now always sorts ordinally, i.e., by the binary values of each character (just like the C++ version).
 
 - Improved slice operator so that both indexes may be omitted, i.e., `seq[:]` is now the same as `seq[0:seq.len]`.
@@ -168,4 +168,11 @@ the next line.  Works in both REPL and script mode.  {#8}
 - MiniScript now has a hard limit of 256 arguments in one call; exceeding this will throw a runtime error saying "Argument limit exceeded". {#35}
 
 - Fixed a recently introduced memory leak in the C++ version.
+
+- Standardized behavior of `and` and `or` when given operands outside the standard [0, 1] range.  (Details: `and` returns Abs(Clamp(a * b)), and `or` returns Abs(Clamp(a + b - a * b), where Abs is absolute value and Clamp limits its argument to the [0, 1] range.)
+
+- Function declarations no longer require empty parentheses.
+
+- Command-line MiniScript now prints an error message when given an invalid script file path and exits with a -1 status code, rather than failing silently.
+
 
