@@ -84,7 +84,7 @@ print -1.23e-9
 -1.230000E-09
 ======================================================================
 ==== Logical operators, short-circuit evaluation.
-reset = function(); globals.r = []; end function
+reset = function; globals.r = []; end function
 ftrue = function(x); globals.r = r + [x]; return 1; end function
 ffalse = function(x); globals.r = r + [x]; return 0; end function
 fmaybe = function(x); globals.r = r + [x]; return 0.5; end function
@@ -1014,7 +1014,7 @@ Compiler Error: 'end for' without matching 'for' [line 5]
 ==== Testing that objects are distinct, even when new'd in a function.
 ==== (This was a bug in an early version of MiniScript.)
 Vec = {"x":0, "y":0}
-Vec.New = function()
+Vec.New = function
 	return new Vec
 end function
 v1 = new Vec
@@ -1032,7 +1032,7 @@ print v3.x
 3
 ======================================================================
 ==== Similar test, for lists.
-f = function()
+f = function
 	return [1,2,3]
 end function
 a = f
@@ -1086,7 +1086,7 @@ Vec.New = function(x=0, y=0)
 	result.y = y
 	return result
 end function
-Vec.Print = function()
+Vec.Print = function
 	print "x:" + self.x + " y:" + self.y
 end function
 Vec.New.Print
@@ -1099,7 +1099,7 @@ d = {}
 d.foo = ["a", "b", "c"]
 print(d.foo.len)				// 3
 print(d.foo.indexOf("b"))		// 1
-f = function()
+f = function
 	return d
 end function
 print(f.foo.len)				// 3
@@ -1225,14 +1225,14 @@ print lst
 ==== Test the super pseudo-keyword
 A = {}
 A.name = "Ay"
-A.func = function()
+A.func = function
 	return self.name + "1"
 end function
 B = new A
 B.name = "Bee"
 C = new B
 C.name = "Sea"
-C.func = function()
+C.func = function
 	return super.func + "." + self.name + "3"
 end function
 c = new C
@@ -1268,7 +1268,7 @@ print bitXor(14, 7)	// binary 1110 ^ 0111 = 1001
 9
 ======================================================================
 ==== Check various edge cases with function calls and implicit results.
-func = function()
+func = function
 	print "func invoked!"
 	return rnd * 10
 end function
@@ -1303,12 +1303,12 @@ Runtime Error: Too Many Arguments [line 2]
 ======================================================================
 ==== Check that we look only in the local and global scope for
 ==== identifiers, and not in any call frames in between.
-func1 = function()
+func1 = function
 	var1 = 42
 	var2 = "ignore me"
 	func2
 end function
-func2 = function()
+func2 = function
 	print "var1: " + var1
 	print "var2: " + var2
 	var2 = "local"
@@ -1342,11 +1342,11 @@ print d isa d
 0
 ======================================================================
 ==== Test adding new extension methods to built-in types.
-string.cap = function()
+string.cap = function
 	return self[0].upper + self[1:]
 end function
 print "foo!".cap
-number.squared = function()
+number.squared = function
 	return self * self
 end function
 
@@ -1403,10 +1403,10 @@ print B.two
 ======================================================================
 ==== Test binding of function context (i.e. outer scope)
 globA = "Global A"
-funcA = function()
+funcA = function
 	AlocalA = "Local A in funcA"
 	AlocalB = 42
-	funcB = function()
+	funcB = function
 		BlocalA = "Local A in funcB"
 		print [globA, AlocalA, AlocalB, BlocalA]
 	end function
@@ -1418,10 +1418,10 @@ funcA
 ======================================================================
 ==== Test assigning to outer-scope variables via "outer"
 globA = "Global A"
-funcA = function()
+funcA = function
 	AlocalA = "Local A in funcA"
 	AlocalB = 0
-	funcB = function()
+	funcB = function
 		BlocalA = "Local A in funcB"
 		outer.AlocalB = AlocalB + 1
 		print [globA, AlocalA, AlocalB, BlocalA]
@@ -1437,23 +1437,23 @@ funcA
 ["Global A", "Local A in funcA", 3, "Local A in funcB"]
 ======================================================================
 ==== Test extending the intrinsic types with new methods
-string.foo = function()
+string.foo = function
 	return self + "foo"
 end function
 print "hello".foo
 
-number.squared = function()
+number.squared = function
 	return self*self
 end function
 x = 42   // (methods on numeric literals are not currently supported)
 print x.squared
 
-list.dbl = function()
+list.dbl = function
 	return self + self
 end function
 print [1,2,3].dbl
 
-map.sortedKeys = function()
+map.sortedKeys = function
 	keys = self.indexes
 	keys.sort
 	return keys
@@ -1491,7 +1491,7 @@ print list.sum
 ==== (Overflows when a signed int is exceeded.)
 ======================================================================
 Counter = {"value":0}
-Counter.next = function()
+Counter.next = function
 	self.value = self.value + 1
 	return self.value
 end function

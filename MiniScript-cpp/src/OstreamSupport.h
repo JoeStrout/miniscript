@@ -6,7 +6,7 @@
 #ifndef OSTREAMSUPPORT_H
 #define OSTREAMSUPPORT_H
 
-#include "MiniScript/String.h"
+#include "MiniScript/SimpleString.h"
 #include "MiniScript/List.h"
 
 #include <iostream>

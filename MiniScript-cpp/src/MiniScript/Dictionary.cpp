@@ -8,7 +8,7 @@
 
 #include "Dictionary.h"
 #include "UnitTest.h"
-#include "String.h"
+#include "SimpleString.h"
 
 namespace MiniScript {
 	

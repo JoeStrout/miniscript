@@ -8,6 +8,7 @@
 
 #include "MiniscriptTAC.h"
 #include <math.h>		// for pow() and fmod()
+#include <cmath>		// for std::signbit()
 #if _WIN32 || _WIN64
 	#include <windows.h>	// for GetTickCount
 #else
@@ -18,7 +19,7 @@
 namespace MiniScript {
 
 	static inline double AbsClamp01(double d) {
-		if (d < 0 || d == -0) d = -d;
+		if (std::signbit(d)) d = -d;
 		if (d > 1) return 1;
 		return d;
 	}

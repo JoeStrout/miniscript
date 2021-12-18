@@ -3,7 +3,7 @@
 //  MiniScript
 //
 //  Created by Joe Strout on 3/9/19.
-//  Copyright © 2019 Joe Strout. All rights reserved.
+//  Copyright © 2021 Joe Strout. All rights reserved.
 //
 
 #ifndef SHELLINTRINSICS_H
