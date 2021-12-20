@@ -210,21 +210,25 @@ namespace Miniscript {
 		/// <param name="sourceCode">source code to analyze</param>
 		/// <returns>true if line continuation is called for; false otherwise</returns>
 		public static bool EndsWithLineContinuation(string sourceCode) {
-			Token lastTok = Lexer.LastToken(sourceCode);
-			// Almost any token at the end will signify line continuation, except:
-			switch (lastTok.type) {
-			case Token.Type.EOL:
-			case Token.Type.Identifier:
-			case Token.Type.Keyword:
-			case Token.Type.Number:
-			case Token.Type.RCurly:
-			case Token.Type.RParen:
-			case Token.Type.RSquare:
-			case Token.Type.String:
-			case Token.Type.Unknown:
+			try {
+				Token lastTok = Lexer.LastToken(sourceCode);
+				// Almost any token at the end will signify line continuation, except:
+				switch (lastTok.type) {
+				case Token.Type.EOL:
+				case Token.Type.Identifier:
+				case Token.Type.Keyword:
+				case Token.Type.Number:
+				case Token.Type.RCurly:
+				case Token.Type.RParen:
+				case Token.Type.RSquare:
+				case Token.Type.String:
+				case Token.Type.Unknown:
+					return false;
+				default:
+					return true;
+				}
+			} catch (LexerException exc) {
 				return false;
-			default:
-				return true;
 			}
 		}
 
