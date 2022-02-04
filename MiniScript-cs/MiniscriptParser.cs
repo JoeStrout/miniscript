@@ -193,6 +193,8 @@ namespace Miniscript {
 			output.backpatches.Clear();
 			output.jumpPoints.Clear();
 			output.nextTempNum = 0;
+			partialInput = null;
+			pendingState = null;
 		}
 
 		public bool NeedMoreInput() {
@@ -227,7 +229,7 @@ namespace Miniscript {
 				default:
 					return true;
 				}
-			} catch (LexerException exc) {
+			} catch (LexerException) {
 				return false;
 			}
 		}
@@ -522,7 +524,6 @@ namespace Miniscript {
 			// Finally, if we have a pending state, because we encountered a function(),
 			// then push it onto our stack now that we're done with that statement.
 			if (pendingState != null) {
-//				Console.WriteLine("PUSHING NEW PARSE STATE");
 				output = pendingState;
 				outputStack.Push(output);
 				pendingState = null;

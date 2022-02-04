@@ -180,7 +180,7 @@ namespace Miniscript {
 				}
 			} catch (MiniscriptException mse) {
 				ReportError(mse);
-				vm.GetTopContext().JumpToEnd();
+				Stop(); // was: vm.GetTopContext().JumpToEnd();
 			}
 		}
 		
@@ -194,7 +194,7 @@ namespace Miniscript {
 				vm.Step();
 			} catch (MiniscriptException mse) {
 				ReportError(mse);
-				vm.GetTopContext().JumpToEnd();
+				Stop(); // was: vm.GetTopContext().JumpToEnd();
 			}
 		}
 
@@ -244,7 +244,7 @@ namespace Miniscript {
 			} catch (MiniscriptException mse) {
 				ReportError(mse);
 				// Attempt to recover from an error by jumping to the end of the code.
-				vm.GetTopContext().JumpToEnd();
+				Stop(); // was: vm.GetTopContext().JumpToEnd();
 			}
 		}
 		

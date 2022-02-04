@@ -574,12 +574,12 @@ namespace Miniscript {
 					if (value == null) return Intrinsic.Result.Null;
 					string s = value.ToString();
 					int idx;
-					if (after == null) idx = str.IndexOf(s);
+					if (after == null) idx = str.IndexOf(s, StringComparison.Ordinal);
 					else {
 						int afterIdx = after.IntValue();
 						if (afterIdx < -1) afterIdx += str.Length;
 						if (afterIdx < -1 || afterIdx >= str.Length-1) return Intrinsic.Result.Null;
-						idx = str.IndexOf(s, afterIdx + 1);
+						idx = str.IndexOf(s, afterIdx + 1, StringComparison.Ordinal);
 					}
 					if (idx >= 0) return new Intrinsic.Result(idx);
 				} else if (self is ValMap) {
@@ -952,7 +952,7 @@ namespace Miniscript {
 					if (k == null) throw new RuntimeException("argument to 'remove' must not be null");
 					ValString selfStr = (ValString)self;
 					string substr = k.ToString();
-					int foundPos = selfStr.value.IndexOf(substr);
+					int foundPos = selfStr.value.IndexOf(substr, StringComparison.Ordinal);
 					if (foundPos < 0) return new Intrinsic.Result(self);
 					return new Intrinsic.Result(selfStr.value.Remove(foundPos, substr.Length));
 				}
@@ -1026,7 +1026,7 @@ namespace Miniscript {
 					string newstr = newval == null ? "" : newval.ToString();
 					int idx = 0;
 					while (true) {
-						idx = str.IndexOf(oldstr, idx);
+						idx = str.IndexOf(oldstr, idx, StringComparison.Ordinal);
 						if (idx < 0) break;
 						str = str.Substring(0, idx) + newstr + str.Substring(idx + oldstr.Length);
 						idx += newstr.Length;
@@ -1235,7 +1235,7 @@ namespace Miniscript {
 					int nextPos;
 					if (maxCount >= 0 && result.values.Count == maxCount - 1) nextPos = self.Length;
 					else if (delim.Length == 0) nextPos = pos+1;
-					else nextPos = self.IndexOf(delim, pos, StringComparison.InvariantCulture);
+					else nextPos = self.IndexOf(delim, pos, StringComparison.Ordinal);
 					if (nextPos < 0) nextPos = self.Length;
 					result.values.Add(new ValString(self.Substring(pos, nextPos - pos)));
 					pos = nextPos + delim.Length;
