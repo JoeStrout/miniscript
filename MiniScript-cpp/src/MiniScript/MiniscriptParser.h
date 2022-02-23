@@ -157,6 +157,8 @@ namespace MiniScript {
 
 		Machine *CreateVM(TextOutputMethod standardOutput);
 		
+		FunctionStorage *CreateImport();
+		
 	private:
 		static ParseState nullState;
 		

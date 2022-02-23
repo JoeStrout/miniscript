@@ -1033,6 +1033,23 @@ namespace MiniScript {
 	}
 	
 	/// <summary>
+	/// Create a Function with the code we have parsed, for use as
+	/// an import.  That means, it runs all that code, then at the
+	/// end it returns `locals` so that the caller can get its symbols.
+	/// </summary>
+	/// <returns></returns>
+	FunctionStorage *Parser::CreateImport() {
+		// Add one additional line to return `locals` as the function return value.
+		Value locals = Value::Var("locals");
+		output->Add(TACLine(Value::Temp(0), TACLine::Op::ReturnA, locals));
+		// Then wrap the whole thing in a Function.
+		FunctionStorage *func = new FunctionStorage();
+		func->code = output->code;
+		return func;
+	}
+
+
+	/// <summary>
 	/// The given token type and text is required. So, consume the next token,
 	/// and if it doesn't match, throw an error.
 	/// </summary>

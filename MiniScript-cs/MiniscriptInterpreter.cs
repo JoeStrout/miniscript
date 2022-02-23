@@ -136,6 +136,7 @@ namespace Miniscript {
 				vm.interpreter = new WeakReference(this);
 			} catch (MiniscriptException mse) {
 				ReportError(mse);
+				if (vm == null) parser = null;
 			}
 		}
 		

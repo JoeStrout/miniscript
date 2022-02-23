@@ -154,7 +154,8 @@ namespace MiniScript {
 		void Step();
 		void Stop();
 		void Reset();
-		
+		void ManuallyPushCall(FunctionStorage* func, Value resultStorage=Value::null);
+
 		Context* GetGlobalContext() { return stack[0]; }
 		Context* GetTopContext() { return stack.Last(); }
 		String FindShortName(const Value& val);

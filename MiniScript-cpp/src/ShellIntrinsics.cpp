@@ -453,6 +453,19 @@ static IntrinsicResult intrinsic_fwriteLine(Context *context, IntrinsicResult pa
 	return IntrinsicResult((int)written);
 }
 
+static String ReadFileHelper(FILE *handle, long bytesToRead) {
+	// If bytesToRead < 0, read to EOF.
+	// Otherwise, read bytesToRead bytes (1k at a time).
+	char buf[1024];
+	String result;
+	while (!feof(handle) && (bytesToRead != 0)) {
+		size_t read = fread(buf, 1, bytesToRead > 0 && bytesToRead < 1024 ? bytesToRead : 1024, handle);
+		if (bytesToRead > 0) bytesToRead -= read;
+		result += String(buf, read);
+	}
+	return result;
+}
+
 static IntrinsicResult intrinsic_fread(Context *context, IntrinsicResult partialResult) {
 	Value self = context->GetVar("self");
 	long bytesToRead = context->GetVar("byteCount").IntValue();
@@ -464,15 +477,7 @@ static IntrinsicResult intrinsic_fread(Context *context, IntrinsicResult partial
 	FILE *handle = storage->f;
 	if (handle == NULL) return IntrinsicResult(Value::zero);
 	
-	// If bytesToRead < 0, read to EOF.
-	// Otherwise, read bytesToRead bytes (1k at a time).
-	char buf[1024];
-	String result;
-	while (!feof(handle) && (bytesToRead != 0)) {
-		size_t read = fread(buf, 1, bytesToRead > 0 && bytesToRead < 1024 ? bytesToRead : 1024, handle);
-		if (bytesToRead > 0) bytesToRead -= read;
-		result += String(buf, read);
-	}
+	String result = ReadFileHelper(handle, bytesToRead);
 	return IntrinsicResult(result);
 }
 
@@ -635,6 +640,72 @@ static ValueDict& FileHandleClass() {
 	return result;
 }
 
+static IntrinsicResult intrinsic_import(Context *context, IntrinsicResult partialResult) {
+	if (!partialResult.Result().IsNull()) {
+		// When we're invoked with a partial result, it means that the import
+		// function has finished, and stored its result (the values that were
+		// created by the import code) in Temp 0.
+		Value importedValues = context->GetTemp(0);
+		// Now we're going to do something slightly evil.  We're going to reach
+		// up into the *parent* context, and store these imported values under
+		// the import library name.  Thus, there will always be a standard name
+		// by which you can refer to the imported stuff.
+		String libname = partialResult.Result().ToString();
+		Context *callerContext = context->parent;
+		callerContext->SetVar(libname, importedValues);
+		return IntrinsicResult::Null;
+	}
+	// When we're invoked without a partial result, it's time to start the import.
+	// Begin by finding the actual code.
+	String libname = context->GetVar("libname").ToString();
+	if (libname.empty()) {
+		RuntimeException("import: libname required").raise();
+	}
+	
+	// Figure out what directories to look for the import modules in.
+	SimpleVector<String> libDirs;
+	libDirs.push_back(".");		// for now!
+	// ToDo: other import dirs, maybe from env, or from something the user can set.
+	
+	// Search the lib dirs for a matching file.
+	String moduleSource;
+	bool found = false;
+	VecIterate(i, libDirs) {
+		String path = libDirs[i];
+		if (path.empty()) path = ".";
+		else if (path[path.LengthB() - 1] != '/') {
+#if WINDOWS
+			path += "\";
+#else
+			path += "/";
+#endif
+		}
+		path += libname + ".ms";
+		FILE *handle = fopen(path.c_str(), "r");
+		if (handle == NULL) continue;
+		moduleSource = ReadFileHelper(handle, -1);
+		fclose(handle);
+		found = true;
+		break;
+	}
+	if (!found) {
+		RuntimeException("import: library not found: " + libname).raise();
+	}
+	
+	// Now, parse that code, and build a function around it that returns
+	// its own locals as its result.  Push a manual call.
+	Parser parser;
+	parser.errorContext = libname + ".ms";
+	parser.Parse(moduleSource);
+	FunctionStorage *import = parser.CreateImport();
+	context->vm->ManuallyPushCall(import, Value::Temp(0));
+	
+	// That call will not be able to run until we return from this intrinsic.
+	// So, return a partial result, with the lib name.  We'll get invoked
+	// again after the import function has finished running.
+	return IntrinsicResult(libname, false);
+}
+
 static IntrinsicResult intrinsic_env(Context *context, IntrinsicResult partialResult) {
 	static ValueDict envMap;
 	if (envMap.Count() == 0) {
@@ -680,6 +751,10 @@ void AddShellIntrinsics() {
 	f = Intrinsic::Create("input");
 	f->AddParam("prompt", "");
 	f->code = &intrinsic_input;
+
+	f = Intrinsic::Create("import");
+	f->AddParam("libname", "");
+	f->code = &intrinsic_import;
 
 	f = Intrinsic::Create("file");
 	f->code = &intrinsic_File;
