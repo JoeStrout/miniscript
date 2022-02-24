@@ -675,7 +675,7 @@ static IntrinsicResult intrinsic_import(Context *context, IntrinsicResult partia
 		if (path.empty()) path = ".";
 		else if (path[path.LengthB() - 1] != '/') {
 #if WINDOWS
-			path += "\";
+			path += "\\";
 #else
 			path += "/";
 #endif
