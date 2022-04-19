@@ -175,6 +175,9 @@ namespace Miniscript {
 				double startTime = vm.runTime;
 				vm.yielding = false;
 				while (!vm.done && !vm.yielding) {
+                    // ToDo: find a substitute for vm.runTime, or make it go faster, because
+                    // right now about 14% of our run time is spent just in the vm.runtime call!
+                    // Perhaps Environment.TickCount?  (Just watch out for the wraparound every 25 days!)
 					if (vm.runTime - startTime > timeLimit) return;	// time's up for now!
 					vm.Step();		// update the machine
 					if (returnEarly && vm.GetTopContext().partialResult != null) return;	// waiting for something

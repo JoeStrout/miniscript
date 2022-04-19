@@ -518,7 +518,7 @@ namespace Miniscript {
 			int result = values.Count.GetHashCode();
 			if (recursionDepth < 1) return result;
 			for (var i = 0; i < values.Count; i++) {
-				result ^= values[i].Hash(recursionDepth-1);
+				if (values[i] != null) result ^= values[i].Hash(recursionDepth-1);
 			}
 			return result;
 		}
