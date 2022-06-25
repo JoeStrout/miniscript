@@ -92,7 +92,7 @@ namespace MiniScript {
 		const char *c_str() const { return ss ? ss->data : ""; }
 		const char *data() const { return ss ? ss->data : nullptr; }
 		inline unsigned char operator[] (size_t posB) const;		// important: [] works on bytes, not characters!
-		inline char atB(size_t posB) const;
+		inline signed char atB(size_t posB) const;
 		int at(size_t pos) const;
 		size_t bytePosOfCharPos(size_t pos) const;
 		size_t charPosOfBytePos(size_t posB) const;
@@ -253,7 +253,7 @@ namespace MiniScript {
 		return ss->data[pos];
 	}
 
-	char String::atB(size_t pos) const {
+	signed char String::atB(size_t pos) const {
 		// NOTE: the standard String class raises an exception for out-of-bounds
 		// values, but we use an assert here instead.  The caller can (and probably
 		// should) do their own range checking if such a case is expected.
