@@ -13,7 +13,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Build
-      - uses: ilammy/msvc-dev-cmd@v1
+        uses: ilammy/msvc-dev-cmd@v1
         run: |
           cd MiniScript-cpp/src
           cl /EHsc /wd4068 *.cpp MiniScript/*.cpp /Feminiscript.exe
