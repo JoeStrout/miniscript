@@ -13,10 +13,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Build
+      - uses: ilammy/msvc-dev-cmd@v1
         run: |
           cd MiniScript-cpp/src
           cl /EHsc /wd4068 *.cpp MiniScript/*.cpp /Feminiscript.exe
-      - uses: actions/upload-artifact@v3  
+      - uses: actions/upload-artifact@v3
         with:
           name: miniscript-windows
           path: MiniScript-cpp/src/miniscript.exe
