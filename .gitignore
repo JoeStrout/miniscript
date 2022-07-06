@@ -35,6 +35,6 @@
 DerivedData
 *.xcodeproj
 .vs
-
+.vscode
 
 
