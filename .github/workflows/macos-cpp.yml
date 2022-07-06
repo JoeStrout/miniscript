@@ -1,0 +1,23 @@
+name: MacOS C++ Build
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Build
+        run: |
+          cd MiniScript-cpp
+          make
+      - uses: actions/upload-artifact@v3
+        with:
+          name: miniscript-macos
+          path: MiniScript-cpp/miniscript
+          if-no-files-found: error
