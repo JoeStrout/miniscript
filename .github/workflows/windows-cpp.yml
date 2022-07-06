@@ -1,0 +1,23 @@
+name: Windows C++ Build
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Build
+        run: |
+          cd MiniScript-cpp/src
+          cl /EHsc /wd4068 *.cpp MiniScript/*.cpp /Feminiscript.exe
+      - uses: actions/upload-artifact@v3  
+        with:
+          name: miniscript-windows
+          path: MiniScript-cpp/src/miniscript.exe
+          if-no-files-found: error
