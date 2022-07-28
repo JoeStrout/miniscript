@@ -1172,7 +1172,7 @@ namespace Miniscript {
 				if (list == null || list.values.Count < 2) return new Intrinsic.Result(self);
 
 				IComparer<Value> sorter;
-				if (context.GetVar("ascending").BoolValue()) sorter = ValueSorter.instance;
+				if (context.GetLocalBool("ascending")) sorter = ValueSorter.instance;
 				else sorter = ValueReverseSorter.instance;
 
 				Value byKey = context.GetLocal("byKey");

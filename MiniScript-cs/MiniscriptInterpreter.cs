@@ -238,7 +238,7 @@ namespace Miniscript {
 					}
 					if (implicitOutput != null && vm.globalContext.implicitResultCounter > startImpResultCount) {
 
-						Value result = vm.globalContext.GetVar(ValVar.implicitResult.identifier);
+						Value result = vm.globalContext.GetVar(ValVar.implicitResult);
 						if (result != null) {
 							implicitOutput.Invoke(result.ToString(vm));
 						}
@@ -282,7 +282,7 @@ namespace Miniscript {
 			TAC.Context c = vm.globalContext;
 			if (c == null) return null;
 			try {
-				return c.GetVar(varName);
+				return c.GetVar(new ValVar(varName));
 			} catch (UndefinedIdentifierException) {
 				return null;
 			}

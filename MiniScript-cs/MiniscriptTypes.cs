@@ -880,12 +880,12 @@ namespace Miniscript {
 	/// </summary>
 	public class ValFunction : Value {
 		public Function function;
-		public readonly ValMap outerVars;	// local variables where the function was defined (usually, the module)
+		public readonly TAC.StackVars outerVars;	// local variables where the function was defined (usually, the module)
 
 		public ValFunction(Function function) {
 			this.function = function;
 		}
-		public ValFunction(Function function, ValMap outerVars) {
+		public ValFunction(Function function, TAC.StackVars outerVars) {
 			this.function = function;
             this.outerVars = outerVars;
 		}
@@ -914,7 +914,7 @@ namespace Miniscript {
 			return function == other.function ? 1 : 0;
 		}
 
-        public ValFunction BindAndCopy(ValMap contextVariables) {
+        public ValFunction BindAndCopy(TAC.StackVars contextVariables) {
             return new ValFunction(function, contextVariables);
         }
 
@@ -950,23 +950,34 @@ namespace Miniscript {
 
 	}
 
+	// ValVar represents a variable reference.  The parser will fill this in
+	// with the identifier and sometimes other useful information.
 	public class ValVar : Value {
 		public string identifier;
 		public bool noInvoke;	// reflects use of "@" (address-of) operator
+		public enum Scope {
+			Undefined = 0,
+			Local,
+			Outer,
+			Global
+		}
+		public Scope scope = Scope.Undefined;
+		public int relativeSlotNumber = -1;
 
-		public ValVar(string identifier) {
+		public ValVar(string identifier, Scope scope = Scope.Undefined) {
 			this.identifier = identifier;
+			this.scope = scope;
 		}
 
 		public override Value Val(TAC.Context context) {
 			if (this == self) return context.self;
-			return context.GetVar(identifier);
+			return context.GetVar(this);
 		}
 
 		public override Value Val(TAC.Context context, out ValMap valueFoundIn) {
 			valueFoundIn = null;
 			if (this == self) return context.self;
-			return context.GetVar(identifier);
+			return context.GetVar(this);
 		}
 
 		public override string ToString(TAC.Machine vm) {

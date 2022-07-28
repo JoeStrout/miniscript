@@ -984,11 +984,25 @@ namespace Miniscript {
 					tokens.Dequeue();	// discard '.'
 					AllowLineBreak(tokens); // allow a line break after a binary operator
 					Token nextIdent = RequireToken(tokens, Token.Type.Identifier);
+
+					string leftIdent = null;
+					if (val is ValVar) leftIdent = ((ValVar)val).identifier;
+
 					// We're chaining sequences here; look up (by invoking)
 					// the previous part of the sequence, so we can build on it.
-					val = FullyEvaluate(val);
+					// Special-case scope identifiers on the left-hand side;
+					// or for anything else, build a ValSeqElem to evaluate the dot.
+					if (leftIdent == "globals") {
+						val = new ValVar(nextIdent.text, ValVar.Scope.Global);
+					} else if (leftIdent == "outer") {
+						val = new ValVar(nextIdent.text, ValVar.Scope.Outer);
+					} else if (leftIdent == "locals") {
+						val = new ValVar(nextIdent.text, ValVar.Scope.Local);
+					} else {
+						val = FullyEvaluate(val);
+						val = new ValSeqElem(val, new ValString(nextIdent.text));
+					}
 					// Now build the lookup.
-					val = new ValSeqElem(val, new ValString(nextIdent.text));
 					if (tokens.Peek().type == Token.Type.LParen && !tokens.Peek().afterSpace) {
 						// If this new element is followed by parens, we need to
 						// parse it as a call right away.

@@ -486,7 +486,7 @@ namespace Miniscript {
 					switch (op) {
 					case Op.BindAssignA:
 						{
-							if (context.variables == null) context.variables = new ValMap();
+//							if (context.variables == null) context.variables = new ValMap();
 							ValFunction valFunc = (ValFunction)opA;
                             return valFunc.BindAndCopy(context.variables);
 						}
@@ -521,7 +521,178 @@ namespace Miniscript {
 			}
 
 		}
+
+		public class NamedValue {
+			public string name;
+			public Value value;
+			
+		}
+
+		/// <summary>
+		// StackVars: a section of the machine variables stack, representing
+		// the local variables of some context.
+		/// </summary>
+		public class StackVars {
+			public Machine vm;
+			public int lowIndex;		// lowest index actually in use
+			public int highIndex;		// one past the highest index in use
+
+			public StackVars(Machine machine, int lowIndex) {
+				this.vm = machine;
+				this.lowIndex = lowIndex;
+				this.highIndex = vm.varHighIndex;
+			}
+
+			/// <summary>
+			/// Convenience method to check whether the map contains a given string key.
+			/// </summary>
+			/// <param name="identifier">string key to check for</param>
+			/// <returns>true if the map contains that key; false otherwise</returns>
+			public bool ContainsKey(string identifier) {
+				for (int i=lowIndex; i<highIndex; i++) {
+					if (vm.variables[i].name == identifier) return true;
+				}
+				return false;
+			}
 		
+			/// <summary>
+			/// Convenience method to check whether this map contains a given key
+			/// (of arbitrary type).
+			/// </summary>
+			/// <param name="key">key to check for</param>
+			/// <returns>true if the map contains that key; false otherwise</returns>
+			public bool ContainsKey(Value key) {
+				return ContainsKey(key.ToString());	// or CodeForm()?
+			}
+		
+			/// <summary>
+			/// Get the number of entries in this map.
+			/// </summary>
+			public int Count {
+				get { return highIndex - lowIndex; }
+			}
+		
+			/// <summary>
+			/// Return the KeyCollection for this map.
+			/// </summary>
+			public Dictionary<Value, Value>.KeyCollection Keys {
+				get {
+					throw new System.NotImplementedException();
+				}
+			}
+		
+		
+			/// <summary>
+			/// Accessor to get/set on element of this map by a string key, walking
+			/// the __isa chain as needed.  (Note that if you want to avoid that, then
+			/// simply look up your value in .map directly.)
+			/// </summary>
+			/// <param name="identifier">string key to get/set</param>
+			/// <returns>value associated with that key</returns>
+			public Value this [string identifier] {
+				get {
+					// ...but since variable maps can't inherit, this is just the same as:
+					for (int i=lowIndex; i<highIndex; i++) {
+						if (vm.variables[i].name == identifier) return vm.variables[i].value;
+					}
+					return null;
+				}
+				set {
+					// update an existing variable
+					int i;
+					for (i=lowIndex; i<highIndex; i++) {
+						if (vm.variables[i].name == identifier) {
+							vm.variables[i].value = value;
+							//Console.WriteLine($"Updated value of {identifier} (slot {i}) to {value}");
+							return;
+						}
+					}
+					// ...or add a new one
+					i = vm.varHighIndex;
+					highIndex = ++vm.varHighIndex;
+					if (vm.varHighIndex > vm.variables.Count) vm.variables.Add(new NamedValue());
+					vm.variables[i].name = identifier;
+					vm.variables[i].value = value;
+					//Console.WriteLine($"Created new {identifier} (slot {i}) with {value}");
+				}
+			}
+		
+			/// <summary>
+			/// Look up the given identifier as quickly as possible, without
+			/// walking the __isa chain or doing anything fancy.  (This is used
+			/// when looking up local variables.)
+			/// </summary>
+			/// <param name="identifier">identifier to look up</param>
+			/// <returns>true if found, false if not</returns>
+			public bool TryGetValue(string identifier, out Value value) {
+				for (int i=lowIndex; i<highIndex; i++) {
+					if (vm.variables[i].name == identifier) {
+						value = vm.variables[i].value;
+						return true;
+					}
+				}
+				value = default(Value);
+				return false;
+			}
+
+			/// <summary>
+			/// Look up a value in this dictionary, walking the __isa chain to find
+			/// it in a parent object if necessary.
+			/// </summary>
+			/// <param name="key">key to search for</param>
+			/// <returns>value associated with that key, or null if not found</returns>
+			public Value Lookup(string key) {
+				// ...but since variable maps can't inherit, this is just the same as:
+				for (int i=lowIndex; i<highIndex; i++) {
+					if (vm.variables[i].name == key) return vm.variables[i].value;
+				}
+				return null;
+			}
+		
+			/// <summary>
+			/// Look up a value in this dictionary, walking the __isa chain to find
+			/// it in a parent object if necessary.
+			/// </summary>
+			/// <param name="key">key to search for</param>
+			/// <returns>value associated with that key, or null if not found</returns>
+			public Value Lookup(Value key) {
+				return Lookup(key.ToString());
+			}
+		
+			/// <summary>
+			/// Look up a value in this dictionary, walking the __isa chain to find
+			/// it in a parent object if necessary; return both the value found and
+			/// (via the output parameter) the map it was found in.
+			/// </summary>
+			/// <param name="key">key to search for</param>
+			/// <returns>value associated with that key, or null if not found</returns>
+			public Value Lookup(Value key, out ValMap valueFoundIn) {
+				// should not be needed for this
+				throw new System.NotImplementedException();
+			}
+		
+			public ValMap EvalCopy(TAC.Context context) {
+				// Create a copy of this map, evaluating its members as we go.
+				// This is used when a map literal appears in the source, to
+				// ensure that each time that code executes, we get a new, distinct
+				// mutable object, rather than the same object multiple times.
+
+				// should not be needed for this
+				throw new System.NotImplementedException();
+			}
+
+			/// <summary>
+			/// Get the indicated key/value pair as another map containing "key" and "value".
+			/// (This is used when iterating over a map with "for".)
+			/// </summary>
+			/// <param name="index">0-based index of key/value pair to get.</param>
+			/// <returns>new map containing "key" and "value" with the requested key/value pair</returns>
+			public ValMap GetKeyValuePair(int index) {
+				// should not be needed for this
+				throw new System.NotImplementedException();
+			}
+		}
+
 		/// <summary>
 		/// TAC.Context keeps track of the runtime environment, including local 
 		/// variables.  Context objects form a linked list via a "parent" reference,
@@ -531,8 +702,8 @@ namespace Miniscript {
 		public class Context {
 			public List<Line> code;			// TAC lines we're executing
 			public int lineNum;				// next line to be executed
-			public ValMap variables;		// local variables for this call frame
-			public ValMap outerVars;        // variables of the context where this function was defined
+			public StackVars variables;		// local variables for this call frame
+			public StackVars outerVars;     // variables of the context where this function was defined
 			public Value self;				// value of self in this context
 			public Stack<Value> args;		// pushed arguments for upcoming calls
 			public Context parent;			// parent (calling) context
@@ -580,7 +751,7 @@ namespace Miniscript {
 			public void Reset(bool clearVariables=true) {
 				lineNum = 0;
 				temps = null;
-				if (clearVariables) variables = new ValMap();
+				if (clearVariables) variables = new StackVars(vm, 0);
 			}
 
 			public void JumpToEnd() {
@@ -611,10 +782,10 @@ namespace Miniscript {
 					throw new RuntimeException("can't assign to " + identifier);
 				}
 				if (identifier == "self") self = value;
-				if (variables == null) variables = new ValMap();
-				if (variables.assignOverride == null || !variables.assignOverride(new ValString(identifier), value)) {
+				if (variables == null) variables = new StackVars(vm, vm.varHighIndex);
+				//if (variables.assignOverride == null || !variables.assignOverride(new ValString(identifier), value)) {
 					variables[identifier] = value;
-				}
+				//}
 			}
 			
 			/// <summary>
@@ -688,26 +859,51 @@ namespace Miniscript {
 			/// </summary>
 			/// <param name="identifier">name of identifier to look up</param>
 			/// <returns>value of that identifier</returns>
-			public Value GetVar(string identifier) {
+			public Value GetVar(ValVar valVar) {
+				string identifier = valVar.identifier;
+				Value result;
+
+				// if the ValVar has a specific scope, check only that
+				if (valVar.scope == ValVar.Scope.Global) {
+					Context globals = root;
+					if (globals.variables != null && globals.variables.TryGetValue(identifier, out result)) {
+						return result;
+					}
+					throw new UndefinedIdentifierException(identifier);
+				}
+				if (valVar.scope == ValVar.Scope.Outer) {
+					if (outerVars != null && outerVars.TryGetValue(identifier, out result)) {
+						return result;
+					}
+					throw new UndefinedIdentifierException(identifier);
+				}
+				if (valVar.scope == ValVar.Scope.Local) {
+					if (variables != null && variables.TryGetValue(identifier, out result)) {
+						return result;
+					}
+					throw new UndefinedIdentifierException(identifier);
+				}
+
 				// check for special built-in identifiers 'locals', 'globals', etc.
 				if (identifier == "self") return self;
 				if (identifier == "locals") {
-					if (variables == null) variables = new ValMap();
-					return variables;
+					// ToDo
+					throw new System.NotImplementedException();
 				}
 				if (identifier == "globals") {
-					if (root.variables == null) root.variables = new ValMap();
-					return root.variables;
+					// ToDo
+					throw new System.NotImplementedException();
 				}
 				if (identifier == "outer") {
 					// return module variables, if we have them; else globals
-					if (outerVars != null) return outerVars;
-					if (root.variables == null) root.variables = new ValMap();
-					return root.variables;
+					//if (outerVars != null) return outerVars;
+					//if (root.variables == null) root.variables = new ValMap();
+					//return root.variables;
+					// ToDo
+					throw new System.NotImplementedException();
 				}
 				
 				// check for a local variable
-				Value result;
 				if (variables != null && variables.TryGetValue(identifier, out result)) {
 					return result;
 				}
@@ -738,7 +934,20 @@ namespace Miniscript {
 				if (lhs is ValTemp) {
 					SetTemp(((ValTemp)lhs).tempNum, value);
 				} else if (lhs is ValVar) {
-					SetVar(((ValVar)lhs).identifier, value);
+					string identifier = ((ValVar)lhs).identifier;
+					switch (((ValVar)lhs).scope) {
+						case ValVar.Scope.Undefined:
+						case ValVar.Scope.Local:
+							SetVar(identifier, value);
+							break;
+						case ValVar.Scope.Global:
+							root.SetVar(identifier, value);
+							break;
+						case ValVar.Scope.Outer:
+							if (outerVars != null) outerVars[identifier] = value;
+							else root.SetVar(identifier, value);
+							break;
+					}
 				} else if (lhs is ValSeqElem) {
 					ValSeqElem seqElem = (ValSeqElem)lhs;
 					Value seq = seqElem.sequence.Val(this);
@@ -787,6 +996,8 @@ namespace Miniscript {
 				result.resultStorage = resultStorage;
 				result.parent = this;
 				result.vm = vm;
+				result.variables = new StackVars(vm, variables.highIndex);
+				//Console.WriteLine($"NextCallContext: created new context starting at {result.variables.lowIndex}");
 
 				// Stuff arguments, stored in our 'args' stack,
 				// into local variables corrersponding to parameter names.
@@ -823,9 +1034,9 @@ namespace Miniscript {
 				if (variables == null) {
 					Console.WriteLine(" NONE");
 				} else {
-					foreach (Value v in variables.Keys) {
-						string id = v.ToString(vm);
-						Console.WriteLine(string.Format("{0}: {1}", id, variables[id].ToString(vm)));
+					for (int i=variables.lowIndex; i < variables.highIndex; i++) {
+						var valstr = vm.variables[i].value.ToString(vm);
+						Console.WriteLine($"{i}. {vm.variables[i].name} = {valstr}");
 					}
 				}
 
@@ -854,6 +1065,10 @@ namespace Miniscript {
 			public TextOutputMethod standardOutput;	// where print() results should go
 			public bool storeImplicit = false;		// whether to store implicit values (e.g. for REPL)
 			public bool yielding = false;			// set to true by yield intrinsic
+
+			public List<NamedValue> variables;
+			public int varHighIndex;
+
 			public ValMap functionType;
 			public ValMap listType;
 			public ValMap mapType;
@@ -878,8 +1093,10 @@ namespace Miniscript {
 			System.Diagnostics.Stopwatch stopwatch;
 
 			public Machine(Context globalContext, TextOutputMethod standardOutput) {
+				variables = new List<NamedValue>();
 				_globalContext = globalContext;
 				_globalContext.vm = this;
+				_globalContext.variables = new StackVars(this, 0);
 				if (standardOutput == null) {
 					this.standardOutput = s => Console.WriteLine(s);
 				} else {
@@ -935,10 +1152,21 @@ namespace Miniscript {
 			/// </summary>
 			/// <param name="func">Miniscript function to invoke</param>
 			/// <param name="resultStorage">where to store result of the call, in the calling context</param>
-			public void ManuallyPushCall(ValFunction func, Value resultStorage=null) {
-				int argCount = 0;
+			/// <param name="arguments">optional list of arguments to push</param>
+			public void ManuallyPushCall(ValFunction func, Value resultStorage=null, List<Value> arguments=null) {
+				var context = stack.Peek();
+				int argCount = func.function.parameters.Count;
+				for (int i=0; i<argCount; i++) {
+					if (arguments != null && i < arguments.Count) {
+						Value val = context.ValueInContext(arguments[i]);
+						context.PushParamArgument(val);						
+					} else {
+						context.PushParamArgument(null);
+					}
+				}
 				Value self = null;	// "self" is always null for a manually pushed call
-				Context nextContext = stack.Peek().NextCallContext(func.function, argCount, self != null, null);
+				
+				Context nextContext = context.NextCallContext(func.function, argCount, self != null, null);
 				if (self != null) nextContext.self = self;
 				nextContext.resultStorage = resultStorage;
 				stack.Push(nextContext);				
@@ -1002,6 +1230,8 @@ namespace Miniscript {
 				Context context = stack.Pop();
 				Value result = context.GetTemp(0, null);
 				Value storage = context.resultStorage;
+				//Console.WriteLine($"PopContext: reducing varHighIndex from {varHighIndex} to {context.variables.lowIndex}");
+				varHighIndex = context.variables.lowIndex;
 				context = stack.Peek();
 				context.StoreValue(storage, result);
 			}
@@ -1016,8 +1246,9 @@ namespace Miniscript {
 			
 			public string FindShortName(Value val) {
 				if (globalContext == null || globalContext.variables == null) return null;
-				foreach (var kv in globalContext.variables.map) {
-					if (kv.Value == val && kv.Key != val) return kv.Key.ToString(this);
+				var gvars = globalContext.variables;
+				for (int i = gvars.lowIndex; i < gvars.highIndex; i++) {
+					if (variables[i].value == val/* && variables[i].name != val*/) return variables[i].name;
 				}
 				string result = null;
 				Intrinsic.shortNames.TryGetValue(val, out result);
