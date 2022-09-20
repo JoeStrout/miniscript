@@ -1,15 +1,13 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
-    <ProjectGuid>{C3806B8F-9702-4B39-B6D9-9ECBC298565F}</ProjectGuid>
-    <OutputType>Exe</OutputType>
-    <RootNamespace>Miniscript</RootNamespace>
-    <AssemblyName>Miniscript</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-    <ProductVersion>8.0.30703</ProductVersion>
-  </PropertyGroup>
+		<Copyright>Copyright © $([System.DateTime]::UtcNow.Year) Joe Strout ($([System.DateTime]::UtcNow.ToString("s")))</Copyright>
+		<ProjectGuid>{C3806B8F-9702-4B39-B6D9-9ECBC298565F}</ProjectGuid>
+		<OutputType>Exe</OutputType>
+		<RootNamespace>Miniscript</RootNamespace>
+		<AssemblyName>Miniscript</AssemblyName>
+		<TargetFramework>net5.0</TargetFramework>
+		<ProductVersion>8.0.30703</ProductVersion>
+	</PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
@@ -30,22 +28,4 @@
     <Externalconsole>true</Externalconsole>
     <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="System" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Program.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Miniscript.cs" />
-    <Compile Include="MiniscriptLexer.cs" />
-    <Compile Include="MiniscriptUnitTest.cs" />
-    <Compile Include="MiniscriptInterpreter.cs" />
-    <Compile Include="MiniscriptTAC.cs" />
-    <Compile Include="MiniscriptIntrinsics.cs" />
-    <Compile Include="MiniscriptParser.cs" />
-    <Compile Include="MiniscriptKeywords.cs" />
-    <Compile Include="MiniscriptTypes.cs" />
-    <Compile Include="MiniscriptErrors.cs" />
-  </ItemGroup>
-  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>
