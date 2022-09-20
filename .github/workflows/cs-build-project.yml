@@ -1,0 +1,26 @@
+name: Build .NET project
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: MiniScript-cs
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - uses: actions/setup-dotnet@v2
+        with:
+          dotnet-version: 5.0.x
+      
+      - name: Build
+        run: dotnet build -c Release
+      
+    

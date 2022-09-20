@@ -1,13 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-		<Copyright>Copyright © $([System.DateTime]::UtcNow.Year) Joe Strout ($([System.DateTime]::UtcNow.ToString("s")))</Copyright>
-		<ProjectGuid>{C3806B8F-9702-4B39-B6D9-9ECBC298565F}</ProjectGuid>
-		<OutputType>Exe</OutputType>
-		<RootNamespace>Miniscript</RootNamespace>
-		<AssemblyName>Miniscript</AssemblyName>
-		<TargetFramework>net5.0</TargetFramework>
-		<ProductVersion>8.0.30703</ProductVersion>
-	</PropertyGroup>
+    <Copyright>Copyright © $([System.DateTime]::UtcNow.Year) Joe Strout ($([System.DateTime]::UtcNow.ToString("s")))</Copyright>
+    <ProjectGuid>{C3806B8F-9702-4B39-B6D9-9ECBC298565F}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Miniscript</RootNamespace>
+    <AssemblyName>Miniscript</AssemblyName>
+    <TargetFramework>net5.0</TargetFramework>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <RepositoryUrl>https://github.com/JoeStrout/miniscript</RepositoryUrl>
+  </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
