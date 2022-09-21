@@ -1,0 +1,37 @@
+name: Publish on Github Packages
+
+on:
+  workflow_run:
+    workflows:
+      - "Build .NET project"
+    types:
+      - completed
+      
+permissions:
+  packages: write
+
+jobs:
+  nuget:
+    name: Nuget
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    
+    defaults:
+      run:
+        working-directory: MiniScript-cs
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - uses: actions/setup-dotnet@v2
+        with:
+          dotnet-version: 5.0.x
+        
+      - name: Authenticate to Github Packages
+        run: dotnet nuget add source --username "${{ github.repository_owner }}" --password "${{ secrets.GITHUB_TOKEN }}" --store-password-in-clear-text --name github "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
+        
+      - name: Package
+        run: dotnet pack -c Release
+        
+      - name: Publish Nuget package
+        run: dotnet nuget push "bin/Release/Miniscript.*.nupkg" --source "github" --api-key "${{ secrets.GHPR_TOKEN }}"
