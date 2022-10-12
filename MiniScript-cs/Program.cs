@@ -133,16 +133,20 @@ class MainClass {
 		Print("Running unit tests.\n");
 		UnitTest.Run();
 
-		Print("Running test suite.\n");
-		RunTestSuite("../../../TestSuite.txt");
+		//Print("Running test suite.\n");
+		//RunTestSuite("../../../TestSuite.txt");
 
 		Print("\n");
 
-		const string quickTestFilePath = "../../../QuickTest.mscp";
+		const string quickTestFilePath = "../../../QuickTest.ms";
 
 		if (File.Exists(quickTestFilePath)) {
 			Print("Running quick test.\n");
+			var stopwatch = new System.Diagnostics.Stopwatch();
+			stopwatch.Start();
 			RunFile(quickTestFilePath, true);
+			stopwatch.Stop();
+			Print($"Run time: {stopwatch.Elapsed.TotalSeconds} sec");
 		} else {
 			Print("Quick test not found, skipping...\n");
 		}
