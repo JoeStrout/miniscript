@@ -6,7 +6,7 @@
     <RootNamespace>Miniscript</RootNamespace>
     <AssemblyName>Miniscript</AssemblyName>
     <TargetFrameworks>net45;net5.0</TargetFrameworks>
-    <ProductVersion>8.0.30703</ProductVersion>
+    <Version>1.5.1</Version>
     <RepositoryUrl>https://github.com/JoeStrout/miniscript</RepositoryUrl>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">

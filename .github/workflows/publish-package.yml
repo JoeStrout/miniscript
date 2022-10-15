@@ -2,6 +2,8 @@ name: Publish on Github Packages
 
 on:
   workflow_run:
+    branches:
+      - master
     workflows:
       - "Build .NET project"
     types:
@@ -11,10 +13,43 @@ permissions:
   packages: write
 
 jobs:
-  nuget:
-    name: Nuget
+  check_nuget:
+    name: Check if a new Nuget release is required
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    outputs:
+      release: ${{ steps.compare.outputs.new-version }}
+
+    defaults:
+      run:
+        working-directory: MiniScript-cs
+
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Get latest nuget package version
+        id: nuget-ver
+        run: |
+          export NUGET_VER=$(gh api -H "Accept: application/vnd.github+json" /users/JoeStrout/packages/nuget/Miniscript/versions | jq '.[0].name' | tr -d '"')
+          echo "version=${NUGET_VER}" >> $GITHUB_OUTPUT
+
+      - name: Compare vs current version
+        id: compare
+        run: |
+          export CURRENT_VER=$(grep -e "Version" Miniscript.csproj | awk -F'>' '{print $2}' | awk -F'<' '{print $1}')
+          [[ "${{ steps.nuget-ver.outputs.version }}" != "$CURRENT_VER" ]] \
+            && echo "new-version=true" \
+            || echo "new-version=false" \
+            >> $GITHUB_OUTPUT
+
+  nuget:
+    name: Release Nuget package
+    runs-on: ubuntu-latest
+    needs: check_nuget
+    if: ${{ github.event.workflow_run.conclusion == 'success' && needs.check_nuget.outputs.release == 'true' }}
     
     defaults:
       run:
