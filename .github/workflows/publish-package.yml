@@ -41,9 +41,8 @@ jobs:
         run: |
           export CURRENT_VER=$(grep -e "Version" Miniscript.csproj | awk -F'>' '{print $2}' | awk -F'<' '{print $1}')
           [[ "${{ steps.nuget-ver.outputs.version }}" != "$CURRENT_VER" ]] \
-            && echo "new-version=true" \
-            || echo "new-version=false" \
-            >> $GITHUB_OUTPUT
+            && echo "new-version=true" >> $GITHUB_OUTPUT \
+            || echo "new-version=false" >> $GITHUB_OUTPUT
 
   nuget:
     name: Release Nuget package
