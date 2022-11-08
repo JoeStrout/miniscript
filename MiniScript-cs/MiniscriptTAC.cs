@@ -935,10 +935,21 @@ namespace Miniscript {
 			/// </summary>
 			/// <param name="func">Miniscript function to invoke</param>
 			/// <param name="resultStorage">where to store result of the call, in the calling context</param>
-			public void ManuallyPushCall(ValFunction func, Value resultStorage=null) {
-				int argCount = 0;
+			/// <param name="arguments">optional list of arguments to push</param>
+			public void ManuallyPushCall(ValFunction func, Value resultStorage=null, List<Value> arguments=null) {
+				var context = stack.Peek();
+				int argCount = func.function.parameters.Count;
+				for (int i=0; i<argCount; i++) {
+					if (arguments != null && i < arguments.Count) {
+						Value val = context.ValueInContext(arguments[i]);
+						context.PushParamArgument(val);						
+					} else {
+						context.PushParamArgument(null);
+					}
+				}
 				Value self = null;	// "self" is always null for a manually pushed call
-				Context nextContext = stack.Peek().NextCallContext(func.function, argCount, self != null, null);
+				
+				Context nextContext = context.NextCallContext(func.function, argCount, self != null, null);
 				if (self != null) nextContext.self = self;
 				nextContext.resultStorage = resultStorage;
 				stack.Push(nextContext);				

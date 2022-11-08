@@ -35,6 +35,5 @@
 DerivedData
 *.xcodeproj
 .vs
-
-
-
+obj/
+bin/
