@@ -1,30 +1,25 @@
 cmake_minimum_required(VERSION 3.22)
 project(MiniScript_cpp LANGUAGES CXX C)
 
-set(CMAKE_CXX_STANDARD 14)
-
-#####  common comp flags #####
-
-add_compile_options(-fsigned-char -Wall)
+if(MSVC)
+    add_compile_options("/EHsc" "/wd4068" "/W4" "$<$<CONFIG:RELEASE>:/O2>" "$<$<CONFIG:DEBUG>:>")
+    add_link_options("$<$<CONFIG:DEBUG>:>")
+else()
+    add_compile_options("-fsigned-char" "-Wall" "$<$<CONFIG:RELEASE>:-O3>" "$<$<CONFIG:DEBUG>:-O0>" "$<$<CONFIG:DEBUG>:-ggdb3>")
+    set(LIBS stdc++ m)
+    if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+        add_compile_options("-stdlib=libc++")
+    else()
+        # nothing special for gcc at the moment
+    endif()
+endif()
 
 ##############################
-
-set(RELEASE_FLAGS "-Ofast -DNDEBUG")
-set(DEBUG_FLAGS "-O0 -ggdb3")
-
-set(CMAKE_CXX_FLAGS_RELEASE ${RELEASE_FLAGS})
-set(CMAKE_C_FLAGS_RELEASE ${RELEASE_FLAGS})
-
-set(CMAKE_CXX_FLAGS_DEBUG ${DEBUG_FLAGS})
-set(CMAKE_C_FLAGS_DEBUG ${DEBUG_FLAGS})
 
 set(SOURCES
         src/main.cpp
         src/OstreamSupport.cpp
         src/ShellIntrinsics.cpp
-        src/editline/complete.c
-        src/editline/editline.c
-        src/editline/sysunix.c
         src/MiniScript/Dictionary.cpp
         src/MiniScript/List.cpp
         src/MiniScript/MiniscriptInterpreter.cpp
@@ -42,8 +37,18 @@ set(SOURCES
         src/MiniScript/UnitTest.cpp
         )
 
+if(UNIX)
+    set(SOURCES
+            ${SOURCES}
+            src/editline/complete.c
+            src/editline/editline.c
+            src/editline/sysunix.c
+            )
+endif()
+
 add_executable(miniscript ${SOURCES})
+target_compile_features(miniscript PRIVATE cxx_std_14)
 target_include_directories(miniscript PRIVATE src src/editline src/MiniScript)
-target_link_libraries(miniscript PRIVATE stdc++ m)
+target_link_libraries(miniscript PRIVATE ${LIBS})
 
 install(TARGETS miniscript DESTINATION bin)
