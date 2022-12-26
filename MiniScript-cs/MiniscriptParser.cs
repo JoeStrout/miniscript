@@ -212,13 +212,12 @@ namespace Miniscript {
 		/// <param name="sourceCode">source code to analyze</param>
 		/// <returns>true if line continuation is called for; false otherwise</returns>
 		public static bool EndsWithLineContinuation(string sourceCode) {
-			try {
+ 			try {
 				Token lastTok = Lexer.LastToken(sourceCode);
 				// Almost any token at the end will signify line continuation, except:
 				switch (lastTok.type) {
 				case Token.Type.EOL:
 				case Token.Type.Identifier:
-				case Token.Type.Keyword:
 				case Token.Type.Number:
 				case Token.Type.RCurly:
 				case Token.Type.RParen:
@@ -226,10 +225,14 @@ namespace Miniscript {
 				case Token.Type.String:
 				case Token.Type.Unknown:
 					return false;
+				case Token.Type.Keyword:
+					// of keywords, only these can cause line continuation:
+					return lastTok.text == "and" || lastTok.text == "or" || lastTok.text == "isa"
+							|| lastTok.text == "not" || lastTok.text == "new";
 				default:
 					return true;
 				}
-			} catch (LexerException) {
+			} catch (LexerException e) {
 				return false;
 			}
 		}
@@ -240,6 +243,7 @@ namespace Miniscript {
 				bool isPartial = EndsWithLineContinuation(sourceCode);
 				if (isPartial) {
 					partialInput += Lexer.TrimComment(sourceCode);
+					partialInput += " ";
 					return;
 				}
 			}
