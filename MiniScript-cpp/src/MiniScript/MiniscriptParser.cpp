@@ -111,29 +111,41 @@ namespace MiniScript {
 	//------------------------------------------------------------------------------------------
 	
 	ParseState Parser::nullState;
-	
+
+	/// <summary>
+	/// Return whether the given source code ends in a token that signifies that
+	/// the statement continues on the next line.  That includes binary operators,
+	/// open brackets or parentheses, etc.
+	/// </summary>
+	/// <param name="sourceCode">source code to analyze</param>
+	/// <returns>true if line continuation is called for; false otherwise</returns>
+	bool Parser::EndsWithLineContinuation(String sourceCode) {
+		Token lastTok = Lexer::LastToken(sourceCode);
+		// Almost any token at the end will signify line continuation, except:
+		switch (lastTok.type) {
+			case Token::Type::EOL:
+			case Token::Type::Identifier:
+			case Token::Type::Number:
+			case Token::Type::RCurly:
+			case Token::Type::RParen:
+			case Token::Type::RSquare:
+			case Token::Type::String:
+			case Token::Type::Unknown:
+				return false;
+				break;
+			case Token::Type::Keyword:
+				// of keywords, only these can cause line continuation:
+				return lastTok.text == "and" || lastTok.text == "or" || lastTok.text == "isa"
+						|| lastTok.text == "not" || lastTok.text == "new";
+			default:
+				return true;
+		}
+	}
+
 	void Parser::Parse(String sourceCode, bool replMode) {
 		if (replMode) {
 			// Check for an incomplete final line by finding the last (non-comment) token.
-			bool isPartial;
-			Token lastTok = Lexer::LastToken(sourceCode);
-			// Almost any token at the end will signify line continuation, except:
-			switch (lastTok.type) {
-				case Token::Type::EOL:
-				case Token::Type::Identifier:
-				case Token::Type::Keyword:
-				case Token::Type::Number:
-				case Token::Type::RCurly:
-				case Token::Type::RParen:
-				case Token::Type::RSquare:
-				case Token::Type::String:
-				case Token::Type::Unknown:
-					isPartial = false;
-					break;
-				default:
-					isPartial = true;
-					break;
-			}
+			bool isPartial = EndsWithLineContinuation(sourceCode);
 			if (isPartial) {
 				partialInput += Lexer::TrimComment(sourceCode);
 				return;

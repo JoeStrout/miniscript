@@ -953,7 +953,8 @@ namespace Miniscript {
 	public class ValVar : Value {
 		public string identifier;
 		public bool noInvoke;	// reflects use of "@" (address-of) operator
-
+		public bool localOnly;	// if true, only look this up in the local scope
+		
 		public ValVar(string identifier) {
 			this.identifier = identifier;
 		}
@@ -966,7 +967,7 @@ namespace Miniscript {
 		public override Value Val(TAC.Context context, out ValMap valueFoundIn) {
 			valueFoundIn = null;
 			if (this == self) return context.self;
-			return context.GetVar(identifier);
+			return context.GetVar(identifier, localOnly);
 		}
 
 		public override string ToString(TAC.Machine vm) {

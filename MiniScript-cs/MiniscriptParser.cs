@@ -37,6 +37,7 @@ namespace Miniscript {
 			public List<BackPatch> backpatches = new List<BackPatch>();
 			public List<JumpPoint> jumpPoints = new List<JumpPoint>();
 			public int nextTempNum = 0;
+			public string localOnlyIdentifier;	// identifier to be looked up in local scope *only*
 
 			public void Add(TAC.Line line) {
 				code.Add(line);
@@ -561,6 +562,30 @@ namespace Miniscript {
 				tokens.Dequeue();	// skip '='
 				lhs = expr;
 				rhs = ParseExpr(tokens);
+			} else if (peek.type == Token.Type.OpAssignPlus || peek.type == Token.Type.OpAssignMinus
+				    || peek.type == Token.Type.OpAssignTimes || peek.type == Token.Type.OpAssignDivide
+				    || peek.type == Token.Type.OpAssignMod || peek.type == Token.Type.OpAssignPower) {
+				var op = TAC.Line.Op.APlusB;
+				switch (tokens.Dequeue().type) {
+				case Token.Type.OpAssignMinus:		op = TAC.Line.Op.AMinusB;		break;
+				case Token.Type.OpAssignTimes:		op = TAC.Line.Op.ATimesB;		break;
+				case Token.Type.OpAssignDivide:		op = TAC.Line.Op.ADividedByB;	break;
+				case Token.Type.OpAssignMod:		op = TAC.Line.Op.AModB;			break;
+				case Token.Type.OpAssignPower:		op = TAC.Line.Op.APowB;			break;
+				default: break;
+				}
+
+				lhs = expr;
+				output.localOnlyIdentifier = null;
+				if (lhs is ValVar vv) output.localOnlyIdentifier = vv.identifier;
+				rhs = ParseExpr(tokens);
+				
+				var opA = FullyEvaluate(lhs);
+				Value opB = FullyEvaluate(rhs);
+				int tempNum = output.nextTempNum++;
+				output.Add(new TAC.Line(TAC.LTemp(tempNum), op, opA, opB));
+				rhs = TAC.RTemp(tempNum);
+				output.localOnlyIdentifier = null;
 			} else {
 				// This looks like a command statement.  Parse the rest
 				// of the line as arguments to a function call.
@@ -959,12 +984,13 @@ namespace Miniscript {
 		Value FullyEvaluate(Value val) {
 			if (val is ValVar) {
 				ValVar var = (ValVar)val;
+				if (var.identifier == output.localOnlyIdentifier) var.localOnly = true;
 				// If var was protected with @, then return it as-is; don't attempt to call it.
 				if (var.noInvoke) return val;
 				// Don't invoke super; leave as-is so we can do special handling
 				// of it at runtime.  Also, as an optimization, same for "self".
 				if (var.identifier == "super" || var.identifier == "self") return val;
-				// Evaluate a variable (which might be a function we need to call).				
+				// Evaluate a variable (which might be a function we need to call).
 				ValTemp temp = new ValTemp(output.nextTempNum++);
 				output.Add(new TAC.Line(temp, TAC.Line.Op.CallFunctionA, val, ValNumber.zero));
 				return temp;

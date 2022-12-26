@@ -687,8 +687,9 @@ namespace Miniscript {
 			/// identifier can be found.
 			/// </summary>
 			/// <param name="identifier">name of identifier to look up</param>
+			/// <param name="localOnly">if true, look in local scope only</param>
 			/// <returns>value of that identifier</returns>
-			public Value GetVar(string identifier) {
+			public Value GetVar(string identifier, bool localOnly=false) {
 				// check for special built-in identifiers 'locals', 'globals', etc.
 				if (identifier == "self") return self;
 				if (identifier == "locals") {
@@ -711,6 +712,7 @@ namespace Miniscript {
 				if (variables != null && variables.TryGetValue(identifier, out result)) {
 					return result;
 				}
+				if (localOnly) throw new UndefinedLocalException(identifier);
 
 				// check for a module variable
 				if (outerVars != null && outerVars.TryGetValue(identifier, out result)) {

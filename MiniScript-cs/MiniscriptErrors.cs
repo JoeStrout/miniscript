@@ -157,10 +157,21 @@ namespace Miniscript {
 		private UndefinedIdentifierException() {}		// don't call this version!
 
 		public UndefinedIdentifierException(string ident) : base(
-			"Undefined Identifier: '" + ident + "' is unknown in this context") {
+		"Undefined Identifier: '" + ident + "' is unknown in this context") {
 		}
 
 		public UndefinedIdentifierException(string message, Exception inner) : base(message, inner) {
+		}
+	}
+
+	public class UndefinedLocalException : RuntimeException {
+		private UndefinedLocalException() {}		// don't call this version!
+
+		public UndefinedLocalException(string ident) : base(
+		"Undefined Local Identifier: '" + ident + "' is unknown in this context") {
+		}
+
+		public UndefinedLocalException(string message, Exception inner) : base(message, inner) {
 		}
 	}
 

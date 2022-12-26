@@ -153,6 +153,8 @@ namespace MiniScript {
 			return (not partialInput.empty() or outputStack.Count() > 1 or output->backpatches.Count() > 0);
 		}
 
+		static bool EndsWithLineContinuation(String sourceCode);
+		
 		void Parse(String sourceCode, bool replMode=false);
 
 		Machine *CreateVM(TextOutputMethod standardOutput);
