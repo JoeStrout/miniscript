@@ -67,6 +67,12 @@ namespace MiniScript {
 		Handle		// (any opaque RefCountedData subclass needed by the host app)
 	};
 	
+	enum class LocalOnlyMode {
+		Off = 0,
+		Warn,
+		Strict
+	};
+
 	String ToString(ValueType type);
 
 	class Value {
@@ -76,6 +82,7 @@ namespace MiniScript {
 		
 		ValueType type;
 		bool noInvoke;
+		LocalOnlyMode localOnly;
 		union {
 			double number;
 			RefCountedStorage *ref;
@@ -83,13 +90,13 @@ namespace MiniScript {
 		} data;
 		
 		// constructors from base types
-		Value() : type(ValueType::Null), noInvoke(false) {}
-		Value(double number) : type(ValueType::Number), noInvoke(false) { data.number = number; }
-		Value(const char *s) : type(ValueType::String), noInvoke(false) { String temp(s); data.ref = temp.ss; temp.forget(); }
-		Value(const String& s) : type(ValueType::String), noInvoke(false) { data.ref = (s.ss ? s.ss : emptyString.data.ref);	retain(); }
-		Value(const ValueList& l) : type(ValueType::List), noInvoke(false) { ((ValueList&)l).ensureStorage(); data.ref = l.ls; retain(); }
-		Value(const ValueDict& d) : type(ValueType::Map), noInvoke(false) { ((ValueDict&)d).ensureStorage(); data.ref = d.ds; retain(); }
-		Value(FunctionStorage *s) : type(ValueType::Function), noInvoke(false) { data.ref = s; }
+		Value() : type(ValueType::Null), noInvoke(false), localOnly(LocalOnlyMode::Off) {}
+		Value(double number) : type(ValueType::Number), noInvoke(false), localOnly(LocalOnlyMode::Off) { data.number = number; }
+		Value(const char *s) : type(ValueType::String), noInvoke(false), localOnly(LocalOnlyMode::Off) { String temp(s); data.ref = temp.ss; temp.forget(); }
+		Value(const String& s) : type(ValueType::String), noInvoke(false), localOnly(LocalOnlyMode::Off) { data.ref = (s.ss ? s.ss : emptyString.data.ref);	retain(); }
+		Value(const ValueList& l) : type(ValueType::List), noInvoke(false), localOnly(LocalOnlyMode::Off) { ((ValueList&)l).ensureStorage(); data.ref = l.ls; retain(); }
+		Value(const ValueDict& d) : type(ValueType::Map), noInvoke(false), localOnly(LocalOnlyMode::Off) { ((ValueDict&)d).ensureStorage(); data.ref = d.ds; retain(); }
+		Value(FunctionStorage *s) : type(ValueType::Function), noInvoke(false), localOnly(LocalOnlyMode::Off) { data.ref = s; }
 		Value(SeqElemStorage *s);
 
 		// some factory functions to make things clearer
@@ -103,7 +110,7 @@ namespace MiniScript {
 		static Value GetKeyValuePair(Value map, long index);
 		
 		// copy-ctor, assignment-op, destructor
-		Value(const Value &other) : type(other.type), noInvoke(other.noInvoke) {
+		Value(const Value &other) : type(other.type), noInvoke(other.noInvoke), localOnly(other.localOnly) {
 			data = other.data;
 			if (usesRef()) retain();
 		}
@@ -112,6 +119,7 @@ namespace MiniScript {
 			if (usesRef()) release();
 			type = other.type;
 			noInvoke = other.noInvoke;
+			localOnly = other.localOnly;
 			data = other.data;
 			return *this;
 		}
@@ -210,8 +218,8 @@ namespace MiniScript {
 		
 	private:
 		// private constructors used by factory functions
-		Value(const int tempNum, ValueType type) : type(type), noInvoke(false) { data.tempNum = tempNum; }	// (type should be ValueType::Temp)
-		Value(const String& s, ValueType type) : type(type), noInvoke(false) { data.ref = s.ss; retain(); }
+		Value(const int tempNum, ValueType type) : type(type), noInvoke(false), localOnly(LocalOnlyMode::Off) { data.tempNum = tempNum; }	// (type should be ValueType::Temp)
+		Value(const String& s, ValueType type) : type(type), noInvoke(false), localOnly(LocalOnlyMode::Off) { data.ref = s.ss; retain(); }
 
 		// reference handling (for types where that applies)
 		bool usesRef() const { return type >= ValueType::String; }

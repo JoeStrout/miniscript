@@ -390,7 +390,36 @@ namespace MiniScript {
 		if (peek.type == Token::Type::OpAssign) {
 			tokens.Dequeue();	// skip '='
 			lhs = expr;
+			output->localOnlyIdentifier = "";
+			output->localOnlyStrict = false; // ToDo: make this always strict, and change "localOnly" to a simple bool
+			if (lhs.type == ValueType::Var) output->localOnlyIdentifier = lhs.GetString();
 			rhs = ParseExpr(tokens);
+			output->localOnlyIdentifier = "";
+		} else if (peek.type == Token::Type::OpAssignPlus || peek.type == Token::Type::OpAssignMinus
+				   || peek.type == Token::Type::OpAssignTimes || peek.type == Token::Type::OpAssignDivide
+				   || peek.type == Token::Type::OpAssignMod || peek.type == Token::Type::OpAssignPower) {
+			TACLine::Op op = TACLine::Op::APlusB;
+			switch (tokens.Dequeue().type) {
+				case Token::Type::OpAssignMinus:	op = TACLine::Op::AMinusB;		break;
+				case Token::Type::OpAssignTimes:	op = TACLine::Op::ATimesB;		break;
+				case Token::Type::OpAssignDivide:	op = TACLine::Op::ADividedByB;	break;
+				case Token::Type::OpAssignMod:		op = TACLine::Op::AModB;		break;
+				case Token::Type::OpAssignPower:	op = TACLine::Op::APowB;		break;
+			default: break;
+			}
+
+			lhs = expr;
+			output->localOnlyIdentifier = "";
+			output->localOnlyStrict = true;
+			if (lhs.type == ValueType::Var) output->localOnlyIdentifier = lhs.GetString();
+			rhs = ParseExpr(tokens);
+
+			Value opA = FullyEvaluate(lhs, LocalOnlyMode::Strict);
+			Value opB = FullyEvaluate(rhs);
+			int tempNum = output->nextTempNum++;
+			output->Add(TACLine(Value::Temp(tempNum), op, opA, opB));
+			rhs = Value::Temp(tempNum);
+			output->localOnlyIdentifier = "";
 		} else {
 			// This looks like a command statement. Parse the rest
 			// of the line as arguments to a function call.
@@ -1005,7 +1034,11 @@ namespace MiniScript {
 		} else if (tok.type == Token::Type::String) {
 			return Value(tok.text);
 		} else if (tok.type == Token::Type::Identifier) {
-			return Value::Var(tok.text);
+			Value result = Value::Var(tok.text);
+ 			if (tok.text == output->localOnlyIdentifier) {
+				result.localOnly = (output->localOnlyStrict ? LocalOnlyMode::Strict : LocalOnlyMode::Warn);
+			}
+			return result;
 		} else if (tok.type == Token::Type::Keyword) {
 			if (tok.text == "null") return Value();
 			if (tok.text == "true") return Value::one;
@@ -1015,13 +1048,16 @@ namespace MiniScript {
 		return Value::null;
 	}
 
-	Value Parser::FullyEvaluate(Value val) {
+	Value Parser::FullyEvaluate(Value val, LocalOnlyMode localOnlyMode) {
 		// If var was protected with @, then return it as-is; don't attempt to call it.
 		if (val.noInvoke) return val;
 		if (val.type == ValueType::Var) {
+			String identifier = val.ToString();
+			if (identifier == output->localOnlyIdentifier) {
+				val.localOnly = localOnlyMode;
+			}
 			// Don't invoke super; leave as-is so we can do special handling
 			// of it at runtime.  Also, as an optimization, same for "self".
-			String identifier = val.ToString();
 			if (identifier == "super" or identifier == "self") return val;
 			// Evaluate a variable (which might be a function we need to call).
 			Value temp = Value::Temp(output->nextTempNum++);

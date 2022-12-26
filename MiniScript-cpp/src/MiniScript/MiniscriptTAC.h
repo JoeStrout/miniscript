@@ -115,7 +115,7 @@ namespace MiniScript {
 		}
 	
 		void SetVar(String identifier, Value value);
-		Value GetVar(String identifier);
+		Value GetVar(String identifier, LocalOnlyMode localOnly=LocalOnlyMode::Off);
 		
 		/// <summary>
 		/// Store a parameter argument in preparation for an upcoming call

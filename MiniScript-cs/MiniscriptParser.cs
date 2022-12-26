@@ -38,7 +38,8 @@ namespace Miniscript {
 			public List<JumpPoint> jumpPoints = new List<JumpPoint>();
 			public int nextTempNum = 0;
 			public string localOnlyIdentifier;	// identifier to be looked up in local scope *only*
-
+			public bool localOnlyStrict;		// whether localOnlyIdentifier applies strictly, or merely warns
+			
 			public void Add(TAC.Line line) {
 				code.Add(line);
 			}
@@ -561,7 +562,11 @@ namespace Miniscript {
 			if (peek.type == Token.Type.OpAssign) {
 				tokens.Dequeue();	// skip '='
 				lhs = expr;
+				output.localOnlyIdentifier = null;
+				output.localOnlyStrict = false;	// ToDo: make this always strict, and change "localOnly" to a simple bool
+				if (lhs is ValVar vv) output.localOnlyIdentifier = vv.identifier;
 				rhs = ParseExpr(tokens);
+				output.localOnlyIdentifier = null;
 			} else if (peek.type == Token.Type.OpAssignPlus || peek.type == Token.Type.OpAssignMinus
 				    || peek.type == Token.Type.OpAssignTimes || peek.type == Token.Type.OpAssignDivide
 				    || peek.type == Token.Type.OpAssignMod || peek.type == Token.Type.OpAssignPower) {
@@ -577,10 +582,11 @@ namespace Miniscript {
 
 				lhs = expr;
 				output.localOnlyIdentifier = null;
+				output.localOnlyStrict = true;
 				if (lhs is ValVar vv) output.localOnlyIdentifier = vv.identifier;
 				rhs = ParseExpr(tokens);
 				
-				var opA = FullyEvaluate(lhs);
+				var opA = FullyEvaluate(lhs, ValVar.LocalOnlyMode.Strict);
 				Value opB = FullyEvaluate(rhs);
 				int tempNum = output.nextTempNum++;
 				output.Add(new TAC.Line(TAC.LTemp(tempNum), op, opA, opB));
@@ -981,12 +987,12 @@ namespace Miniscript {
 		}
 
 
-		Value FullyEvaluate(Value val) {
+		Value FullyEvaluate(Value val, ValVar.LocalOnlyMode localOnlyMode = ValVar.LocalOnlyMode.Off) {
 			if (val is ValVar) {
 				ValVar var = (ValVar)val;
-				if (var.identifier == output.localOnlyIdentifier) var.localOnly = true;
 				// If var was protected with @, then return it as-is; don't attempt to call it.
 				if (var.noInvoke) return val;
+				if (var.identifier == output.localOnlyIdentifier) var.localOnly = localOnlyMode;
 				// Don't invoke super; leave as-is so we can do special handling
 				// of it at runtime.  Also, as an optimization, same for "self".
 				if (var.identifier == "super" || var.identifier == "self") return val;
@@ -1196,7 +1202,11 @@ namespace Miniscript {
 				return new ValString(tok.text);
 			} else if (tok.type == Token.Type.Identifier) {
 				if (tok.text == "self") return ValVar.self;
-				return new ValVar(tok.text);
+				ValVar result = new ValVar(tok.text);
+				if (result.identifier == output.localOnlyIdentifier) {
+					result.localOnly = (output.localOnlyStrict ? ValVar.LocalOnlyMode.Strict : ValVar.LocalOnlyMode.Warn);
+				}
+				return result;
 			} else if (tok.type == Token.Type.Keyword) {
 				switch (tok.text) {
 				case "null":	return null;

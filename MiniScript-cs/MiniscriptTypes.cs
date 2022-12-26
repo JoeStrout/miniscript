@@ -951,9 +951,11 @@ namespace Miniscript {
 	}
 
 	public class ValVar : Value {
+		public enum LocalOnlyMode { Off, Warn, Strict };
+		
 		public string identifier;
 		public bool noInvoke;	// reflects use of "@" (address-of) operator
-		public bool localOnly;	// if true, only look this up in the local scope
+		public LocalOnlyMode localOnly = LocalOnlyMode.Off;	// whether to look this up in the local scope only
 		
 		public ValVar(string identifier) {
 			this.identifier = identifier;

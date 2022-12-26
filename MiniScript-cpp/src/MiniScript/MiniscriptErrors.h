@@ -107,6 +107,14 @@ namespace MiniScript {
 		virtual void raise() { throw *this; }
 	};
 
+	class UndefinedLocalException : public UndefinedIdentifierException {
+	public:
+		UndefinedLocalException(String ident) : UndefinedIdentifierException("") {
+			message = String("Undefined Local Identifier: '") + ident + "' is unknown in this context";
+		}
+		virtual void raise() { throw *this; }
+	};
+
 	class TooManyArgumentsException : public RuntimeException {
 	public:
 		TooManyArgumentsException(String msg="Too Many Arguments") : RuntimeException(msg) {}

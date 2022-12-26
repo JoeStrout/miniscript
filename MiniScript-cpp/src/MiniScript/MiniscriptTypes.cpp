@@ -169,7 +169,7 @@ namespace MiniScript {
 			case ValueType::Var:
 			{
 				String ident((StringStorage*)(data.ref));
-				Value result = context->GetVar(ident);
+				Value result = context->GetVar(ident, localOnly);
 				return result;
 			} break;
 			case ValueType::SeqElem:

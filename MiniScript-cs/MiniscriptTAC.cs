@@ -689,7 +689,7 @@ namespace Miniscript {
 			/// <param name="identifier">name of identifier to look up</param>
 			/// <param name="localOnly">if true, look in local scope only</param>
 			/// <returns>value of that identifier</returns>
-			public Value GetVar(string identifier, bool localOnly=false) {
+			public Value GetVar(string identifier, ValVar.LocalOnlyMode localOnly=ValVar.LocalOnlyMode.Off) {
 				// check for special built-in identifiers 'locals', 'globals', etc.
 				if (identifier == "self") return self;
 				if (identifier == "locals") {
@@ -712,7 +712,11 @@ namespace Miniscript {
 				if (variables != null && variables.TryGetValue(identifier, out result)) {
 					return result;
 				}
-				if (localOnly) throw new UndefinedLocalException(identifier);
+				if (localOnly != ValVar.LocalOnlyMode.Off) {
+					if (localOnly == ValVar.LocalOnlyMode.Strict) throw new UndefinedLocalException(identifier);
+					else vm.standardOutput("Warning: assignment of unqualified local '" + identifier 
+					 + "' based on nonlocal is deprecated " + code[lineNum].location);
+				}
 
 				// check for a module variable
 				if (outerVars != null && outerVars.TryGetValue(identifier, out result)) {

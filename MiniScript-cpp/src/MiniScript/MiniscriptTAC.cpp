@@ -519,8 +519,9 @@ namespace MiniScript {
 	/// identifier can be found.
 	/// </summary>
 	/// <param name="identifier">name of identifier to look up</param>
+	/// <param name="localOnly">if true, look in local scope only</param>
 	/// <returns>value of that identifier</returns>
-	Value Context::GetVar(String identifier) {
+	Value Context::GetVar(String identifier, LocalOnlyMode localOnly) {
 		// check for special built-in identifiers 'locals', 'globals', and 'outer'
 		if (identifier == "locals") return variables;
 		if (identifier == "globals") return Root()->variables;
@@ -532,6 +533,12 @@ namespace MiniScript {
 		// check for a local variable
 		Value result;
 		if (variables.Get(identifier, &result)) return result;
+		if (localOnly != LocalOnlyMode::Off) {
+			if (localOnly == LocalOnlyMode::Strict) UndefinedLocalException(identifier).raise();
+			else vm->standardOutput("Warning: assignment of unqualified local '" + identifier
+									+ "' based on nonlocal is deprecated "
+									+ code[lineNum].location.ToString());
+		}
 		
 		// check for a module variable
 		if (!outerVars.empty() && outerVars.Get(identifier, &result)) return result;

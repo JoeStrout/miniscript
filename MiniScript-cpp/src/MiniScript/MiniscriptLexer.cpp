@@ -18,36 +18,42 @@ namespace MiniScript {
 	String Token::ToString() {
 		String result;
 		switch (type) {
-			case Token::Type::Unknown: 		result = "Unknown"; 	break;
-			case Token::Type::Keyword: 		result = "Keyword"; 	break;
-			case Token::Type::Number: 		result = "Number"; 		break;
-			case Token::Type::String: 		result = "String"; 		break;
-			case Token::Type::Identifier: 	result = "Identifier"; 	break;
-			case Token::Type::OpAssign: 	result = "OpAssign"; 	break;
-			case Token::Type::OpPlus: 		result = "OpPlus"; 		break;
-			case Token::Type::OpMinus: 		result = "OpMinus"; 	break;
-			case Token::Type::OpTimes: 		result = "OpTimes"; 	break;
-			case Token::Type::OpDivide: 	result = "OpDivide"; 	break;
-			case Token::Type::OpMod: 		result = "OpMod"; 		break;
-			case Token::Type::OpPower: 		result = "OpPower"; 	break;
-			case Token::Type::OpEqual: 		result = "OpEqual"; 	break;
-			case Token::Type::OpNotEqual: 	result = "OpNotEqual"; 	break;
-			case Token::Type::OpGreater: 	result = "OpGreater"; 	break;
-			case Token::Type::OpGreatEqual: result = "OpGreatEqual"; break;
-			case Token::Type::OpLesser: 	result = "OpLesser"; 	break;
-			case Token::Type::OpLessEqual: 	result = "OpLessEqual"; break;
-			case Token::Type::LParen: 		result = "LParen"; 		break;
-			case Token::Type::RParen: 		result = "RParen"; 		break;
-			case Token::Type::LSquare:		result = "LSquare"; 	break;
-			case Token::Type::RSquare: 		result = "RSquare"; 	break;
-			case Token::Type::LCurly: 		result = "LCurly"; 		break;
-			case Token::Type::RCurly: 		result = "RCurly"; 		break;
-			case Token::Type::AddressOf: 	result = "AddressOf"; 	break;
-			case Token::Type::Comma: 		result = "Comma"; 		break;
-			case Token::Type::Dot: 			result = "Dot"; 		break;
-			case Token::Type::Colon: 		result = "Colon"; 		break;
-			case Token::Type::Comment: 		result = "Comment"; 	break;
-			case Token::Type::EOL: 			result = "EOL"; 		break;
+			case Token::Type::Unknown: 			result = "Unknown"; 		break;
+			case Token::Type::Keyword: 			result = "Keyword"; 		break;
+			case Token::Type::Number: 			result = "Number"; 			break;
+			case Token::Type::String: 			result = "String"; 			break;
+			case Token::Type::Identifier: 		result = "Identifier"; 		break;
+			case Token::Type::OpAssign: 		result = "OpAssign"; 		break;
+			case Token::Type::OpPlus: 			result = "OpPlus"; 			break;
+			case Token::Type::OpMinus: 			result = "OpMinus"; 		break;
+			case Token::Type::OpTimes: 			result = "OpTimes"; 		break;
+			case Token::Type::OpDivide: 		result = "OpDivide"; 		break;
+			case Token::Type::OpMod: 			result = "OpMod"; 			break;
+			case Token::Type::OpPower: 			result = "OpPower"; 		break;
+			case Token::Type::OpEqual: 			result = "OpEqual"; 		break;
+			case Token::Type::OpNotEqual: 		result = "OpNotEqual"; 		break;
+			case Token::Type::OpGreater: 		result = "OpGreater"; 		break;
+			case Token::Type::OpGreatEqual: 	result = "OpGreatEqual";	break;
+			case Token::Type::OpLesser: 		result = "OpLesser"; 		break;
+			case Token::Type::OpLessEqual: 		result = "OpLessEqual"; 	break;
+			case Token::Type::OpAssignPlus:		result = "OpAssignPlus";	break;
+			case Token::Type::OpAssignMinus:	result = "OpAssignPMinus";	break;
+			case Token::Type::OpAssignTimes:	result = "OpAssignTimes";	break;
+			case Token::Type::OpAssignDivide:	result = "OpAssignDivide";	break;
+			case Token::Type::OpAssignMod:		result = "OpAssignMod";		break;
+			case Token::Type::OpAssignPower:	result = "OpAssignPower";	break;
+			case Token::Type::LParen: 			result = "LParen"; 			break;
+			case Token::Type::RParen: 			result = "RParen"; 			break;
+			case Token::Type::LSquare:			result = "LSquare"; 		break;
+			case Token::Type::RSquare: 			result = "RSquare"; 		break;
+			case Token::Type::LCurly: 			result = "LCurly"; 			break;
+			case Token::Type::RCurly: 			result = "RCurly"; 			break;
+			case Token::Type::AddressOf: 		result = "AddressOf"; 		break;
+			case Token::Type::Comma: 			result = "Comma"; 			break;
+			case Token::Type::Dot: 				result = "Dot"; 			break;
+			case Token::Type::Colon: 			result = "Colon"; 			break;
+			case Token::Type::Comment: 			result = "Comment"; 		break;
+			case Token::Type::EOL: 				result = "EOL"; 			break;
 		}
 		if (!text.empty()) result = result + "(" + text + ")";
 		return result;
@@ -90,7 +96,15 @@ namespace MiniScript {
 		// Handle two-character operators first.
 		if (!atEnd()) {
 			char c2 = ls->input[ls->positionB];
-			if (c == '=' && c2 == '=') result.type = Token::Type::OpEqual;
+			if (c2 == '=') {
+				if (c == '=') result.type = Token::Type::OpEqual;
+				else if (c == '+') result.type = Token::Type::OpAssignPlus;
+				else if (c == '-') result.type = Token::Type::OpAssignMinus;
+				else if (c == '*') result.type = Token::Type::OpAssignTimes;
+				else if (c == '/') result.type = Token::Type::OpAssignDivide;
+				else if (c == '%') result.type = Token::Type::OpAssignMod;
+				else if (c == '^') result.type = Token::Type::OpAssignPower;
+			}
 			if (c == '!' && c2 == '=') result.type = Token::Type::OpNotEqual;
 			if (c == '>' && c2 == '=') result.type = Token::Type::OpGreatEqual;
 			if (c == '<' && c2 == '=') result.type = Token::Type::OpLessEqual;
@@ -373,6 +387,13 @@ namespace MiniScript {
 		check(lex.Dequeue(), Token::Type::Identifier, "bamf");
 		Assert(lex.lineNum() == 4);
 		check(lex.Dequeue(), Token::Type::EOL);
+		Assert(lex.atEnd());
+		
+		lex = Lexer("x += 42");
+		check(lex.Dequeue(), Token::Type::Identifier, "x");
+		Assert(lex.lineNum() == 1);
+		check(lex.Dequeue(), Token::Type::OpAssignPlus);
+		check(lex.Dequeue(), Token::Type::Number, "42");
 		Assert(lex.atEnd());
 		
 		check(Lexer::LastToken("x=42 // foo"), Token::Type::Number, "42");
