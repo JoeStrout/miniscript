@@ -133,8 +133,8 @@ class MainClass {
 		Print("Running unit tests.\n");
 		UnitTest.Run();
 
-		//Print("Running test suite.\n");
-		//RunTestSuite("../../../TestSuite.txt");
+		Print("Running test suite.\n");
+		RunTestSuite("../../../TestSuite.txt");
 
 		Print("\n");
 

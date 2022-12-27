@@ -1341,6 +1341,28 @@ print d isa d
 1
 0
 ======================================================================
+==== Test math-assignment operators.
+score = 0
+score += 12; print score
+score -= 2; print score
+score *= 3; print score
+score /= 5; print score
+score %= 4; print score
+score ^= 3; print score
+f = function
+	globals.score += 15
+end function
+f
+print score
+----------------------------------------------------------------------
+12
+10
+30
+6
+2
+8
+23
+======================================================================
 ==== Test adding new extension methods to built-in types.
 string.cap = function
 	return self[0].upper + self[1:]
