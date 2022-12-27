@@ -142,6 +142,17 @@ namespace MiniScript {
 		}
 	}
 
+	void Parser::CheckForOpenBackpatches(int sourceLineNum) {
+		if (output->backpatches.Count() == 0) return;
+		BackPatch bp = output->backpatches[output->backpatches.Count() - 1];
+		String msg;
+		if (bp.waitingFor == "end for") msg = "'for' without matching 'end for'";
+		else if (bp.waitingFor == "end if" or bp.waitingFor == "else") msg = "'if' without matching 'end if'";
+		else if (bp.waitingFor == "end while") msg = "'while' without matching 'end while'";
+		else msg = "unmatched block opener";
+		CompilerException(errorContext, sourceLineNum, msg).raise();
+	}
+
 	void Parser::Parse(String sourceCode, bool replMode) {
 		if (replMode) {
 			// Check for an incomplete final line by finding the last (non-comment) token.
@@ -161,15 +172,8 @@ namespace MiniScript {
 			if (outputStack.Count() > 1) {
 				CompilerException(errorContext, tokens.lineNum() + 1,
 					"'function' without matching 'end function'").raise();
-			} else if (output->backpatches.Count() > 0) {
-				BackPatch bp = output->backpatches[output->backpatches.Count() - 1];
-				String msg;
-				if (bp.waitingFor == "end for") msg = "'for' without matching 'end for'";
-				else if (bp.waitingFor == "end if") msg = "'if' without matching 'end if'";
-				else if (bp.waitingFor == "end while") msg = "'while' without matching 'end while'";
-				else msg = "unmatched block opener";
-				CompilerException(errorContext, tokens.lineNum() + 1, msg).raise();
 			}
+			CheckForOpenBackpatches(tokens.lineNum() + 1);
 		}
 	}
 	
@@ -192,7 +196,7 @@ namespace MiniScript {
 			if (tokens.Peek().type == Token::Type::Keyword && tokens.Peek().text == "end function") {
 				tokens.Dequeue();
 				if (outputStack.Count() > 1) {
-					// Console.WriteLine("Popping compiler output stack");
+					CheckForOpenBackpatches(tokens.lineNum() + 1);
 					outputStack.Pop();
 					output = &outputStack.Last();
 				} else {

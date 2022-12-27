@@ -239,6 +239,29 @@ namespace Miniscript {
 			}
 		}
 
+		void CheckForOpenBackpatches(int sourceLineNum) {
+			if (output.backpatches.Count == 0) return;
+			BackPatch bp = output.backpatches[output.backpatches.Count - 1];
+			UnityEngine.Debug.Log("BP waiting for: " + bp.waitingFor);
+			string msg;
+			switch (bp.waitingFor) {
+			case "end for":
+				msg = "'for' without matching 'end for'";
+				break;
+			case "end if":
+			case "else":
+				msg = "'if' without matching 'end if'";
+				break;
+			case "end while":
+				msg = "'while' without matching 'end while'";
+				break;
+			default:
+				msg = "unmatched block opener";
+				break;
+			}
+			throw new CompilerException(errorContext, sourceLineNum, msg);
+		}
+
 		public void Parse(string sourceCode, bool replMode=false) {
 			if (replMode) {
 				// Check for an incomplete final line by finding the last (non-comment) token.
@@ -259,25 +282,8 @@ namespace Miniscript {
 				if (outputStack.Count > 1) {
 					throw new CompilerException(errorContext, tokens.lineNum,
 						"'function' without matching 'end function'");
-				} else if (output.backpatches.Count > 0) {
-					BackPatch bp = output.backpatches[output.backpatches.Count - 1];
-					string msg;
-					switch (bp.waitingFor) {
-					case "end for":
-						msg = "'for' without matching 'end for'";
-						break;
-					case "end if":
-						msg = "'if' without matching 'end if'";
-						break;
-					case "end while":
-						msg = "'while' without matching 'end while'";
-						break;
-					default:
-						msg = "unmatched block opener";
-						break;
-					}
-					throw new CompilerException(errorContext, tokens.lineNum, msg);
-				}
+				} 
+				CheckForOpenBackpatches(tokens.lineNum);
 			}
 		}
 
@@ -338,6 +344,7 @@ namespace Miniscript {
 				if (tokens.Peek().type == Token.Type.Keyword && tokens.Peek().text == "end function") {
 					tokens.Dequeue();
 					if (outputStack.Count > 1) {
+						CheckForOpenBackpatches(tokens.lineNum);
 						outputStack.Pop();
 						output = outputStack.Peek();
 					} else {

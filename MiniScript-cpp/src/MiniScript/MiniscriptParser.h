@@ -200,6 +200,7 @@ namespace MiniScript {
 		Value ParseCallArgs(Value funcRef, Lexer tokens);
 		Value ParseAtom(Lexer tokens, bool asLval=false, bool statementStart=false);
 
+		void CheckForOpenBackpatches(int sourceLineNum);
 		Value FullyEvaluate(Value val, LocalOnlyMode localOnlyMode=LocalOnlyMode::Off);
 		void StartElseClause();
 		Token RequireToken(Lexer tokens, Token::Type type, String text=String());
