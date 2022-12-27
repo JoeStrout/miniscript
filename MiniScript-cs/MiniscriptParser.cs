@@ -661,7 +661,7 @@ namespace Miniscript {
 				while (tokens.Peek().type != Token.Type.RParen) {
 					// parse a parameter: a comma-separated list of
 					//			identifier
-					//	or...	identifier = expr
+					//	or...	identifier = constant
 					Token id = tokens.Dequeue();
 					if (id.type != Token.Type.Identifier) throw new CompilerException(errorContext, tokens.lineNum,
 						"got " + id + " where an identifier is required");
@@ -669,6 +669,11 @@ namespace Miniscript {
 					if (tokens.Peek().type == Token.Type.OpAssign) {
 						tokens.Dequeue();	// skip '='
 						defaultValue = ParseExpr(tokens);
+						// Ensure the default value is a constant, not an expression.
+						if (defaultValue is ValTemp) {
+							throw new CompilerException(errorContext, tokens.lineNum,
+								"parameter default value must be a literal value");
+						}
 					}
 					func.parameters.Add(new Function.Param(id.text, defaultValue));
 					if (tokens.Peek().type == Token.Type.RParen) break;

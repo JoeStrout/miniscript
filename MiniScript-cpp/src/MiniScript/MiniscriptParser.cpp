@@ -499,6 +499,11 @@ namespace MiniScript {
 				if (tokens.Peek().type == Token::Type::OpAssign) {
 					tokens.Dequeue();	// skip '='
 					defaultValue = ParseExpr(tokens);
+					// Ensure the default value is a constant, not an expression.
+					if (defaultValue.type == ValueType::Temp) {
+						CompilerException(errorContext, tokens.lineNum(),
+							"parameter default value must be a literal value").raise();
+					}
 				}
 				func->parameters.Add(FuncParam(id.text, defaultValue));
 				if (tokens.Peek().type == Token::Type::RParen) break;
