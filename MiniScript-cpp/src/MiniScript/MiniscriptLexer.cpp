@@ -195,7 +195,7 @@ namespace MiniScript {
 				long p = ls->positionB;
 				while (p < ls->inputLengthB and (ls->input[p]==' ' or ls->input[p]=='\t')) p++;
 				if (p+1 < ls->inputLengthB and ls->input.SubstringB(p, 2) == "if" and
-						(p+2 >= ls->inputLengthB or IsWhitespace(ls->input[p+2]))) {
+						(p+2 >= ls->inputLengthB or !IsIdentifier(ls->input[p+2]))) {
 					result.text = "else if";
 					ls->positionB = p + 2;
 				}

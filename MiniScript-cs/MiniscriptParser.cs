@@ -242,7 +242,6 @@ namespace Miniscript {
 		void CheckForOpenBackpatches(int sourceLineNum) {
 			if (output.backpatches.Count == 0) return;
 			BackPatch bp = output.backpatches[output.backpatches.Count - 1];
-			UnityEngine.Debug.Log("BP waiting for: " + bp.waitingFor);
 			string msg;
 			switch (bp.waitingFor) {
 			case "end for":
@@ -1264,7 +1263,7 @@ namespace Miniscript {
 		}
 
 		static void TestValidParse(string src, bool dumpTac=false) {
-		Parser parser = new Parser();
+			Parser parser = new Parser();
 			try {
 				parser.Parse(src);
 			} catch (System.Exception e) {

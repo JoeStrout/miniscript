@@ -207,10 +207,12 @@ namespace Miniscript {
 					}
 				} else if (result.text == "else") {
 					// And similarly, conjoin an "if" after "else" (to make "else if").
+					// (Note we can't use Peek or Dequeue/Enqueue for these, because we are probably
+					// inside a Peek call already, and that would end up swapping the order of these tokens.)
 					var p = position;
 					while (p < inputLength && (input[p]==' ' || input[p]=='\t')) p++;
 					if (p+1 < inputLength && input.Substring(p,2) == "if" &&
-							(p+2 >= inputLength || IsWhitespace(input[p+2]))) {
+							(p+2 >= inputLength || !IsIdentifier(input[p+2]))) {
 						result.text = "else if";
 						position = p + 2;
 					}
