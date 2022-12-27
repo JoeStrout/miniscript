@@ -1240,6 +1240,12 @@ namespace Miniscript {
 			Token got = (tokens.AtEnd ? Token.EOL : tokens.Dequeue());
 			if (got.type != type || (text != null && got.text != text)) {
 				Token expected = new Token(type, text);
+				// provide a special error for the common mistake of using `=` instead of `==`
+				// in an `if` condition; this will be found here:
+				if (got.type == Token.Type.OpAssign && text == "then") {
+					throw new CompilerException(errorContext, tokens.lineNum, 
+						"found = instead of == in if condition");
+				}
 				throw new CompilerException(errorContext, tokens.lineNum, 
 					string.Format("got {0} where {1} is required", got, expected));
 			}

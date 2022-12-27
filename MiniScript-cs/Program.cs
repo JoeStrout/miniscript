@@ -114,7 +114,7 @@ class MainClass {
 		miniscript.implicitOutput = miniscript.standardOutput;
 		miniscript.Compile();
 
-		if (dumpTAC) {
+		if (dumpTAC && miniscript.vm != null) {
 			miniscript.vm.DumpTopContext();
 		}
 		

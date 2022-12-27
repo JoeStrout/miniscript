@@ -1116,8 +1116,15 @@ namespace MiniScript {
 	Token Parser::RequireToken(Lexer tokens, Token::Type type, String text) {
 		Token got = (tokens.atEnd() ? Token::EOL : tokens.Dequeue());
 		if (got.type != type or (!text.empty() and got.text != text)) {
+			// provide a special error for the common mistake of using `=` instead of `==`
+			// in an `if` condition; this will be found here:
+			if (got.type == Token::Type::OpAssign && text == "then") {
+				CompilerException(errorContext, tokens.lineNum(),
+					"found = instead of == in if condition").raise();
+			}
 			Token expected(type, text);
-			CompilerException(String("got ") + got.ToString() + " where " + expected.ToString() + " is required").raise();
+			CompilerException(errorContext, tokens.lineNum(),
+				String("got ") + got.ToString() + " where " + expected.ToString() + " is required").raise();
 		}
 		return got;
 	}
