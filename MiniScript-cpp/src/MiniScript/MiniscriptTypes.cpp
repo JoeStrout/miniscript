@@ -203,20 +203,26 @@ namespace MiniScript {
 						}
 						baseVal = baseVal.Val(context);	// ToDo: is this really needed?
 					}
-				} else if (baseVal.type == ValueType::List and idxVal.type == ValueType::Number) {
-					ValueList baseLst((ValueListStorage*)(baseVal.data.ref));
-					Value result = baseLst.Item((long)(idxVal.data.number));
-					return result;
-				} else if (baseVal.type == ValueType::String and idxVal.type == ValueType::Number) {
-					String baseStr((StringStorage*)(baseVal.data.ref));
-					long len = baseStr.Length();
-					long i = (long)idxVal.data.number;
-					if (i < 0) i += len;
-					if (i < 0 or i >= len) {
-						IndexException(String("Index Error (string index ") + i + " out of range").raise();
+				} else if (baseVal.type == ValueType::List) {
+					if (idxVal.type == ValueType::Number) {
+						ValueList baseLst((ValueListStorage*)(baseVal.data.ref));
+						Value result = baseLst.Item((long)(idxVal.data.number));
+						return result;
 					}
-					Value result = baseStr.Substring(i, 1);
-					return result;
+					KeyException("List index must be numeric").raise();
+				} else if (baseVal.type == ValueType::String) {
+					if (idxVal.type == ValueType::Number) {
+						String baseStr((StringStorage*)(baseVal.data.ref));
+						long len = baseStr.Length();
+						long i = (long)idxVal.data.number;
+						if (i < 0) i += len;
+						if (i < 0 or i >= len) {
+							IndexException(String("Index Error (string index ") + i + " out of range").raise();
+						}
+						Value result = baseStr.Substring(i, 1);
+						return result;
+					}
+					KeyException("String index must be numeric").raise();
 				}
 				
 				TypeException("Type Exception: can't index into this type").raise();

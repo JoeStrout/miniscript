@@ -490,14 +490,19 @@ namespace Miniscript {
 				Value self = context.self;
 				Value index = context.GetLocal("index");
 				if (self is ValList) {
-					if (!(index is ValNumber)) return Intrinsic.Result.False;	// #3
-					List<Value> list = ((ValList)self).values;
-					int i = index.IntValue();
-					return new Intrinsic.Result(ValNumber.Truth(i >= -list.Count && i < list.Count));
+					if (index is ValNumber) {
+						List<Value> list = ((ValList)self).values;
+						int i = index.IntValue();
+						return new Intrinsic.Result(ValNumber.Truth(i >= -list.Count && i < list.Count));
+					}
+					return Intrinsic.Result.False;
 				} else if (self is ValString) {
-					string str = ((ValString)self).value;
-					int i = index.IntValue();
-					return new Intrinsic.Result(ValNumber.Truth(i >= -str.Length && i < str.Length));
+					if (index is ValNumber) {
+						string str = ((ValString)self).value;
+						int i = index.IntValue();
+						return new Intrinsic.Result(ValNumber.Truth(i >= -str.Length && i < str.Length));
+					}
+					return new Intrinsic.Result(ValNumber.zero);
 				} else if (self is ValMap) {
 					ValMap map = (ValMap)self;
 					return new Intrinsic.Result(ValNumber.Truth(map.ContainsKey(index)));

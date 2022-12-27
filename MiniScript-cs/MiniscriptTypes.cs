@@ -1068,16 +1068,18 @@ namespace Miniscript {
 			Value idxVal = index == null ? null : index.Val(context);
 			if (idxVal is ValString) return Resolve(baseSeq, ((ValString)idxVal).value, context, out valueFoundIn);
 			// Ok, we're searching for something that's not a string;
-			// this can only be done in maps and lists (and lists, only with a numeric index).
+			// this can only be done in maps, lists, and strings (and lists/strings, only with a numeric index).
 			Value baseVal = baseSeq.Val(context);
 			if (baseVal is ValMap) {
 				Value result = ((ValMap)baseVal).Lookup(idxVal, out valueFoundIn);
 				if (valueFoundIn == null) throw new KeyException(idxVal.CodeForm(context.vm, 1));
 				return result;
-			} else if (baseVal is ValList && idxVal is ValNumber) {
-				return ((ValList)baseVal).GetElem(idxVal);
-			} else if (baseVal is ValString && idxVal is ValNumber) {
-				return ((ValString)baseVal).GetElem(idxVal);
+			} else if (baseVal is ValList) {
+				if (idxVal is ValNumber) return ((ValList)baseVal).GetElem(idxVal);
+				else throw new KeyException("List index must be numeric", null);
+			} else if (baseVal is ValString) {
+				if (idxVal is ValNumber) return ((ValString)baseVal).GetElem(idxVal);
+				else throw new KeyException("String index must be numeric", null);
 			}
 				
 			throw new TypeException("Type Exception: can't index into this type");

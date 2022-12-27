@@ -136,14 +136,19 @@ namespace MiniScript {
 		Value self = context->GetVar("self");
 		Value index = context->GetVar("index");
 		if (self.type == ValueType::List) {
-			if (index.type != ValueType::Number) return IntrinsicResult(Value::zero);		// #3
-			ValueList list = self.GetList();
-			long i = index.IntValue();
-			return IntrinsicResult(Value::Truth(i >= -list.Count() and i < list.Count()));
+			if (index.type == ValueType::Number) {
+				ValueList list = self.GetList();
+				long i = index.IntValue();
+				return IntrinsicResult(Value::Truth(i >= -list.Count() and i < list.Count()));
+			}
+			return IntrinsicResult(Value::zero);
 		} else if (self.type == ValueType::String) {
-			String str = self.GetString();
-			long i = index.IntValue();
-			return IntrinsicResult(Value::Truth(i >= -str.Length() and i < str.Length()));
+			if (index.type == ValueType::Number) {
+				String str = self.GetString();
+				long i = index.IntValue();
+				return IntrinsicResult(Value::Truth(i >= -str.Length() and i < str.Length()));
+			}
+			return IntrinsicResult(Value::zero);
 		} else if (self.type == ValueType::Map) {
 			ValueDict map = self.GetDict();
 			return IntrinsicResult(Value::Truth(map.ContainsKey(index)));
