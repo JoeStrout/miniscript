@@ -223,6 +223,8 @@ namespace MiniScript {
 						return result;
 					}
 					KeyException("String index must be numeric").raise();
+				} else if (baseVal.type == ValueType::Null) {
+					TypeException("Null Reference Exception: can't index into null").raise();
 				}
 				
 				TypeException("Type Exception: can't index into this type").raise();

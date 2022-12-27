@@ -1080,6 +1080,8 @@ namespace Miniscript {
 			} else if (baseVal is ValString) {
 				if (idxVal is ValNumber) return ((ValString)baseVal).GetElem(idxVal);
 				else throw new KeyException("String index must be numeric", null);
+			} else if (baseVal is null) {
+				throw new TypeException("Null Reference Exception: can't index into null");
 			}
 				
 			throw new TypeException("Type Exception: can't index into this type");
