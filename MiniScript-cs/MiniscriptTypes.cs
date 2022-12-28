@@ -1069,8 +1069,7 @@ namespace Miniscript {
 			valueFoundIn = null;
 			Value idxVal = index == null ? null : index.Val(context);
 			if (idxVal is ValString) return Resolve(baseSeq, ((ValString)idxVal).value, context, out valueFoundIn);
-			//UnityEngine.Debug.Log("idxVal: " + idxVal);
-				// Ok, we're searching for something that's not a string;
+			// Ok, we're searching for something that's not a string;
 			// this can only be done in maps, lists, and strings (and lists/strings, only with a numeric index).
 			Value baseVal = baseSeq.Val(context);
 			if (baseVal is ValMap) {

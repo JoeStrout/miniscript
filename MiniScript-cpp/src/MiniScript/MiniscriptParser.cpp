@@ -448,6 +448,13 @@ namespace MiniScript {
 			return;
 		}
 
+		// Now we need to assign the value in rhs to the lvalue in lhs.
+		// First, check for the case where lhs is a temp; that indicates it is not an lvalue
+		// (for example, it might be a list slice).
+		if (lhs.type == ValueType::Temp) {
+			CompilerException(errorContext, tokens.lineNum(), "invalid assignment (not an lvalue)").raise();
+		}
+
 		// OK, now, in many cases our last TAC line at this point is an assignment to our RHS temp.
 		// In that case, as a simple (but very useful) optimization, we can simply patch that to
 		// assign to our lhs instead.  BUT, we must not do this if there are any jumps to the next
