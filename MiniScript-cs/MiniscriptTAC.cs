@@ -357,10 +357,7 @@ namespace Miniscript {
 						return new ValString(result.ToString());						
 					}
 					if (op == Op.ElemBofA || op == Op.ElemBofIterA) {
-						int idx = opB.IntValue();
-						Check.Range(idx, -sA.Length, sA.Length - 1, "string index");
-						if (idx < 0) idx += sA.Length;
-						return new ValString(sA.Substring(idx, 1));
+						return ((ValString)opA).GetElem(opB);
 					}
 					if (opB == null || opB is ValString) {
 						string sB = (opB == null ? null : opB.ToString(context.vm));
@@ -402,10 +399,7 @@ namespace Miniscript {
 					List<Value> list = ((ValList)opA).values;
 					if (op == Op.ElemBofA || op == Op.ElemBofIterA) {
 						// list indexing
-						int idx = opB.IntValue();
-						Check.Range(idx, -list.Count, list.Count - 1, "list index");
-						if (idx < 0) idx += list.Count;
-						return list[idx];
+						return ((ValList)opA).GetElem(opB);
 					} else if (op == Op.LengthOfA) {
 						return new ValNumber(list.Count);
 					} else if (op == Op.AEqualB) {

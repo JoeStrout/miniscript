@@ -314,11 +314,8 @@ namespace MiniScript {
 				case Op::ElemBofA:
 				case Op::ElemBofIterA:
 				{
-					long idx = opB.IntValue();
-					long len = sA.Length();
-					CheckRange(idx, -len, len - 1, "String index");
-					if (idx < 0) idx += len;
-					return Value(sA.Substring(idx, 1));
+					// string indexing
+					return opA.GetElem(opB);
 				}
 			}
 			if (opB.IsNull() or opB.type == ValueType::String) {
@@ -361,11 +358,7 @@ namespace MiniScript {
 			 ValueList list = opA.GetList();
 			if (op == Op::ElemBofA || op == Op::ElemBofIterA) {
 				// list indexing
-				long idx = opB.IntValue();
-				long count = list.Count();
-				CheckRange(idx, -count, count - 1, "list index");
-				if (idx < 0) idx += count;
-				return list[idx];
+				return opA.GetElem(opB);
 			} else if (op == Op::LengthOfA) {
 				return Value(list.Count());
 			} else if (op == Op::AEqualB) {

@@ -378,6 +378,7 @@ namespace Miniscript {
 		}
 
 		public Value GetElem(Value index) {
+			if (!(index is ValNumber)) throw new KeyException("String index must be numeric", null);
 			var i = index.IntValue();
 			if (i < 0) i += value.Length;
 			if (i < 0 || i >= value.Length) {
@@ -550,6 +551,7 @@ namespace Miniscript {
 		}
 
 		public Value GetElem(Value index) {
+			if (!(index is ValNumber)) throw new KeyException("List index must be numeric", null);
 			var i = index.IntValue();
 			if (i < 0) i += values.Count;
 			if (i < 0 || i >= values.Count) {
@@ -1067,7 +1069,8 @@ namespace Miniscript {
 			valueFoundIn = null;
 			Value idxVal = index == null ? null : index.Val(context);
 			if (idxVal is ValString) return Resolve(baseSeq, ((ValString)idxVal).value, context, out valueFoundIn);
-			// Ok, we're searching for something that's not a string;
+			//UnityEngine.Debug.Log("idxVal: " + idxVal);
+				// Ok, we're searching for something that's not a string;
 			// this can only be done in maps, lists, and strings (and lists/strings, only with a numeric index).
 			Value baseVal = baseSeq.Val(context);
 			if (baseVal is ValMap) {
@@ -1075,11 +1078,9 @@ namespace Miniscript {
 				if (valueFoundIn == null) throw new KeyException(idxVal.CodeForm(context.vm, 1));
 				return result;
 			} else if (baseVal is ValList) {
-				if (idxVal is ValNumber) return ((ValList)baseVal).GetElem(idxVal);
-				else throw new KeyException("List index must be numeric", null);
+				return ((ValList)baseVal).GetElem(idxVal);
 			} else if (baseVal is ValString) {
-				if (idxVal is ValNumber) return ((ValString)baseVal).GetElem(idxVal);
-				else throw new KeyException("String index must be numeric", null);
+				return ((ValString)baseVal).GetElem(idxVal);
 			} else if (baseVal is null) {
 				throw new TypeException("Null Reference Exception: can't index into null");
 			}

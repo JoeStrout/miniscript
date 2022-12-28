@@ -174,6 +174,11 @@ namespace MiniScript {
 		/// <param name="value">value to set</param>
 		void SetElem(Value index, Value value);
 
+		/// <summary
+		/// Get the element associated with the given index within this value.
+		/// </summary>
+		Value GetElem(Value index);
+		
 		// Look up the given identifier in the given sequence, walking the
 		// type chain until we either find it, or fail.
 		static Value Resolve(Value sequence, String identifier, Context *context, ValueDict *outFoundInMap);

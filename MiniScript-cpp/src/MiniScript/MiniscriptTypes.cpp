@@ -204,25 +204,9 @@ namespace MiniScript {
 						baseVal = baseVal.Val(context);	// ToDo: is this really needed?
 					}
 				} else if (baseVal.type == ValueType::List) {
-					if (idxVal.type == ValueType::Number) {
-						ValueList baseLst((ValueListStorage*)(baseVal.data.ref));
-						Value result = baseLst.Item((long)(idxVal.data.number));
-						return result;
-					}
-					KeyException("List index must be numeric").raise();
+					return baseVal.GetElem(idxVal);
 				} else if (baseVal.type == ValueType::String) {
-					if (idxVal.type == ValueType::Number) {
-						String baseStr((StringStorage*)(baseVal.data.ref));
-						long len = baseStr.Length();
-						long i = (long)idxVal.data.number;
-						if (i < 0) i += len;
-						if (i < 0 or i >= len) {
-							IndexException(String("Index Error (string index ") + i + " out of range").raise();
-						}
-						Value result = baseStr.Substring(i, 1);
-						return result;
-					}
-					KeyException("String index must be numeric").raise();
+					return baseVal.GetElem(idxVal);
 				} else if (baseVal.type == ValueType::Null) {
 					TypeException("Null Reference Exception: can't index into null").raise();
 				}
@@ -406,6 +390,39 @@ namespace MiniScript {
 				dict.SetValue(index, value);
 			}
 		}
+	}
+
+	Value Value::GetElem(Value index) {
+		if (type == ValueType::List) {
+			if (index.type == ValueType::Number) {
+				ValueList baseLst((ValueListStorage*)(data.ref));
+				Value result = baseLst.Item((long)(index.data.number));
+				return result;
+			}
+			KeyException("List index must be numeric").raise();
+		}
+		if (type == ValueType::String) {
+			if (index.type == ValueType::Number) {
+				String baseStr((StringStorage*)(data.ref));
+				long len = baseStr.Length();
+				long i = (long)index.data.number;
+				if (i < 0) i += len;
+				if (i < 0 or i >= len) {
+					IndexException(String("Index Error (string index ") + i + " out of range").raise();
+				}
+				Value result = baseStr.Substring(i, 1);
+				return result;
+			}
+			KeyException("String index must be numeric").raise();
+		}
+		if (type == ValueType::Map) {
+			return Lookup(index);
+		}
+		if (type == ValueType::Null) {
+			TypeException("Null Reference Exception: can't index into null").raise();
+		}
+		TypeException("Type Exception: can't index into this type").raise();
+		return Value::null;
 	}
 
 	
