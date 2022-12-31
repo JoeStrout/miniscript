@@ -73,11 +73,13 @@ namespace MiniScript {
 	/// <param name="timeLimit">maximum amout of time to run before returning, in seconds</param>
 	/// <param name="returnEarly">if true, return as soon as we reach an intrinsic that returns a partial result</param>
 	void Interpreter::RunUntilDone(double timeLimit, bool returnEarly) {
+		long startImpResultCount = 0;
 		try {
 			if (not vm) {
 				Compile();
 				if (not vm) return;	// (must have been some error)
 			}
+			startImpResultCount = vm->GetGlobalContext()->implicitResultCounter;
 			double startTime = vm->RunTime();
 			vm->yielding = false;
 			int checkRuntimeIn = 15;		// (because vm->RunTime() is expensive on many machines)
@@ -93,6 +95,7 @@ namespace MiniScript {
 			ReportError(mse);
 			vm->GetTopContext()->JumpToEnd();
 		}
+		CheckImplicitResult(startImpResultCount);
 	}
 
 	/// <summary>
@@ -126,14 +129,11 @@ namespace MiniScript {
 		try {
 			if (not sourceLine.empty()) parser->Parse(sourceLine, true);
 			if (not parser->NeedMoreInput()) {
-				while (not vm->Done()) {
+				while (not vm->Done() && !vm->yielding) {
 					if (vm->RunTime() - startTime > timeLimit) return;	// time's up for now!
 					vm->Step();
 				}
-				if (implicitOutput and globalContext->implicitResultCounter > startImpResultCount) {
-					Value result = globalContext->GetVar("_");
-					if (!result.IsNull()) (*implicitOutput)(result.ToString(vm));
-				}
+				CheckImplicitResult(startImpResultCount);
 			}
 			
 		} catch (const MiniscriptException& mse) {
@@ -155,6 +155,21 @@ namespace MiniScript {
 	/// <returns></returns>
 	bool Interpreter::NeedMoreInput() {
 		return parser and parser->NeedMoreInput();
+	}
+
+	/// <summary>
+	/// Helper method that checks whether we have a new implicit result, and if
+	/// so, invokes the implicitOutput callback (if any).  This is how you can
+	/// see the result of an expression in a Read-Eval-Print Loop (REPL).
+	/// </summary>
+	/// <param name="previousImpResultCount">previous value of implicitResultCounter</param>
+	void Interpreter::CheckImplicitResult(long previousImpResultCount) {
+		if (!implicitOutput) return;
+		Context* globalContext = vm->GetGlobalContext();
+		if (implicitOutput and globalContext->implicitResultCounter > previousImpResultCount) {
+			Value result = globalContext->GetVar("_");
+			if (!result.IsNull()) (*implicitOutput)(result.ToString(vm));
+		}
 	}
 	
 	void Interpreter::ReportError(const MiniscriptException& mse) {

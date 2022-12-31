@@ -131,6 +131,8 @@ namespace MiniScript {
 
 		
 	protected:
+		void CheckImplicitResult(long previousImpResultCount);
+
 		virtual void ReportError(const MiniscriptException& mse);
 
 	private:

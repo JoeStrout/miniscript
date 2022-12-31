@@ -167,11 +167,13 @@ namespace Miniscript {
 		/// <param name="timeLimit">maximum amout of time to run before returning, in seconds</param>
 		/// <param name="returnEarly">if true, return as soon as we reach an intrinsic that returns a partial result</param>
 		public void RunUntilDone(double timeLimit=60, bool returnEarly=true) {
+			int startImpResultCount = 0;
 			try {
 				if (vm == null) {
 					Compile();
 					if (vm == null) return;	// (must have been some error)
 				}
+				startImpResultCount = vm.globalContext.implicitResultCounter;
 				double startTime = vm.runTime;
 				vm.yielding = false;
 				while (!vm.done && !vm.yielding) {
@@ -186,6 +188,7 @@ namespace Miniscript {
 				ReportError(mse);
 				Stop(); // was: vm.GetTopContext().JumpToEnd();
 			}
+			CheckImplicitResult(startImpResultCount);
 		}
 		
 		/// <summary>
@@ -236,13 +239,7 @@ namespace Miniscript {
 						if (vm.runTime - startTime > timeLimit) return;	// time's up for now!
 						vm.Step();
 					}
-					if (implicitOutput != null && vm.globalContext.implicitResultCounter > startImpResultCount) {
-
-						Value result = vm.globalContext.GetVar(ValVar.implicitResult.identifier);
-						if (result != null) {
-							implicitOutput.Invoke(result.ToString(vm));
-						}
-					}
+					CheckImplicitResult(startImpResultCount);
 				}
 
 			} catch (MiniscriptException mse) {
@@ -295,6 +292,23 @@ namespace Miniscript {
 		/// <param name="value">value to set</param>
 		public void SetGlobalValue(string varName, Value value) {
 			if (vm != null) vm.globalContext.SetVar(varName, value);
+		}
+		
+		
+		/// <summary>
+		/// Helper method that checks whether we have a new implicit result, and if
+		/// so, invokes the implicitOutput callback (if any).  This is how you can
+		/// see the result of an expression in a Read-Eval-Print Loop (REPL).
+		/// </summary>
+		/// <param name="previousImpResultCount">previous value of implicitResultCounter</param>
+		protected void CheckImplicitResult(int previousImpResultCount) {
+			if (implicitOutput != null && vm.globalContext.implicitResultCounter > previousImpResultCount) {
+
+				Value result = vm.globalContext.GetVar(ValVar.implicitResult.identifier);
+				if (result != null) {
+					implicitOutput.Invoke(result.ToString(vm));
+				}
+			}			
 		}
 		
 		/// <summary>
