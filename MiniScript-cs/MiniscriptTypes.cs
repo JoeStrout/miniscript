@@ -723,8 +723,8 @@ namespace Miniscript {
 			foreach (Value k in map.Keys) {
 				Value key = k;		// stupid C#!
 				Value value = map[key];
-				if (key is ValTemp || key is ValVar) key = key.Val(context);
-				if (value is ValTemp || value is ValVar) value = value.Val(context);
+				if (key is ValTemp || key is ValVar || value is ValSeqElem) key = key.Val(context);
+				if (value is ValTemp || value is ValVar || value is ValSeqElem) value = value.Val(context);
 				result.map[key] = value;
 			}
 			return result;

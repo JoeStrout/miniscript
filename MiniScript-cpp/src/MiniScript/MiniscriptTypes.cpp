@@ -355,8 +355,8 @@ namespace MiniScript {
 			for (ValueDictIterator iter=src.GetIterator(); not iter.Done(); iter.Next()) {
 				Value key = iter.Key();
 				Value val = iter.Value();
-				if (key.type == ValueType::Temp or key.type == ValueType::Var) key = key.Val(context);
-				if (val.type == ValueType::Temp or val.type == ValueType::Var) val = val.Val(context);
+				if (key.type == ValueType::Temp or key.type == ValueType::Var or key.type == ValueType::SeqElem) key = key.Val(context);
+				if (val.type == ValueType::Temp or val.type == ValueType::Var or val.type == ValueType::SeqElem) val = val.Val(context);
 				result.SetValue(key, val);
 			}
 //			src.forget();
