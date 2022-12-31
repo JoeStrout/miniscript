@@ -1019,7 +1019,6 @@ namespace MiniScript {
 			list.Add(elem);
 			if (RequireEitherToken(tokens, Token::Type::Comma, Token::Type::RSquare).type == Token::Type::RSquare) break;
 		}
-		if (statementStart) return list;	// return the list as-is for indexed assignment (foo[3]=42)
 		Value result = Value::Temp(output->nextTempNum++);
 		output->Add(TACLine(result, TACLine::Op::CopyA, list));	// use COPY on this mutable list!
 		return result;

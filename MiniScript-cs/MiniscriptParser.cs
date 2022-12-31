@@ -1164,7 +1164,6 @@ namespace Miniscript {
 				list.values.Add(elem);
 				if (RequireEitherToken(tokens, Token.Type.Comma, Token.Type.RSquare).type == Token.Type.RSquare) break;
 			}
-			if (statementStart) return list;	// return the list as-is for indexed assignment (foo[3]=42)
 			Value result = new ValTemp(output.nextTempNum++);
 			output.Add(new TAC.Line(result, TAC.Line.Op.CopyA, list));	// use COPY on this mutable list!
 			return result;
