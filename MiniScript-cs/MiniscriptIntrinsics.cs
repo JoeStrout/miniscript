@@ -783,16 +783,21 @@ namespace Miniscript {
 			// print
 			//	Display the given value on the default output stream.  The
 			//	exact effect may vary with the environment.  In most cases, the
-			//	given string will be followed by the standard line delimiter.
+			//	given string will be followed by the standard line delimiter
+			//	(unless overridden with the second parameter).
 			// s (any): value to print (converted to a string as needed)
+			// delimiter (string or null): string to print after s; if null, use standard EOL
 			// Returns: null
 			// Example: print 6*7
 			f = Intrinsic.Create("print");
 			f.AddParam("s", ValString.empty);
+			f.AddParam("delimiter");
 			f.code = (context, partialResult) => {
-				Value s = context.GetLocal("s");
-				if (s != null) context.vm.standardOutput(s.ToString());
-				else context.vm.standardOutput("null");
+				Value sVal = context.GetLocal("s");
+				string s = (sVal == null ? "null" : sVal.ToString());
+				Value delimiter = context.GetLocal("delimiter");
+				if (delimiter == null) context.vm.standardOutput(s, true);
+				else context.vm.standardOutput(s + delimiter.ToString(), false);
 				return Intrinsic.Result.Null;
 			};
 				

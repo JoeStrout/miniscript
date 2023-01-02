@@ -709,7 +709,7 @@ namespace Miniscript {
 				if (localOnly != ValVar.LocalOnlyMode.Off) {
 					if (localOnly == ValVar.LocalOnlyMode.Strict) throw new UndefinedLocalException(identifier);
 					else vm.standardOutput("Warning: assignment of unqualified local '" + identifier 
-					 + "' based on nonlocal is deprecated " + code[lineNum].location);
+					 + "' based on nonlocal is deprecated " + code[lineNum].location, true);
 				}
 
 				// check for a module variable
@@ -881,7 +881,7 @@ namespace Miniscript {
 				_globalContext = globalContext;
 				_globalContext.vm = this;
 				if (standardOutput == null) {
-					this.standardOutput = s => Console.WriteLine(s);
+					this.standardOutput = (s,eol) => Console.WriteLine(s);
 				} else {
 					this.standardOutput = standardOutput;
 				}

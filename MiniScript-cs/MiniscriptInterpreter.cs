@@ -19,7 +19,7 @@ namespace Miniscript {
 	/// (e.g. normal output, errors, etc.) to your C# code.
 	/// </summary>
 	/// <param name="output"></param>
-	public delegate void TextOutputMethod(string output);
+	public delegate void TextOutputMethod(string output, bool addLineBreak);
 
 	/// <summary>
 	/// Interpreter: an object that contains and runs one MiniScript script.
@@ -85,8 +85,8 @@ namespace Miniscript {
 		/// </summary>
 		public Interpreter(string source=null, TextOutputMethod standardOutput=null, TextOutputMethod errorOutput=null) {
 			this.source = source;
-			if (standardOutput == null) standardOutput = s => Console.WriteLine(s);
-			if (errorOutput == null) errorOutput = s => Console.WriteLine(s);
+			if (standardOutput == null) standardOutput = (s,eol) => Console.WriteLine(s);
+			if (errorOutput == null) errorOutput = (s,eol) => Console.WriteLine(s);
 			this.standardOutput = standardOutput;
 			this.errorOutput = errorOutput;
 		}
@@ -306,7 +306,7 @@ namespace Miniscript {
 
 				Value result = vm.globalContext.GetVar(ValVar.implicitResult.identifier);
 				if (result != null) {
-					implicitOutput.Invoke(result.ToString(vm));
+					implicitOutput.Invoke(result.ToString(vm), true);
 				}
 			}			
 		}
@@ -319,7 +319,7 @@ namespace Miniscript {
 		/// </summary>
 		/// <param name="mse">exception that was thrown</param>
 		protected virtual void ReportError(MiniscriptException mse) {
-			errorOutput.Invoke(mse.Description());
+			errorOutput.Invoke(mse.Description(), true);
 		}
 	}
 }
