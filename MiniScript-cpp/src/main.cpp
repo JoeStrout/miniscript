@@ -26,12 +26,14 @@ bool printHeaderInfo = true;
 
 static bool dumpTAC = false;
 
-static void Print(String s) {
-	std::cout << s.c_str() << std::endl;
+static void Print(String s, bool lineBreak=true) {
+	std::cout << s.c_str();
+	if (lineBreak) std::cout << std::endl;
 }
 
-static void PrintErr(String s) {
-	std::cerr << s.c_str() << std::endl;
+static void PrintErr(String s, bool lineBreak=true) {
+	std::cerr << s.c_str();
+	if (lineBreak) std::cerr << std::endl;
 }
 
 static int ReturnErr(String s, int errCode = -1) {
@@ -77,7 +79,13 @@ static int DoREPL() {
 			continue;
 		}
 		
-		const char *prompt = (interp.NeedMoreInput() ? ">>> " : "> ");
+		const char *prompt;
+		if (interp.NeedMoreInput()) {
+			prompt = ">>> ";
+		} else {
+			prompt = "> ";
+			std::cout << std::flush;
+		}
 		
 		try {
 			#if useEditline
@@ -156,7 +164,7 @@ static int DoScriptFile(String path) {
 }
 
 static List<String> testOutput;
-static void PrintToTestOutput(String s) {
+static void PrintToTestOutput(String s, bool lineBreak=true) {
 	testOutput.Add(s);
 }
 

@@ -530,7 +530,7 @@ namespace MiniScript {
 			if (localOnly == LocalOnlyMode::Strict) UndefinedLocalException(identifier).raise();
 			else vm->standardOutput("Warning: assignment of unqualified local '" + identifier
 									+ "' based on nonlocal is deprecated "
-									+ code[lineNum].location.ToString());
+									+ code[lineNum].location.ToString(), true);
 		}
 		
 		// check for a module variable

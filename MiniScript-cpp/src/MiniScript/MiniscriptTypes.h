@@ -328,7 +328,7 @@ namespace MiniScript {
 
 	/// TextOutputMethod: function pointer that receives text to be output to the user
 	/// (or whatever the host environment wants to do with it).
-	typedef void (*TextOutputMethod)(String text);
+	typedef void (*TextOutputMethod)(String text, bool addLineBreak);
 
 }
 

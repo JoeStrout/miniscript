@@ -26,6 +26,7 @@ namespace MiniScript {
 	static Value _mapType;
 	static Value _numberType;
 	static Value _stringType;
+	static Value _EOL("\n");
 	
 	List<Intrinsic*> Intrinsic::all;
 	Dictionary<String, Intrinsic*, hashString> Intrinsic::nameMap;
@@ -314,8 +315,15 @@ namespace MiniScript {
 
 	static IntrinsicResult intrinsic_print(Context *context, IntrinsicResult partialResult) {
 		Value s = context->GetVar("s");
-		if (!s.IsNull()) (*context->vm->standardOutput)(s.ToString());
-		else (*context->vm->standardOutput)("null");
+		if (s.IsNull()) s = "null";
+		Value delimiter = context->GetVar("delimiter");
+		if (delimiter.IsNull()) {
+			(*context->vm->standardOutput)(s.ToString(), false);
+		} else if (delimiter == _EOL) {
+			(*context->vm->standardOutput)(s.ToString(), true);
+		} else {
+			(*context->vm->standardOutput)(s.ToString() + delimiter.ToString(), false);
+		}
 		return IntrinsicResult::Null;
 	}
 	
@@ -965,6 +973,7 @@ namespace MiniScript {
 		
 		f = Intrinsic::Create("print");
 		f->AddParam("s", Value::emptyString);
+		f->AddParam("delimiter", _EOL);
 		f->code = &intrinsic_print;
 		
 		f = Intrinsic::Create("pop");

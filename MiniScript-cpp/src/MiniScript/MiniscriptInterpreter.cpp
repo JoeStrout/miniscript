@@ -168,12 +168,12 @@ namespace MiniScript {
 		Context* globalContext = vm->GetGlobalContext();
 		if (implicitOutput and globalContext->implicitResultCounter > previousImpResultCount) {
 			Value result = globalContext->GetVar("_");
-			if (!result.IsNull()) (*implicitOutput)(result.ToString(vm));
+			if (!result.IsNull()) (*implicitOutput)(result.ToString(vm), true);
 		}
 	}
 	
 	void Interpreter::ReportError(const MiniscriptException& mse) {
-		if (errorOutput) (*errorOutput)(mse.Description());
+		if (errorOutput) (*errorOutput)(mse.Description(), true);
 	}
 
 }
