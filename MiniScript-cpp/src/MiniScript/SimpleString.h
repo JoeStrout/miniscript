@@ -199,7 +199,7 @@ namespace MiniScript {
 	}
 
 	String::String(const char* c) : isTemp(false) {
-		size_t n = strlen(c);
+		size_t n = c ? strlen(c) : 0;
 		if (!n) {
 			ss = nullptr;
 		} else {

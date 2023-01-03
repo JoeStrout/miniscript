@@ -1,0 +1,5 @@
+The "whereami" library is taken from https://github.com/gpakosz/whereami with the following minor adaptations:
+
+1. Angle brackets changed to quotation marks in `#include` on line 8 of whereami.c.
+
+Many thanks to Gregory Pakosz for his excellent and generous code.

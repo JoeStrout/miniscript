@@ -19,6 +19,7 @@
 #include "MiniScript/MiniscriptInterpreter.h"
 #include "OstreamSupport.h"
 #include "MiniScript/SplitJoin.h"
+#include "whereami.h"
 
 #include <stdio.h>
 #if _WIN32 || _WIN64
@@ -57,6 +58,9 @@ int exitResult = 0;
 ValueList shellArgs;
 
 static Value _handle("_handle");
+static Value _MS_IMPORT_PATH("MS_IMPORT_PATH");
+
+static ValueDict getEnvMap();
 
 // RefCountedStorage class to wrap a FILE*
 class FileHandleStorage : public RefCountedStorage {
@@ -124,6 +128,60 @@ static int UnixishCopyFile(const char* source, const char* destination) {
 	return result;
 }
 #endif
+
+// Expand any occurrences of $VAR, $(VAR) or ${VAR} on all platforms,
+// and also of %VAR% under Windows only, using variables from GetEnvMap().
+static String ExpandVariables(String path) {
+	long p0, p1;
+	long len = path.LengthB();
+	ValueDict envMap = getEnvMap();
+	while (true) {
+		p0 = path.IndexOfB("${");
+		if (p0 >= 0) {
+			for (p1=p0+1; p1<len && path[p1] != '}'; p1++) {}
+			if (p1 < len) {
+				String varName = path.SubstringB(p0 + 2, p1 - p0 - 2);
+				path = path.Substring(0, p0) + envMap.Lookup(varName, Value::emptyString).ToString() + path.SubstringB(p1 + 1);
+				continue;
+			}
+		}
+		p0 = path.IndexOfB("$(");
+		if (p0 >= 0) {
+			for (p1=p0+1; p1<len && path[p1] != ')'; p1++) {}
+			if (p1 < len) {
+				String varName = path.SubstringB(p0 + 2, p1 - p0 - 2);
+				path = path.Substring(0, p0) + envMap.Lookup(varName, Value::emptyString).ToString() + path.SubstringB(p1 + 1);
+				continue;
+			}
+		}
+#if WINDOWS
+		p0 = path.IndexOfB("%");
+		if (p0 >= 0) {
+			for (p1=p0+1; p1<len && path[p1] != '%'; p1++) {}
+			if (p1 < len) {
+				String varName = path.SubstringB(p0 + 1, p1 - p0 - 1);
+				path = path.Substring(0, p0) + envMap.Lookup(varName, Value::emptyString).ToString() + path.SubstringB(p1 + 1);
+				continue;
+			}
+		}
+#endif		
+		p0 = path.IndexOfB("$");
+		if (p0 >= 0) {
+			// variable continues until non-alphanumeric char
+			p1 = p0+1;
+			while (p1 < len) {
+				char c = path[p1];
+				if (c < '0' || (c > '9' && c < 'A') || (c > 'Z' && c < '_') || c == '`' || c > 'z') break;
+				p1++;
+			}
+			String varName = path.SubstringB(p0 + 1, p1 - p0 - 1);
+			path = path.Substring(0, p0) + envMap.Lookup(varName, Value::emptyString).ToString() + path.SubstringB(p1);
+			continue;
+		}
+		break;
+	}
+	return path;
+}
 
 static ValueDict& FileHandleClass();
 
@@ -200,8 +258,8 @@ static IntrinsicResult intrinsic_readdir(Context *context, IntrinsicResult parti
 				if (name == "." || name == "..") continue;
 				result.Add(name);
 			}
+			closedir(dir);
 		}
-		closedir(dir);
 	#endif
 	return IntrinsicResult(result);
 }
@@ -222,21 +280,24 @@ static IntrinsicResult intrinsic_basename(Context *context, IntrinsicResult part
 	return IntrinsicResult(result);
 }
 
+static String dirname(String pathStr) {
+#if _WIN32 || _WIN64
+	char pathBuf[512];
+	_fullpath(pathBuf, pathStr.c_str(), sizeof(pathBuf));
+	char driveBuf[3];
+	char dirBuf[256];
+	_splitpath_s(pathBuf, driveBuf, sizeof(driveBuf), dirBuf, sizeof(dirBuf), NULL, 0, NULL, 0);
+	String result = String(driveBuf) + String(dirBuf);
+#else
+	String result(dirname((char*)pathStr.c_str()));
+#endif
+	return result;
+}
+
 static IntrinsicResult intrinsic_dirname(Context *context, IntrinsicResult partialResult) {
 	Value path = context->GetVar("path");
 	if (path.IsNull()) return IntrinsicResult(Value::zero);
-	String pathStr = path.ToString();
-	#if _WIN32 || _WIN64
-		char pathBuf[512];
-		_fullpath(pathBuf, pathStr.c_str(), sizeof(pathBuf));
-		char driveBuf[3];
-		char dirBuf[256];
-		_splitpath_s(pathBuf, driveBuf, sizeof(driveBuf), dirBuf, sizeof(dirBuf), NULL, 0, NULL, 0);
-		String result = String(driveBuf) + String(dirBuf);
-	#else
-		String result(dirname((char*)pathStr.c_str()));
-	#endif
-	return IntrinsicResult(result);
+	return IntrinsicResult(dirname(path.ToString()));
 }
 
 static IntrinsicResult intrinsic_exists(Context *context, IntrinsicResult partialResult) {
@@ -640,6 +701,40 @@ static ValueDict& FileHandleClass() {
 	return result;
 }
 
+static void setEnvVar(const char* key, const char* value) {
+	#if WINDOWS
+		_putenv_s(key, value);
+	#else
+		setenv(key, value, 1);
+	#endif
+}
+
+static bool assignEnvVar(ValueDict& dict, Value key, Value value) {
+	setEnvVar(key.ToString().c_str(), value.ToString().c_str());
+	return false;	// allow standard assignment to also apply.
+}
+
+static ValueDict getEnvMap() {
+	static ValueDict envMap;
+	if (envMap.Count() == 0) {
+		// The stdlib-supplied `environ` is a null-terminated array of char* (C strings).
+		// Each such C string is of the form NAME=VALUE.  So we need to split on the
+		// first '=' to separate this into keys and values for our env map.
+		for (char **current = environ; *current; current++) {
+			char* eqPos = strchr(*current, '=');
+			if (!eqPos) continue;	// (should never happen, but just in case)
+			String varName(*current, eqPos - *current);
+			String valueStr(eqPos+1);
+			envMap.SetValue(varName, valueStr);
+		}
+		if (envMap.Lookup(_MS_IMPORT_PATH, Value::null).IsNull()) {
+			envMap.SetValue(_MS_IMPORT_PATH, "$MS_SCRIPT_DIR/lib:$MS_EXE_DIR/lib");
+		}
+		envMap.SetAssignOverride(assignEnvVar);
+	}
+	return envMap;
+}
+
 static IntrinsicResult intrinsic_import(Context *context, IntrinsicResult partialResult) {
 	if (!partialResult.Result().IsNull()) {
 		// When we're invoked with a partial result, it means that the import
@@ -663,14 +758,14 @@ static IntrinsicResult intrinsic_import(Context *context, IntrinsicResult partia
 	}
 	
 	// Figure out what directories to look for the import modules in.
-	SimpleVector<String> libDirs;
-	libDirs.push_back(".");		// for now!
-	// ToDo: other import dirs, maybe from env, or from something the user can set.
+	Value searchPath = getEnvMap().Lookup(_MS_IMPORT_PATH, Value::null);
+	StringList libDirs;
+	if (!searchPath.IsNull()) libDirs = Split(searchPath.ToString(), ":");
 	
 	// Search the lib dirs for a matching file.
 	String moduleSource;
 	bool found = false;
-	VecIterate(i, libDirs) {
+	for (long i=0, len=libDirs.Count(); i<len; i++) {
 		String path = libDirs[i];
 		if (path.empty()) path = ".";
 		else if (path[path.LengthB() - 1] != '/') {
@@ -681,6 +776,7 @@ static IntrinsicResult intrinsic_import(Context *context, IntrinsicResult partia
 #endif
 		}
 		path += libname + ".ms";
+		path = ExpandVariables(path);
 		FILE *handle = fopen(path.c_str(), "r");
 		if (handle == NULL) continue;
 		moduleSource = ReadFileHelper(handle, -1);
@@ -707,35 +803,38 @@ static IntrinsicResult intrinsic_import(Context *context, IntrinsicResult partia
 }
 
 static IntrinsicResult intrinsic_env(Context *context, IntrinsicResult partialResult) {
-	static ValueDict envMap;
-	if (envMap.Count() == 0) {
-		// The stdlib-supplied `environ` is a null-terminated array of char* (C strings).
-		// Each such C string is of the form NAME=VALUE.  So we need to split on the
-		// first '=' to separate this into keys and values for our env map.
-		for (char **current = environ; *current; current++) {
-			char* eqPos = strchr(*current, '=');
-			if (!eqPos) continue;	// (should never happen, but just in case)
-			String varName(*current, eqPos - *current);
-			String valueStr(eqPos+1);
-			envMap.SetValue(varName, valueStr);
-		}
+	return IntrinsicResult(getEnvMap());
+}
+
+void AddScriptPathVar(const char* scriptPartialPath) {
+	String scriptDir;
+	if (!scriptPartialPath || scriptPartialPath[0] == 0) {
+		char* s = realpath(".", NULL);
+		scriptDir = s;
+		free(s);
+	} else {
+		char* s = realpath(scriptPartialPath, NULL);
+		String scriptFullPath(s);
+		free(s);
+		scriptDir = dirname(scriptFullPath);
 	}
-	return IntrinsicResult(envMap);
+	setEnvVar("MS_SCRIPT_DIR", scriptDir.c_str());
 }
 
-static bool assignEnvVar(ValueDict& dict, Value key, Value value) {
-	#if WINDOWS
-		_putenv_s(key.ToString().c_str(), value.ToString().c_str());
-	#else
-		setenv(key.ToString().c_str(), value.ToString().c_str(), 1);
-	#endif
-	return false;	// allow standard assignment to also apply.
+void AddPathEnvVars() {
+	int length = wai_getExecutablePath(NULL, 0, NULL);
+	char* path = (char*)malloc(length + 1);
+	int dirname_length;
+	wai_getExecutablePath(path, length, &dirname_length);
+	path[dirname_length] = '\0';
+	setEnvVar("MS_EXE_DIR", path);
 }
-
 
 /// Add intrinsics that are not part of core MiniScript, but which make sense
 /// in this command-line environment.
 void AddShellIntrinsics() {
+	AddPathEnvVars();
+	
 	Intrinsic *f;
 	
 	f = Intrinsic::Create("exit");

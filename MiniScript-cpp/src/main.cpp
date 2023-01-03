@@ -273,8 +273,9 @@ int main(int argc, const char * argv[]) {
 #endif
 	MiniScript::hostInfo = "https://miniscript.org/cmdline/";
 	
+	AddPathEnvVars();
+	AddScriptPathVar("");
 	AddShellIntrinsics();
-
 	
 	for (int i=1; i<argc; i++) {
 		String arg = argv[i];
@@ -303,6 +304,7 @@ int main(int argc, const char * argv[]) {
 			return DoREPL();
 		} else if (not arg.StartsWith("-")) {
 			PrepareShellArgs(argc, argv, i);
+			AddScriptPathVar(arg.c_str());
 			return DoScriptFile(arg);
 		} else {
 			PrintHeaderInfo();

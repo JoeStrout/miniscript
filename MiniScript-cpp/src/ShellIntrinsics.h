@@ -22,6 +22,8 @@ extern int exitResult;
 
 extern MiniScript::ValueList shellArgs;
 
+void AddPathEnvVars();
+void AddScriptPathVar(const char* scriptPartialPath);
 void AddShellIntrinsics();
 
 #endif // SHELLINTRINSICS_H
