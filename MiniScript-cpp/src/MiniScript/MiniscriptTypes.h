@@ -53,7 +53,7 @@ namespace MiniScript {
 
 	class SeqElemStorage;
 
-	enum class ValueType {
+	enum class ValueType : unsigned char {
 		Null,
 		Number,
 		Temp,
@@ -67,7 +67,7 @@ namespace MiniScript {
 		Handle		// (any opaque RefCountedData subclass needed by the host app)
 	};
 	
-	enum class LocalOnlyMode {
+	enum class LocalOnlyMode : unsigned char {
 		Off = 0,
 		Warn,
 		Strict
