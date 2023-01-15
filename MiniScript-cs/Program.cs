@@ -5,8 +5,9 @@ using System.Collections.Generic;
 
 class MainClass {
 
-	static void Print(string s) {
-		Console.WriteLine(s);
+	static void Print(string s, bool lineBreak=true) {
+		if (lineBreak) Console.WriteLine(s);
+		else Console.Write(s);
 	}
 
 	static void ListErrors(Script script) {
@@ -31,7 +32,7 @@ class MainClass {
 
 		Interpreter miniscript = new Interpreter(sourceLines);
 		List<string> actualOutput = new List<string>();
-		miniscript.standardOutput = (string s) => actualOutput.Add(s);
+		miniscript.standardOutput = (string s, bool eol) => actualOutput.Add(s);
 		miniscript.errorOutput = miniscript.standardOutput;
 		miniscript.implicitOutput = miniscript.standardOutput;
 		miniscript.RunUntilDone(60, false);
@@ -110,7 +111,7 @@ class MainClass {
 		while (!file.EndOfStream) sourceLines.Add(file.ReadLine());
 
 		Interpreter miniscript = new Interpreter(sourceLines);
-		miniscript.standardOutput = (string s) => Print(s);
+		miniscript.standardOutput = (string s, bool eol) => Print(s, eol);
 		miniscript.implicitOutput = miniscript.standardOutput;
 		miniscript.Compile();
 

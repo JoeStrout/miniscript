@@ -15,6 +15,7 @@
 
 #include <iostream>
 #include <math.h>
+#include <bit>
 
 namespace MiniScript {
 
@@ -31,6 +32,10 @@ namespace MiniScript {
 	Value Value::keyString("key");
 	Value Value::valueString("value");
 	Value Value::implicitResult = Value::Var("_");
+
+	static int rotateBits(int n) {
+		return (n >> 1) | (n << (sizeof(int) * 8 - 1));
+	}
 
 	FunctionStorage *FunctionStorage::BindAndCopy(ValueDict contextVariables) {
 		FunctionStorage *result = new FunctionStorage();
@@ -555,13 +560,7 @@ namespace MiniScript {
 			if (lhl == nullptr) return rhl == nullptr ? 1 : 0;
 			long count = lhl->size();
 			if (count != rhl->size()) return 0;
-			if (recursionDepth < 1) return 0.5;		// in too deep
-			double result = 1;
-			for (long i = 0; i < count; i++) {
-				result *= Equality((*lhl)[i], (*rhl)[i], recursionDepth-1);
-				if (result <= 0) break;
-			}
-			return result;
+			return lhs.RecursiveEqual(rhs) ? 1 : 0;
 		} else if (lhs.type == ValueType::Map) {
 			if (rhs.type != ValueType::Map) return 0;
 			if (lhs.data.ref == rhs.data.ref) return 1;
@@ -569,15 +568,7 @@ namespace MiniScript {
 			const ValueDict rhd = ((Value)rhs).GetDict();
 			long count = lhd.Count();
 			if (count != rhd.Count()) return 0;
-			if (recursionDepth < 1) return 0.5;		// in too deep
-			double result = 1;
-			Value v;
-			for (ValueDictIterator kv = lhd.GetIterator(); not kv.Done(); kv.Next()) {
-				if (not rhd.Get(kv.Key(), &v)) return 0;
-				result *= Equality(kv.Value(), v, recursionDepth-1);
-				if (result <= 0) break;
-			}
-			return result;
+			return lhs.RecursiveEqual(rhs) ? 1 : 0;
 		} else if (lhs.type == ValueType::Function) {
 			// Two Function values are equal only if they refer to the exact same function
 			if (rhs.type != ValueType::Function) return 0;
@@ -664,27 +655,12 @@ namespace MiniScript {
 				
 			case ValueType::List:
 			{
-				ValueList list((ListStorage<Value>*)data.ref);
-				long count = list.Count();
-				unsigned int x = IntHash((int)count);
-				for (int i=0; i<count; i++) x ^= list[i].Hash();
-//				list.forget();
-				return x;
+				return RecursiveHash();
 			} break;
 			
 			case ValueType::Map:
 			{
-				ValueDict dict((DictionaryStorage<Value, Value>*)data.ref);
-				long count = dict.Count();
-				unsigned int x = IntHash((int)count);
-				ValueList keys = dict.Keys();
-				for (int i=0; i<count; i++) {
-					Value key = keys[i];
-					x ^= key.Hash();
-					x ^= dict[key].Hash();
-				}
-//				dict.forget();
-				return x;
+				return RecursiveHash();
 			} break;
 
 			case ValueType::Temp:
@@ -704,6 +680,102 @@ namespace MiniScript {
 				return IntHash((int)(long)data.ref);
 		}
 		return 0;
+	}
+
+	bool Value::RecursiveEqual(Value rhs) const {
+		struct ValuePair {
+			Value a;
+			Value b;
+			ValuePair(const Value& inA, const Value& inB) : a(inA), b(inB) {}
+			ValuePair() {}
+//			operator=(const ValuePair rhs) { a = rhs.a; b = rhs.b; }
+			bool operator==(const ValuePair& rhs) {
+				return a == rhs.a and b == rhs.b;
+			}
+		};
+		SimpleVector<ValuePair> toDo;
+		SimpleVector<ValuePair> visited;
+		toDo.push_back(ValuePair(*this, rhs));
+		while (!toDo.empty()) {
+			ValuePair pair = toDo.pop_back();
+			visited.push_back(pair);
+			if (pair.a.type == ValueType::List) {
+				if (pair.b.type != ValueType::List) return false;
+				ValueList listA((ListStorage<Value>*)pair.a.data.ref);
+				long aCount = listA.Count();
+				ValueList listB((ListStorage<Value>*)pair.b.data.ref);
+				if (listB.Count() != aCount) return false;
+				for (int i=0; i < aCount; i++) {
+					ValuePair newPair(listA[i], listB[i]);
+					if (!visited.Contains(newPair)) toDo.push_back(newPair);
+				}
+			} else if (pair.a.type == ValueType::Map) {
+				if (pair.b.type != ValueType::Map) return false;
+				ValueDict dictA((DictionaryStorage<Value, Value>*)pair.a.data.ref);
+				long countA = dictA.Count();
+				ValueDict dictB((DictionaryStorage<Value, Value>*)pair.b.data.ref);
+				if (dictB.Count() != countA) return false;
+				ValueList keys = dictA.Keys();
+				for (int i=0; i<countA; i++) {
+					Value key = keys[i];
+					Value valFromB;
+					if (!dictB.Get(key, &valFromB)) return false;
+					Value valFromA = dictA[key];
+					ValuePair newPair(valFromA, valFromB);
+					if (!visited.Contains(newPair)) toDo.push_back(newPair);
+				}
+			} else {
+				// No other types can recurse, so can safely do:
+				if (Equality(pair.a, pair.b) == 0) return false;
+			}
+		}
+		// If we clear out our toDo list without finding anything unequal,
+		// then the values as a whole must be equal.
+		return true;
+	}
+
+	unsigned int Value::RecursiveHash() const {
+		unsigned int result = 0;
+		SimpleVector<Value> toDo;
+		SimpleVector<void*> visited;
+		toDo.push_back(*this);
+		visited.push_back(data.ref);
+		while (!toDo.empty()) {
+			Value item = toDo.pop_back();
+			if (item.type == ValueType::List) {
+				ValueList list((ListStorage<Value>*)item.data.ref);
+				long count = list.Count();
+				result = rotateBits(result) ^ IntHash((int)count);
+				for (int i=0; i<count; i++) {
+					Value child = list[i];
+					if (!(child.type == ValueType::List || child.type == ValueType::Map) || !visited.Contains(child.data.ref)) {
+						toDo.push_back(child);
+						visited.push_back(child.data.ref);
+					}
+				}
+			} else if (item.type == ValueType::Map) {
+				ValueDict dict((DictionaryStorage<Value, Value>*)item.data.ref);
+				long count = dict.Count();
+				result = rotateBits(result) ^ IntHash((int)count);
+				ValueList keys = dict.Keys();
+				for (int i=0; i<count; i++) {
+					Value key = keys[i];
+					if (!(key.type == ValueType::List || key.type == ValueType::Map) || !visited.Contains(key.data.ref)) {
+						toDo.push_back(key);
+						visited.push_back(key.data.ref);
+					}
+					Value value = dict[key];
+					if (!(value.type == ValueType::List || value.type == ValueType::Map) || !visited.Contains(value.data.ref)) {
+						toDo.push_back(value);
+						visited.push_back(value.data.ref);
+					}
+				}
+			} else {
+				// Anything else, we can safely use the standard hash method
+				result = rotateBits(result) ^ item.Hash();
+			}
+		}
+		return result;
 	}
 
 	bool Value::Equal(StringStorage *lhs, StringStorage *rhs) {

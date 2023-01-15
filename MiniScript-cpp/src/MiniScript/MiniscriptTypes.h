@@ -220,6 +220,7 @@ namespace MiniScript {
 		inline bool operator!=(const Value& rhs) const { return !(*this == rhs); }
 		unsigned int Hash() const;
 		static double Equality(const Value& lhs, const Value& rhs, int recursionDepth=16);
+		inline bool RefEquals(const Value& rhs) const;
 		
 	private:
 		// private constructors used by factory functions
@@ -237,6 +238,10 @@ namespace MiniScript {
 		static bool Equal(DictionaryStorage<Value, Value> *lhs, DictionaryStorage<Value, Value> *rhs);
 		static bool Equal(SeqElemStorage *lhs, SeqElemStorage *rhs);
 		static bool RefEqual(const Value& lhs, const Value& rhs);
+		
+		// more hashing/equality helpers, for recursive reference types (List and Map)
+		bool RecursiveEqual(Value rhs) const;
+		unsigned int RecursiveHash() const;
 	};
 	
 	class FuncParam {
@@ -270,13 +275,13 @@ namespace MiniScript {
 			{
 				if (data.ref == rhs.data.ref) return true;
 				if (!data.ref || !rhs.data.ref) return false;
-				return Equal((ListStorage<Value>*)data.ref, (ListStorage<Value>*)rhs.data.ref);
+				return RecursiveEqual(rhs);
 			}
 			case ValueType::Map:
 			{
 				if (data.ref == rhs.data.ref) return true;
 				if (!data.ref || !rhs.data.ref) return false;
-				return Equal((DictionaryStorage<Value, Value>*)data.ref, (DictionaryStorage<Value, Value>*)rhs.data.ref);
+				return RecursiveEqual(rhs);
 			}
 			case ValueType::Function:
 				// Two functions are equal only if they refer to the exact same function
@@ -294,6 +299,11 @@ namespace MiniScript {
 				return (data.ref == rhs.data.ref);
 		}
 		return false;
+	}
+
+	bool Value::RefEquals(const Value& rhs) const {
+		if (!usesRef()) return *this == rhs;
+		return data.ref == rhs.data.ref;
 	}
 	
 	/// <summary>

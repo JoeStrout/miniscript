@@ -718,7 +718,9 @@ namespace MiniScript {
 		Context *globalContext = stack[0];
 		if (globalContext == NULL) return nullStr;
 		for (ValueDictIterator kv = globalContext->variables.GetIterator(); !kv.Done(); kv.Next()) {
-			if (kv.Value() == val && kv.Key() != val) return kv.Key().ToString();
+			if (!kv.Value().RefEquals(val)) continue;
+			String varName = kv.Key().ToString();
+			if (varName != "_") return varName;
 		}
 		return nullStr;
 	}

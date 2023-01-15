@@ -114,14 +114,14 @@ namespace Miniscript {
 		/// equal will return the same hash value.
 		/// </summary>
 		/// <returns>hash value</returns>
-		public abstract int Hash(int recursionDepth=16);
+		public abstract int Hash();
 		
 		/// <summary>
 		/// Check whether this Value is equal to another Value.
 		/// </summary>
 		/// <param name="rhs">other value to compare to</param>
 		/// <returns>1if these values are considered equal; 0 if not equal; 0.5 if unsure</returns>
-		public abstract double Equality(Value rhs, int recursionDepth=16);
+		public abstract double Equality(Value rhs);
 		
 		/// <summary>
 		/// Can we set elements within this value?  (I.e., is it a list or map?)
@@ -171,6 +171,98 @@ namespace Miniscript {
 			// Otherwise, consider all values equal, for sorting purposes.
 			return 0;
 		}
+
+		private int RotateBits(int n) {
+			return (n >> 1) | (n << (sizeof(int) * 8 - 1));
+		}
+
+		/// <summary>
+		/// Compare lhs and rhs for equality, in a way that traverses down
+		/// the tree when it finds a list or map.  For any other type, this
+		/// just calls through to the regular Equality method.
+		///
+		/// Note that this works correctly for loops (maintaining a visited
+		/// list to avoid recursing indefinitely).
+		/// </summary>
+		protected bool RecursiveEqual(Value rhs) { 
+			var toDo = new Stack<ValuePair>();
+			var visited = new HashSet<ValuePair>();
+			toDo.Push(new ValuePair() { a = this, b = rhs });
+			while (toDo.Count > 0) {
+				var pair = toDo.Pop();
+				visited.Add(pair);
+				if (pair.a is ValList listA) {
+					var listB = pair.b as ValList;
+					if (listB == null) return false;
+					int aCount = listA.values.Count;
+					if (aCount != listB.values.Count) return false;
+					for (int i = 0; i < aCount; i++) {
+						var newPair = new ValuePair() {  a = listA.values[i], b = listB.values[i] };
+						if (!visited.Contains(newPair)) toDo.Push(newPair);
+					}
+				} else if (pair.a is ValMap mapA) {
+					var mapB = pair.b as ValMap;
+					if (mapB == null) return false;
+					if (mapA.map.Count != mapB.map.Count) return false;
+					foreach (KeyValuePair<Value, Value> kv in mapA.map) {
+						Value valFromB;
+						if (!mapB.map.TryGetValue(kv.Key, out valFromB)) return false;
+						Value valFromA = mapA.map[kv.Key];
+						var newPair = new ValuePair() {  a = valFromA, b = valFromB };
+						if (!visited.Contains(newPair)) toDo.Push(newPair);
+					}
+				} else {
+					// No other types can recurse, so we can safely do:
+					if (pair.a.Equality(pair.b) == 0) return false;
+				}
+			}
+			// If we clear out our toDo list without finding anything unequal,
+			// then the values as a whole must be equal.
+			return true;
+		}
+
+		// Hash function that works correctly with nested lists and maps.
+		protected int RecursiveHash()
+		{
+			int result = 0;
+			var toDo = new Stack<Value>();
+			var visited = new HashSet<Value>();
+			toDo.Push(this);
+			while (toDo.Count > 0) {
+				Value item = toDo.Pop();
+				visited.Add(item);
+				if (item is ValList list) {
+					result = RotateBits(result) ^ list.values.Count.GetHashCode();
+					for (int i=list.values.Count-1; i>=0; i--) {
+						Value child = list.values[i];
+						if (!(child is ValList || child is ValMap) || !visited.Contains(child)) {
+							toDo.Push(child);
+						}
+					}
+				} else  if (item is ValMap map) {
+					result = RotateBits(result) ^ map.map.Count.GetHashCode();
+					foreach (KeyValuePair<Value, Value> kv in map.map) {
+						if (!(kv.Key is ValList || kv.Key is ValMap) || !visited.Contains(kv.Key)) {
+							toDo.Push(kv.Key);
+						}
+						if (!(kv.Value is ValList || kv.Value is ValMap) || !visited.Contains(kv.Value)) {
+							toDo.Push(kv.Value);
+						}
+					}
+				} else {
+					// Anything else, we can safely use the standard hash method
+					result = RotateBits(result) ^ item.Hash();
+				}
+			}
+			return result;
+		}
+	}
+
+	// ValuePair: used internally when working out whether two maps
+	// or lists are equal.
+	struct ValuePair {
+		public Value a;
+		public Value b;
 	}
 
 	public class ValueSorter : IComparer<Value>
@@ -206,7 +298,7 @@ namespace Miniscript {
 			return false;
 		}
 
-		public override int Hash(int recursionDepth=16) {
+		public override int Hash() {
 			return -1;
 		}
 
@@ -235,7 +327,7 @@ namespace Miniscript {
 			return false;
 		}
 
-		public override double Equality(Value rhs, int recursionDepth=16) {
+		public override double Equality(Value rhs) {
 			return (rhs == null || rhs is ValNull ? 1 : 0);
 		}
 
@@ -292,11 +384,11 @@ namespace Miniscript {
 			return type == vm.numberType;
 		}
 
-		public override int Hash(int recursionDepth=16) {
+		public override int Hash() {
 			return value.GetHashCode();
 		}
 
-		public override double Equality(Value rhs, int recursionDepth=16) {
+		public override double Equality(Value rhs) {
 			return rhs is ValNumber && ((ValNumber)rhs).value == value ? 1 : 0;
 		}
 
@@ -368,11 +460,11 @@ namespace Miniscript {
 			return type == vm.stringType;
 		}
 
-		public override int Hash(int recursionDepth=16) {
+		public override int Hash() {
 			return value.GetHashCode();
 		}
 
-		public override double Equality(Value rhs, int recursionDepth=16) {
+		public override double Equality(Value rhs) {
 			// String equality is treated the same as in C#.
 			return rhs is ValString && ((ValString)rhs).value == value ? 1 : 0;
 		}
@@ -514,29 +606,20 @@ namespace Miniscript {
 			return type == vm.listType;
 		}
 
-		public override int Hash(int recursionDepth=16) {
-			//return values.GetHashCode();
-			int result = values.Count.GetHashCode();
-			if (recursionDepth < 1) return result;
-			for (var i = 0; i < values.Count; i++) {
-				if (values[i] != null) result ^= values[i].Hash(recursionDepth-1);
-			}
-			return result;
+		public override int Hash() {
+			return RecursiveHash();
 		}
 
-		public override double Equality(Value rhs, int recursionDepth=16) {
+		public override double Equality(Value rhs) {
+			// Quick bail-out cases:
 			if (!(rhs is ValList)) return 0;
 			List<Value> rhl = ((ValList)rhs).values;
 			if (rhl == values) return 1;  // (same list)
 			int count = values.Count;
 			if (count != rhl.Count) return 0;
-			if (recursionDepth < 1) return 0.5;		// in too deep
-			double result = 1;
-			for (var i = 0; i < count; i++) {
-				result *= values[i].Equality(rhl[i], recursionDepth-1);
-				if (result <= 0) break;
-			}
-			return result;
+
+			// Otherwise, we have to do:
+			return RecursiveEqual(rhs) ? 1 : 0;
 		}
 
 		public override bool CanSetElem() { return true; }
@@ -765,36 +848,20 @@ namespace Miniscript {
 			return false;
 		}
 
-		public override int Hash(int recursionDepth=16) {
-			//return map.GetHashCode();
-			int result = map.Count.GetHashCode();
-			if (recursionDepth < 0) return result;  // (important to recurse an odd number of times, due to bit flipping)
-			foreach (KeyValuePair<Value, Value> kv in map) {
-				result ^= kv.Key.Hash(recursionDepth-1);
-				if (kv.Value != null) result ^= kv.Value.Hash(recursionDepth-1);
-			}
-			return result;
+		public override int Hash() {
+			return RecursiveHash();
 		}
 
-		public override double Equality(Value rhs, int recursionDepth=16) {
+		public override double Equality(Value rhs) {
+			// Quick bail-out cases:
 			if (!(rhs is ValMap)) return 0;
 			Dictionary<Value, Value> rhm = ((ValMap)rhs).map;
 			if (rhm == map) return 1;  // (same map)
 			int count = map.Count;
 			if (count != rhm.Count) return 0;
-			if (recursionDepth < 1) return 0.5;		// in too deep
-			double result = 1;
-			foreach (KeyValuePair<Value, Value> kv in map) {
-				if (!rhm.ContainsKey(kv.Key)) return 0;
-				var rhvalue = rhm[kv.Key];
-				if (kv.Value == null) {
-					if (rhvalue != null) return 0;
-					continue;
-				}
-				result *= kv.Value.Equality(rhvalue, recursionDepth-1);
-				if (result <= 0) break;
-			}
-			return result;
+
+			// Otherwise:
+			return RecursiveEqual(rhs) ? 1 : 0;
 		}
 
 		public override bool CanSetElem() { return true; }
@@ -905,11 +972,11 @@ namespace Miniscript {
 			return type == vm.functionType;
 		}
 
-		public override int Hash(int recursionDepth=16) {
+		public override int Hash() {
 			return function.GetHashCode();
 		}
 
-		public override double Equality(Value rhs, int recursionDepth=16) {
+		public override double Equality(Value rhs) {
 			// Two Function values are equal only if they refer to the exact same function
 			if (!(rhs is ValFunction)) return 0;
 			var other = (ValFunction)rhs;
@@ -942,11 +1009,11 @@ namespace Miniscript {
 			return "_" + tempNum.ToString(CultureInfo.InvariantCulture);
 		}
 
-		public override int Hash(int recursionDepth=16) {
+		public override int Hash() {
 			return tempNum.GetHashCode();
 		}
 
-		public override double Equality(Value rhs, int recursionDepth=16) {
+		public override double Equality(Value rhs) {
 			return rhs is ValTemp && ((ValTemp)rhs).tempNum == tempNum ? 1 : 0;
 		}
 
@@ -979,11 +1046,11 @@ namespace Miniscript {
 			return identifier;
 		}
 
-		public override int Hash(int recursionDepth=16) {
+		public override int Hash() {
 			return identifier.GetHashCode();
 		}
 
-		public override double Equality(Value rhs, int recursionDepth=16) {
+		public override double Equality(Value rhs) {
 			return rhs is ValVar && ((ValVar)rhs).identifier == identifier ? 1 : 0;
 		}
 
@@ -1091,11 +1158,11 @@ namespace Miniscript {
 			return string.Format("{0}{1}[{2}]", noInvoke ? "@" : "", sequence, index);
 		}
 
-		public override int Hash(int recursionDepth=16) {
-			return sequence.Hash(recursionDepth-1) ^ index.Hash(recursionDepth-1);
+		public override int Hash() {
+			return sequence.Hash() ^ index.Hash();
 		}
 
-		public override double Equality(Value rhs, int recursionDepth=16) {
+		public override double Equality(Value rhs) {
 			return rhs is ValSeqElem && ((ValSeqElem)rhs).sequence == sequence
 				&& ((ValSeqElem)rhs).index == index ? 1 : 0;
 		}
