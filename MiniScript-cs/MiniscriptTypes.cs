@@ -251,7 +251,7 @@ namespace Miniscript {
 					}
 				} else {
 					// Anything else, we can safely use the standard hash method
-					result = RotateBits(result) ^ item.Hash();
+					result = RotateBits(result) ^ (item == null ? 0 : item.Hash());
 				}
 			}
 			return result;
