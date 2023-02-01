@@ -486,6 +486,12 @@ namespace Miniscript {
 						}
 					case Op.NotA:
 						return opA != null && opA.BoolValue() ? ValNumber.zero : ValNumber.one;
+					case Op.ElemBofA:
+						if (opA is null) {
+							throw new TypeException("Null Reference Exception: can't index into null");
+						} else {
+							throw new TypeException("Type Exception: can't index into this type");
+						}
 					}
 				}
 				

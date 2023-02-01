@@ -453,6 +453,13 @@ namespace MiniScript {
 				} break;
 				case Op::NotA:
 					return Value::Truth(!opA.BoolValue());
+				case Op::ElemBofA:
+					if (opA.IsNull()) {
+						TypeException("Null Reference Exception: can't index into null").raise();
+					} else {
+						TypeException("Type Exception: can't index into this type").raise();
+					}
+
 				default:
 					break;
 			}

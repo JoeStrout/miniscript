@@ -993,6 +993,18 @@ a[42]
 ----------------------------------------------------------------------
 Runtime Error: __isa depth exceeded (perhaps a reference loop?) [line 3]
 ======================================================================
+==== Trap null reference lookups.
+a = null
+print a[3]
+----------------------------------------------------------------------
+Runtime Error: Null Reference Exception: can't index into null [line 2]
+======================================================================
+==== Trap null reference lookups (#2).
+a = null
+print a.foo
+----------------------------------------------------------------------
+Runtime Error: Type Error (while attempting to look up foo) [line 2]
+======================================================================
 ==== Error reporting of unexpected end-of-file.
 for i in range(0,10)
 	print i
