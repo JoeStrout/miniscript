@@ -1481,7 +1481,7 @@ namespace Miniscript {
 			f.code = (context, partialResult) => {
 				if (context.vm.versionMap == null) {
 					var d = new ValMap();
-					d["miniscript"] = new ValString("1.5.1");
+					d["miniscript"] = new ValString("1.5.9");
 			
 					// Getting the build date is annoyingly hard in C#.
 					// This will work if the assembly.cs file uses the version format: 1.0.*
