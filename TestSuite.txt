@@ -814,9 +814,8 @@ a = {}
 b = {"__isa": a}
 a.__isa = b
 x = a.foo
-print x == null
 ----------------------------------------------------------------------
-1
+Runtime Error: __isa depth exceeded (perhaps a reference loop?) [line 4]
 ======================================================================
 ==== Test the range() intrinsic.
 print range(1,10)
@@ -986,6 +985,13 @@ x = noSuchThingy
 x = 3
 ----------------------------------------------------------------------
 Runtime Error: Undefined Identifier: 'noSuchThingy' is unknown in this context [line 2]
+======================================================================
+==== More trapping of loops in the __isa chain
+a = {}
+a.__isa = a
+a[42]
+----------------------------------------------------------------------
+Runtime Error: __isa depth exceeded (perhaps a reference loop?) [line 3]
 ======================================================================
 ==== Error reporting of unexpected end-of-file.
 for i in range(0,10)

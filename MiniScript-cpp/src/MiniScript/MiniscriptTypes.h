@@ -79,6 +79,7 @@ namespace MiniScript {
 	public:
 		static long maxStringSize;
 		static long maxListSize;
+		static int maxIsaDepth;
 		
 		ValueType type;
 		bool noInvoke;

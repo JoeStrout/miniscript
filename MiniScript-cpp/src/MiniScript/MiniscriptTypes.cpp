@@ -23,6 +23,7 @@ namespace MiniScript {
 
 	long Value::maxStringSize = 0xFFFFFF;		// about 16MB
 	long Value::maxListSize   = 0xFFFFFF;		// about 16M elements
+	int Value::maxIsaDepth = 256;
 
 	Value Value::zero(0.0);
 	Value Value::one(1.0);
@@ -197,6 +198,7 @@ namespace MiniScript {
 				if (baseVal.type == ValueType::Map) {
 					Value result = null;
 					// Keep walking the "__isa" chain until we find the value, or can go no further.
+					int chainDepth = 0;
 					while (baseVal.type == ValueType::Map) {
 //						if (idxVal.IsNull()) KeyException("null").raise();
 						ValueDict baseDict((ValueDictStorage*)(baseVal.data.ref));
@@ -205,6 +207,9 @@ namespace MiniScript {
 						}
 						if (not baseDict.Get(Value::magicIsA, &baseVal)) {
 							KeyException(idxVal.ToString(context->vm)).raise();
+						}
+						if (chainDepth++ > maxIsaDepth) {
+							LimitExceededException("__isa depth exceeded (perhaps a reference loop?)").raise();
 						}
 						baseVal = baseVal.Val(context);	// ToDo: is this really needed?
 					}
@@ -441,7 +446,7 @@ namespace MiniScript {
 	/// <param name="outFoundInMap">Output parameter: map the value was found in.</param>
 	Value Value::Resolve(Value sequence, String identifier, Context *context, ValueDict *outFoundInMap) {
 		bool includeMapType = true;
-		int loopsLeft = 1000;		// (max __isa chain depth)
+		int loopsLeft = maxIsaDepth;
 		while (not sequence.IsNull()) {
 			if (sequence.type == ValueType::Temp or sequence.type == ValueType::Var) sequence = sequence.Val(context);
 			if (sequence.type == ValueType::Map) {
@@ -453,7 +458,9 @@ namespace MiniScript {
 					return result;
 				}
 				// Otherwise, if we have an __isa, try that next
-				if (loopsLeft < 0) return null;		// (unless we've hit the loop limit)
+				if (loopsLeft < 0) {
+					LimitExceededException("__isa depth exceeded (perhaps a reference loop?)").raise();
+				}
 				if (not d.Get(Value::magicIsA, &sequence)) {
 					// ...and if we don't have an __isa, try the generic map type if allowed
 					if (!includeMapType) KeyException(identifier).raise();
@@ -514,12 +521,16 @@ namespace MiniScript {
 				// otherwise, walk the __isa chain
 				ValueDict d = GetDict();
 				Value p;
+				int chainDepth = 0;
 				if (!d.Get(magicIsA, &p)) return false;
 				while (true) {
 					if (RefEqual(p, type)) return true;
 					if (p.type != ValueType::Map) return false;
 					d = p.GetDict();
 					if (!d.Get(magicIsA, &p)) return false;
+					if (chainDepth++ > maxIsaDepth) {
+						LimitExceededException("__isa depth exceeded (perhaps a reference loop?)").raise();
+					}
 				}
 			}
 

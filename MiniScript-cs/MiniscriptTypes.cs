@@ -653,6 +653,13 @@ namespace Miniscript {
 	/// of Value, Value pairs.
 	/// </summary>
 	public class ValMap : Value {
+
+		// Define a maximum depth we will allow an inheritance ("__isa") chain to be.
+		// This is used to avoid locking up the app if some bozo creates a loop in
+		// the __isa chain, but it also means we can't allow actual inheritance trees
+		// to be longer than this.  So, use a reasonably generous value.
+		public const int maxIsaDepth = 256;
+
 		public Dictionary<Value, Value> map;
 
 		// Assignment override function: return true to cancel (override)
@@ -740,7 +747,7 @@ namespace Miniscript {
 		
 		/// <summary>
 		/// Look up a value in this dictionary, walking the __isa chain to find
-		/// it in a parent object if necessary.
+		/// it in a parent object if necessary.  
 		/// </summary>
 		/// <param name="key">key to search for</param>
 		/// <returns>value associated with that key, or null if not found</returns>
@@ -748,10 +755,14 @@ namespace Miniscript {
 			if (key == null) key = ValNull.instance;
 			Value result = null;
 			ValMap obj = this;
+			int chainDepth = 0;
 			while (obj != null) {
 				if (obj.map.TryGetValue(key, out result)) return result;
 				Value parent;
 				if (!obj.map.TryGetValue(ValString.magicIsA, out parent)) break;
+				if (chainDepth++ > maxIsaDepth) {
+					throw new LimitExceededException("__isa depth exceeded (perhaps a reference loop?)");
+				}
 				obj = parent as ValMap;
 			}
 			return null;
@@ -768,6 +779,7 @@ namespace Miniscript {
 			if (key == null) key = ValNull.instance;
 			Value result = null;
 			ValMap obj = this;
+			int chainDepth = 0;
 			while (obj != null) {
 				if (obj.map.TryGetValue(key, out result)) {
 					valueFoundIn = obj;
@@ -775,6 +787,9 @@ namespace Miniscript {
 				}
 				Value parent;
 				if (!obj.map.TryGetValue(ValString.magicIsA, out parent)) break;
+				if (chainDepth++ > maxIsaDepth) {
+					throw new LimitExceededException("__isa depth exceeded (perhaps a reference loop?)");
+				}
 				obj = parent as ValMap;
 			}
 			valueFoundIn = null;
@@ -842,9 +857,13 @@ namespace Miniscript {
 			if (type == vm.mapType) return true;
 			Value p = null;
 			map.TryGetValue(ValString.magicIsA, out p);
+			int chainDepth = 0;
 			while (p != null) {
 				if (p == type) return true;
 				if (!(p is ValMap)) return false;
+				if (chainDepth++ > maxIsaDepth) {
+					throw new LimitExceededException("__isa depth exceeded (perhaps a reference loop?)");
+				}
 				((ValMap)p).map.TryGetValue(ValString.magicIsA, out p);
 			}
 			return false;
@@ -1083,7 +1102,7 @@ namespace Miniscript {
 		public static Value Resolve(Value sequence, string identifier, TAC.Context context, out ValMap valueFoundIn) {
 			var includeMapType = true;
 			valueFoundIn = null;
-			int loopsLeft = 1000;		// (max __isa chain depth)
+			int loopsLeft = ValMap.maxIsaDepth;
 			while (sequence != null) {
 				if (sequence is ValTemp || sequence is ValVar) sequence = sequence.Val(context);
 				if (sequence is ValMap) {
@@ -1098,7 +1117,7 @@ namespace Miniscript {
 					}
 					
 					// Otherwise, if we have an __isa, try that next.
-					if (loopsLeft < 0) return null;		// (unless we've hit the loop limit)
+					if (loopsLeft < 0) throw new LimitExceededException("__isa depth exceeded (perhaps a reference loop?)"); 
 					if (!((ValMap)sequence).map.TryGetValue(ValString.magicIsA, out sequence)) {
 						// ...and if we don't have an __isa, try the generic map type if allowed
 						if (!includeMapType) throw new KeyException(identifier);
