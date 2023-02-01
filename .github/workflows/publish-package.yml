@@ -8,13 +8,13 @@ on:
       - "Build .NET project"
     types:
       - completed
-      
+
 permissions:
   packages: write
 
 jobs:
   check_nuget:
-    name: Check if a new Nuget release is required
+    name: Check what kind of Nuget release is required
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     outputs:
@@ -33,7 +33,7 @@ jobs:
       - name: Get latest nuget package version
         id: nuget-ver
         run: |
-          export NUGET_VER=$(gh api -H "Accept: application/vnd.github+json" /users/JoeStrout/packages/nuget/Miniscript/versions | jq '.[0].name' | tr -d '"')
+          export NUGET_VER=$(gh api -H "Accept: application/vnd.github+json" /users/${{ github.repository_owner }}/packages/nuget/Miniscript/versions | jq '.[0].name' | tr -d '"')
           echo "version=${NUGET_VER}" >> $GITHUB_OUTPUT
 
       - name: Compare vs current version
@@ -48,24 +48,27 @@ jobs:
     name: Release Nuget package
     runs-on: ubuntu-latest
     needs: check_nuget
-    if: ${{ github.event.workflow_run.conclusion == 'success' && needs.check_nuget.outputs.release == 'true' }}
-    
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
     defaults:
       run:
         working-directory: MiniScript-cs
-    
+
     steps:
       - uses: actions/checkout@v3
-      
+
       - uses: actions/setup-dotnet@v2
         with:
           dotnet-version: 5.0.x
-        
+
       - name: Authenticate to Github Packages
         run: dotnet nuget add source --username "${{ github.repository_owner }}" --password "${{ secrets.GITHUB_TOKEN }}" --store-password-in-clear-text --name github "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
-        
+
       - name: Package
-        run: dotnet pack -c Release
-        
+        run: |
+          [[ "${{ needs.check_nuget.outputs.release }}" == "true" ]] \
+            && dotnet pack -c Release \
+            || dotnet pack -c Release --version-suffix $(git rev-parse --short HEAD)
+
       - name: Publish Nuget package
         run: dotnet nuget push "bin/Release/Miniscript.*.nupkg" --source "github" --api-key "${{ secrets.GHPR_TOKEN }}"
