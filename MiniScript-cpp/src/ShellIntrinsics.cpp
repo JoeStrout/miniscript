@@ -446,7 +446,7 @@ static IntrinsicResult intrinsic_fopen(Context *context, IntrinsicResult partial
 	Value modeVal = context->GetVar("mode");
 	String mode = modeVal.ToString();
 	FILE *handle;
-	if (modeVal.IsNull() || mode.empty() || mode == "rw+") {
+	if (modeVal.IsNull() || mode.empty() || mode == "rw+" || mode == "r+") {
 		// special case: open for reading/updating, creating it if it doesn't exist
 		handle = fopen(path.c_str(), "r+");
 		if (handle == NULL) handle = fopen(path.c_str(), "w+");
@@ -910,7 +910,7 @@ void AddShellIntrinsics() {
 	
 	i_fopen = Intrinsic::Create("");
 	i_fopen->AddParam("path");
-	i_fopen->AddParam("mode");
+	i_fopen->AddParam("mode", "r+");
 	i_fopen->code = &intrinsic_fopen;
 
 	i_fclose = Intrinsic::Create("");

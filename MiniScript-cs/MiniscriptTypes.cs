@@ -120,7 +120,7 @@ namespace Miniscript {
 		/// Check whether this Value is equal to another Value.
 		/// </summary>
 		/// <param name="rhs">other value to compare to</param>
-		/// <returns>1if these values are considered equal; 0 if not equal; 0.5 if unsure</returns>
+		/// <returns>1 if these values are considered equal; 0 if not equal; 0.5 if unsure</returns>
 		public abstract double Equality(Value rhs);
 		
 		/// <summary>
@@ -211,6 +211,8 @@ namespace Miniscript {
 						var newPair = new ValuePair() {  a = valFromA, b = valFromB };
 						if (!visited.Contains(newPair)) toDo.Push(newPair);
 					}
+				} else if (pair.a == null || pair.b == null) {
+					return pair.a == null && pair.b == null;
 				} else {
 					// No other types can recurse, so we can safely do:
 					if (pair.a.Equality(pair.b) == 0) return false;

@@ -920,6 +920,35 @@ namespace Miniscript {
 				return new Intrinsic.Result(new ValList(values));
 			};
 
+			// refEquals
+			//	Tests whether two values refer to the very same object (rather than
+			//	merely representing the same value).  For numbers, this is the same
+			//	as ==, but for strings, lists, and maps, it is reference equality.
+			f = Intrinsic.Create("refEquals");
+			f.AddParam("a");
+			f.AddParam("b");
+			f.code = (context, partialResult) => {
+				Value a = context.GetLocal("a");
+				Value b = context.GetLocal("b");
+				bool result = false;
+				if (a == null) {
+					result = (b == null);
+				} else if (a is ValNumber) {
+					result = (b is ValNumber && a.DoubleValue() == b.DoubleValue());
+				} else if (a is ValString) {
+					result = (b is ValString && ReferenceEquals( ((ValString)a).value, ((ValString)b).value ));
+				} else if (a is ValList) {
+					result = (b is ValList && ReferenceEquals( ((ValList)a).values, ((ValList)b).values ));
+				} else if (a is ValMap) {
+					result = (b is ValMap && ReferenceEquals( ((ValMap)a).map, ((ValMap)b).map ));
+				} else if (a is ValFunction) {
+					result = (b is ValFunction && ReferenceEquals( ((ValFunction)a).function, ((ValFunction)b).function ));
+				} else {
+					result = (a.Equality(b) >= 1);
+				}
+				return new Intrinsic.Result(ValNumber.Truth(result));
+			};
+
 			// remove
 			//	Removes part of a list, map, or string.  Exact behavior depends on
 			//	the data type of self:

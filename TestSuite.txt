@@ -1490,6 +1490,27 @@ hellofoo
 [1, 2, 3, 1, 2, 3]
 [1, 2, 3]
 ======================================================================
+==== Test the refEquals intrinsic
+a = {"x":42}
+b = {"x":42}
+c = a
+print refEquals(a,b)
+print refEquals(a,c)
+print refEquals(b,c)
+a = [1,2,3]
+b = [1,2,3]
+c = a
+print refEquals(a,b)
+print refEquals(a,c)
+print refEquals(b,c)
+----------------------------------------------------------------------
+0
+1
+0
+0
+1
+0
+======================================================================
 ==== Test the split intrinsic
 print split("Eat, pray, love", ", ")
 print split("...foo...bar...", "...")

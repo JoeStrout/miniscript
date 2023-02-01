@@ -408,6 +408,28 @@ namespace MiniScript {
 			return IntrinsicResult::Null;
 		}
 	}
+
+	static IntrinsicResult intrinsic_refEquals(Context *context, IntrinsicResult partialResult) {
+		Value a = context->GetVar("a");
+		Value b = context->GetVar("b");
+		bool result;
+		if (a.IsNull()) {
+			result = (b.IsNull());
+		} else if (a.type == ValueType::Number) {
+			result = (b.type == ValueType::Number && a.DoubleValue() == b.DoubleValue());
+		} else if (a.type == ValueType::String) {
+			result = (b.type == ValueType::String && a.RefEquals(b));
+		} else if (a.type == ValueType::List) {
+			result = (b.type == ValueType::List && a.RefEquals(b));
+		} else if (a.type == ValueType::Map) {
+			result = (b.type == ValueType::Map && a.RefEquals(b));
+		} else if (a.type == ValueType::Function) {
+			result = (b.type == ValueType::Function && a.RefEquals(b));
+		} else {
+			result = a.RefEquals(b);
+		}
+		return IntrinsicResult(Value::Truth(result));
+	}
 	
 	static IntrinsicResult intrinsic_remove(Context *context, IntrinsicResult partialResult) {
 		Value self = context->GetVar("self");
@@ -994,6 +1016,11 @@ namespace MiniScript {
 		f->AddParam("to", 0);
 		f->AddParam("step");
 		f->code = &intrinsic_range;
+		
+		f = Intrinsic::Create("refEquals");
+		f->AddParam("a");
+		f->AddParam("b");
+		f->code = &intrinsic_refEquals;
 		
 		f = Intrinsic::Create("remove");
 		f->AddParam("self");
