@@ -33,7 +33,7 @@ jobs:
       - name: Get latest nuget package version
         id: nuget-ver
         run: |
-          export NUGET_VER=$(gh api -H "Accept: application/vnd.github+json" /users/${{ github.repository_owner }}/packages/nuget/Miniscript/versions | jq '.[0].name' | tr -d '"')
+          export NUGET_VER=$(gh api -H "Accept: application/vnd.github+json" /users/${{ github.repository_owner }}/packages/nuget/Miniscript/versions | jq '.[0].name' | tr -d '"' | awk -F'-' '{print $1}')
           echo "version=${NUGET_VER}" >> $GITHUB_OUTPUT
 
       - name: Compare vs current version
