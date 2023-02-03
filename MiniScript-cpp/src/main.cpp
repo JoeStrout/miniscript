@@ -19,6 +19,7 @@
 #include "OstreamSupport.h"
 #include "MiniScript/SplitJoin.h"
 #include "ShellIntrinsics.h"
+#include "DateTimeUtils.h"	// TEMP for initial testing
 
 using namespace MiniScript;
 
@@ -276,6 +277,11 @@ int main(int argc, const char * argv[]) {
 	AddPathEnvVars();
 	AddScriptPathVar("");
 	AddShellIntrinsics();
+	
+	// HACK for initial testing:
+	time_t t;
+	time(&t);
+	Print(FormatDate(t, "MMM d, yyyy \\h hh:mm:ss.FF t"));
 	
 	for (int i=1; i<argc; i++) {
 		String arg = argv[i];

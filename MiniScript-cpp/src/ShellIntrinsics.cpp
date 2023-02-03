@@ -20,15 +20,16 @@
 #include "OstreamSupport.h"
 #include "MiniScript/SplitJoin.h"
 #include "whereami.h"
+#include "DateTimeUtils.h"
 
 #include <stdio.h>
+#include <time.h>
 #if _WIN32 || _WIN64
 	#define WINDOWS 1
 	#include <windows.h>
 	#include <Shlwapi.h>
 	#include <Fileapi.h>
 	#include <direct.h>
-	#include <time.h>
 	#define getcwd _getcwd
 	#define setenv _setenv
 #else
@@ -315,6 +316,39 @@ static IntrinsicResult intrinsic_exists(Context *context, IntrinsicResult partia
 		bool found = (access(pathStr.c_str(), F_OK ) != -1);
 	#endif
 	return IntrinsicResult(Value::Truth(found));
+}
+
+static double dateTimeEpoch() {
+	static double _result = 0;
+	if (_result == 0) {
+		tm baseDate;
+		memset(&baseDate, 0, sizeof(tm));
+		baseDate.tm_year = 2000 - 1900;	// (because tm_year is years since 1900!)
+		baseDate.tm_mon = 0;
+		baseDate.tm_mday = 1;
+		_result = mktime(&baseDate);
+	}
+	return _result;
+}
+
+static IntrinsicResult intrinsic_dateStr(Context *context, IntrinsicResult partialResult) {
+	Value date = context->GetVar("date");
+	Value format = context->GetVar("format");
+	String formatStr;
+	if (format.IsNull()) formatStr = "yyyy-MM-dd HH:mm:ss";
+	else formatStr = format.ToString();
+	double d;
+	if (date.IsNull()) {
+		time_t t;
+		time(&t);
+		d = t;
+	} else if (date.type == ValueType::Number) {
+		d = date.DoubleValue() + dateTimeEpoch();
+	} else {
+		// ToDo: parse a date string
+		d = 0;
+	}
+	return IntrinsicResult(FormatDate((time_t)d, formatStr));
 }
 
 static String timestampToString(const struct tm& t) {
@@ -858,6 +892,11 @@ void AddShellIntrinsics() {
 	f = Intrinsic::Create("file");
 	f->code = &intrinsic_File;
 
+	f = Intrinsic::Create("_dateStr");
+	f->AddParam("date");
+	f->AddParam("format", "yyyy-MM-dd HH:mm:ss");
+	f->code = &intrinsic_dateStr;
+
 	i_getcwd = Intrinsic::Create("");
 	i_getcwd->code = &intrinsic_getcwd;
 	
@@ -948,4 +987,5 @@ void AddShellIntrinsics() {
 	i_writeLines->AddParam("path");
 	i_writeLines->AddParam("lines");
 	i_writeLines->code = &intrinsic_writeLines;
+	
 }
