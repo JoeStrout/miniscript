@@ -351,6 +351,19 @@ static IntrinsicResult intrinsic_dateStr(Context *context, IntrinsicResult parti
 	return IntrinsicResult(FormatDate((time_t)d, formatStr));
 }
 
+static IntrinsicResult intrinsic_dateVal(Context *context, IntrinsicResult partialResult) {
+	Value date = context->GetVar("dateStr");
+	time_t t;
+	if (date.IsNull()) {
+		time(&t);
+	} else if (date.type == ValueType::Number) {
+		return IntrinsicResult(date);
+	} else {
+		t = ParseDate(date.ToString());
+	}
+	return IntrinsicResult((double)t - dateTimeEpoch());
+}
+
 static String timestampToString(const struct tm& t) {
 	String result = String::Format(1900 + t.tm_year) + "-";
 	if (t.tm_mon < 10) result += "0";
@@ -891,6 +904,10 @@ void AddShellIntrinsics() {
 
 	f = Intrinsic::Create("file");
 	f->code = &intrinsic_File;
+
+	f = Intrinsic::Create("_dateVal");
+	f->AddParam("dateStr");
+	f->code = &intrinsic_dateVal;
 
 	f = Intrinsic::Create("_dateStr");
 	f->AddParam("date");

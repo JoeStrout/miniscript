@@ -180,6 +180,56 @@ String FormatDate(time_t t, const String formatSpec) {
 	return Join("", result);
 }
 
+// Parse a date/time consisting of a date, time, or date and time separated
+// by one or more spaces.  Within a date, the separator is assumed to be '-'
+// and the parts are assumed to be year, year-month, or year-month-day.
+// Within a time, the separator is assumed to be ':' and the parts are assumed
+// to be hour, hour:minute, or hour:minute:second.  If there is additionally
+// a "P" or "PM" found in either the second field, or as a separate space-
+// delimited part, then we add 12 to any hour values < 12.
+//
+// So basically this will parse a date in the format returned by default from
+// FormatDate (which is also the same as a SQL date), or simple variations thereof.
+time_t ParseDate(const String dateStr) {
+	bool gotDate = false;
+	bool pmTime = false;
+	tm dateTime;
+	memset(&dateTime, 0, sizeof(tm));
+
+	StringList parts = Split(dateStr);
+	for (long i=0, iLimit=parts.Count(); i<iLimit; i++) {
+		String part = parts[i];
+		if (part.Contains("-")) {
+			// Parse a date
+			StringList fields = Split(part, "-");
+			dateTime.tm_year = fields[0].IntValue() - 1900;
+			if (fields.Count() > 1) dateTime.tm_mon = fields[1].IntValue() - 1;
+			if (fields.Count() > 2) dateTime.tm_mday = fields[2].IntValue();
+			gotDate = true;
+		} else if (part.Contains(":")) {
+			// Parse a time
+			StringList fields = Split(part, ":");
+			dateTime.tm_hour = fields[0].IntValue();
+			if (fields.Count() > 1) dateTime.tm_min = fields[1].IntValue();
+			if (fields.Count() > 2) dateTime.tm_sec = fields[2].DoubleValue();
+		} else {
+			part = part.ToUpper();
+			if (part == "P" || part == "PM") pmTime = true;
+		}
+	}
+	if (pmTime && dateTime.tm_hour < 12) dateTime.tm_hour += 12;
+	if (!gotDate) {
+		// If no date is supplied, assume the current date
+		tm now;
+		time_t t;
+		time(&t);
+		localtime_r(&t, &now);
+		dateTime.tm_year = now.tm_year;
+		dateTime.tm_mon = now.tm_mon;
+		dateTime.tm_mday = now.tm_mday;
+	}
+	return mktime(&dateTime);
+}
 
 }
 

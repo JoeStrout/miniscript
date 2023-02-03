@@ -21,6 +21,8 @@ inline String FormatDate(time_t dateTime) {
 	return FormatDate(dateTime, "yyyy-MM-dd HH:mm:ss");
 }
 
+time_t ParseDate(const String dateStr);
+
 }
 
 #endif /* DateTimeUtils_hpp */
