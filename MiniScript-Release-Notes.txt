@@ -176,3 +176,47 @@ Version 1.5.1: Dec 18, 2021
 - Command-line MiniScript now prints an error message when given an invalid script file path and exits with a -1 status code, rather than failing silently.
 
 
+Version 1.6: Feb 06, 2023
+=========================
+- New: Added math-assignment operators (+=, etc.)
+
+- New: `print` now takes an optional second argument, `delimiter` which defaults to the line break character (specify "" for no delimiter at all)
+
+- New: command-line MiniScript, on launch, adds MS_SCRIPT_DIR and MS_EXE_DIR to the environment variables, as well as MS_IMPORT_PATH if not already defined
+
+- New: command-line MiniScript now supports `import` intrinsic, searching directories in MS_IMPORT_PATH for the specified import module
+
+- New: command-line MiniScript now ships with a set of 11 standard import modules, including date/time functions, JSON and tab-separated value converters, misc. utilities, and VTxxx terminal control
+
+- New: intrinsic `refEquals` checks two values for reference equality
+
+- New: intrinsic `stackTrace` returns the current call stack
+
+- Improved: attempting to index into `null` now generates a more specific error
+
+- Improved: common mistake of using = in an `if` statement now generates a more specific and helpful error
+
+- Improved: equality tests on identical lists or maps containing reference loops could previously return 0.5; now returns 1, and does so more quickly (by recognizing and accounting for the loops)
+
+- Fixed: Using line continuation directly after `and` produced unreliable results
+
+- Fixed: using an expression as a parameter default value exposed an internal temporary; now throws an error instead
+
+- Fixed: string.hasIndex(string) returned true for any non-empty string, when it should return false
+
+- Fixed: missing `end if` in a function was not flagged as an error [#38]
+
+- Fixed: `else if(x)` failed unless you have a space after `else if`
+
+- Fixed: x = someList[null] failed to throw an error
+
+- Fixed: assignment to a slice (e.g. `someList[1:3] = foo`) failed to throw an error, but had no effect; now throws a compiler error
+
+- Fixed: the REPL failed to print results of any function that takes more than one run cycle to complete (e.g., a function containing a `yield`)
+
+- Fixed: trying to store a function reference in a map literal did not work, e.g. `a = {"b":@color.lerp}`
+
+- Fixed: a function ref in a list literal (e.g. `[@color.lerp]`) didn't show properly as an implicit result, but worked fine when assigned to something
+
+- Fixed: loops in the __isa chain could cause the app to lock up; now generates runtime error
+

@@ -19,7 +19,7 @@
 
 namespace MiniScript {
 
-	const String VERSION = "1.5.9";
+	const String VERSION = "1.6.0";
 
 	long Value::maxStringSize = 0xFFFFFF;		// about 16MB
 	long Value::maxListSize   = 0xFFFFFF;		// about 16M elements
