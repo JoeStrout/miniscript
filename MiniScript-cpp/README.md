@@ -10,7 +10,6 @@ Open the Xcode project (MiniScript.xcodeproj).  Build.
 
 You can also follow the Linux procedure, if you prefer command-line tools.
 
-
 ## Building for Linux
 
 Prerequisites: You will need make, gcc, and g++ installed.
@@ -33,4 +32,6 @@ Install the [Visual Studio Command-Line Tools](https://docs.microsoft.com/en-us/
 
 The output will be called `miniscript.exe` and located in the same directory.
 
+## About the lib folder
 
+The **lib** folder contains importable scripts (modules) for use with the [import](https://miniscript.org/wiki/Import) command.  MiniScript will look for these in any directory in the `MS_IMPORT_PATH` environment variable.  If undefined, a value of `$MS_SCRIPT_DIR/lib:$MS_EXE_DIR/lib` will be used — that is, it will look for import modules first next to the current script, and then in a `lib` folder next to the executable.
