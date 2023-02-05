@@ -171,6 +171,9 @@ namespace MiniScript {
 		ensureStorage();
 		HashMapEntry<K, V> *entry = ds->mTable[hash];
 		while (entry) {
+			// Note: We rely here on our key types defining == in a way
+			// that is intended to equate keys that should be unique in
+			// the dictionary (and consistent with the hash function).
 			if (entry->key == key) {
 				entry->value = value;
 				return;

@@ -278,11 +278,6 @@ int main(int argc, const char * argv[]) {
 	AddScriptPathVar("");
 	AddShellIntrinsics();
 	
-	// HACK for initial testing:
-	time_t t;
-	time(&t);
-	Print(FormatDate(t, "MMM d, yyyy \\h hh:mm:ss.FF t"));
-	
 	for (int i=1; i<argc; i++) {
 		String arg = argv[i];
 		if (arg == "-h" or arg == "-?" or arg == "--help") {

@@ -406,6 +406,11 @@ namespace MiniScript {
 		if (type == ValueType::List) {
 			if (index.type == ValueType::Number) {
 				ValueList baseLst((ValueListStorage*)(data.ref));
+				int i = index.data.number;
+				if (i < 0) i += baseLst.Count();
+				if (i < 0 || i >= baseLst.Count()) {
+					IndexException(String("Index Error (list index ") + index.ToString() + " out of range)").raise();
+				}
 				Value result = baseLst.Item((long)(index.data.number));
 				return result;
 			}
@@ -699,9 +704,11 @@ namespace MiniScript {
 			Value b;
 			ValuePair(const Value& inA, const Value& inB) : a(inA), b(inB) {}
 			ValuePair() {}
-//			operator=(const ValuePair rhs) { a = rhs.a; b = rhs.b; }
 			bool operator==(const ValuePair& rhs) {
-				return a == rhs.a and b == rhs.b;
+				// Careful: we muste use RefEqual here to detect reference loops
+				// below; if we used ==, which does a deep comparison, it could
+				// just send us into an infinite recursion right here.
+				return Value::RefEqual(a, rhs.a) && Value::RefEqual(b, rhs.b);
 			}
 		};
 		SimpleVector<ValuePair> toDo;

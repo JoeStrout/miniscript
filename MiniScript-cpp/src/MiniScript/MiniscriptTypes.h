@@ -255,7 +255,9 @@ namespace MiniScript {
 		FuncParam(String name, Value defaultValue) : name(name), defaultValue(defaultValue) {}
 	};
 	
-	
+	// operator== must be defined in a way that matches MiniScript equality,
+	// because it is used by the Dictionary template to figure out what keys
+	// should be considered equal in a map.
 	inline bool Value::operator==(const Value& rhs) const {
 		if (type != rhs.type) return false;
 		switch (type) {

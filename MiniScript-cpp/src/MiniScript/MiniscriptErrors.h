@@ -27,6 +27,10 @@ namespace MiniScript {
 			if (context.empty()) return String("[line ") + String::Format(lineNum) + "]";
 		   return String("[") + context + " line " + String::Format(lineNum) + "]";
 		}
+		
+		bool IsEmpty() const {
+			return lineNum == 0 && context.empty();
+		}
 	};
 	
 	class MiniscriptException : public std::exception {

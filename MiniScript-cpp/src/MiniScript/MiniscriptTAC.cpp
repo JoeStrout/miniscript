@@ -598,6 +598,13 @@ namespace MiniScript {
 		return result;
 	}
 	
+	SourceLoc Context::GetSourceLoc() {
+		if (lineNum < 0 || lineNum >= code.Count()) {
+			return SourceLoc();
+		}
+		return code[lineNum].location;
+	}
+
 //	Machine::Machine() : stack(16), storeImplicit(false) {
 //		Context *globalContext = new Context;
 //		stack.Add(new Context);
@@ -741,4 +748,14 @@ namespace MiniScript {
 			return (long)timecheck.tv_sec * 1.0 + (long)timecheck.tv_usec / 1000000.0;
 		#endif
 	}
+
+	List<SourceLoc> Machine::GetStack() {
+		long count = stack.Count();
+		List<SourceLoc> result(count);
+		for (long i=0; i<count; i++) {
+			result.Add(stack[i]->GetSourceLoc());
+		}
+		return result;
+	}
+
 }

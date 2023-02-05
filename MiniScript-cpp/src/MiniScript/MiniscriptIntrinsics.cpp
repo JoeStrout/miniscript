@@ -660,6 +660,20 @@ namespace MiniScript {
 		return IntrinsicResult(sqrt(context->GetVar("x").DoubleValue()));
 	}
 	
+	static IntrinsicResult intrinsic_stackTrace(Context *context, IntrinsicResult partialResult) {
+		Machine* vm = context->vm;
+		Value stackAtBreak;
+		if (vm->GetGlobalContext()->variables.Get("_stackAtBreak", &stackAtBreak)) {
+			// We have a stored stack from a break or exit.
+			// So, display that.  The host app should clear this when starting a 'run'
+			// so it never interferes with showing a more up-to-date stack during a run.
+			return IntrinsicResult(stackAtBreak);
+		}
+		// Otherwise, build a stack now from the state of the VM.
+		ValueList result = Intrinsics::StackList(vm);
+		return IntrinsicResult(result);
+	}
+
 	static IntrinsicResult intrinsic_str(Context *context, IntrinsicResult partialResult) {
 		return IntrinsicResult(context->GetVar("x").ToString());
 	}
@@ -1073,6 +1087,9 @@ namespace MiniScript {
 		f->AddParam("x", 0);
 		f->code = &intrinsic_sqrt;
 
+		f = Intrinsic::Create("stackTrace");
+		f->code = &intrinsic_stackTrace;
+
 		f = Intrinsic::Create("str");
 		f->AddParam("x", 0);
 		f->code = &intrinsic_str;
@@ -1128,6 +1145,22 @@ namespace MiniScript {
 		code.Add(TACLine(Value::Temp(resultTempNum), TACLine::Op::CallFunctionA, func, 3));
 	}
 
+	// Helper method to get a stack trace as a list (the heart of the stackTrace intrinsic).
+	ValueList Intrinsics::StackList(Machine* vm) {
+		ValueList result;
+		if (vm == nullptr) return result;
+		List<SourceLoc> sourceLocs = vm->GetStack();
+		for (long i=0, len=sourceLocs.Count(); i<len; i++) {
+			if (sourceLocs[i].IsEmpty()) continue;
+			String s = sourceLocs[i].context;
+			if (s.empty()) s = "(current program)";
+			s += " line ";
+			s += String::Format(sourceLocs[i].lineNum);
+			result.Add(s);
+		}
+		return result;
+
+	}
 	
 	Value Intrinsics::FunctionType() {
 		if (_functionType.IsNull()) {

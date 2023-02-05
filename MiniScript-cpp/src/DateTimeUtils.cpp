@@ -22,7 +22,7 @@ static bool Match(const String s, size_t *posB, const String match) {
 	return false;
 }
 
-String FormatDate(time_t t, const String formatSpec) {
+String FormatDate(time_t t, String formatSpec) {
 	tm dateTime;
 	localtime_r(&t, &dateTime);
 	
@@ -30,8 +30,67 @@ String FormatDate(time_t t, const String formatSpec) {
 	char buffer[BUFSIZE];
 	setlocale(LC_ALL, "");
 	
+	// First, check for special cases -- i.e. standard date formatters.
+	// (Unless the first character is %, in which case skip that and
+	// take the rest as an individual part, below.)
+	// Note that "d", "g", and "G" are culture- and platform-specific,
+	// and will not come out the same on different platforms.
+	// All others have been implemented in standard ways assuming
+	// an invariant culture (which may not match user expectations).
+	if (formatSpec.empty()) {
+		strftime(buffer, BUFSIZE, "%c", &dateTime);
+		return buffer;
+	}
+	size_t posB = 0;
+	if (formatSpec[0] == '%') {
+		posB = 1;
+	} else if (formatSpec == "d") {	// short date
+		// culture- and platform-specific
+		strftime(buffer, BUFSIZE, "%x", &dateTime);
+		return buffer;
+	} else if (formatSpec == "D") { // long date
+		formatSpec = "dddd, dd MMMM yyyy";
+	} else if (formatSpec == "f") { // full date/time (short time)
+		formatSpec = "dddd, dd MMMM yyyy HH:mm";
+	} else if (formatSpec == "F") { // full date/time (long time)
+		formatSpec = "dddd, dd MMMM yyyy HH:mm:ss";
+	} else if (formatSpec == "g") { // general date/time (short time)
+		// culture- and platform-specific
+		strftime(buffer, BUFSIZE, "%x ", &dateTime);
+		String result = buffer;
+		result += String::Format(dateTime.tm_hour) + ":";
+		strftime(buffer, BUFSIZE, "%H %p", &dateTime);
+		return result + String(buffer);
+	} else if (formatSpec == "G") { // general date/time (long time)
+		// culture- and platform-specific
+		strftime(buffer, BUFSIZE, "%x %X", &dateTime);
+		return buffer;
+	} else if (formatSpec == "M" or formatSpec == "m") {	// month/day
+		formatSpec = "d MMMM";
+	} else if (formatSpec == "O" or formatSpec == "o") {	// round-trip (ISO) format
+		formatSpec = "yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fffffffK";
+	} else if (formatSpec == "R" or formatSpec == "r") {	// RFC1123 format
+		formatSpec = "ddd, dd MMM yyyy HH':'mm':'ss 'GMT'";
+	} else if (formatSpec == "s") {	// sortable
+		formatSpec = "yyyy'-'MM'-'dd'T'HH':'mm':'ss";
+	} else if (formatSpec == "t") { // short time
+		formatSpec = "HH:mm";
+	} else if (formatSpec == "T") { // long time
+		formatSpec = "HH:mm:ss";
+	} else if (formatSpec == "u") { // universal sortable
+		formatSpec = "yyyy'-'MM'-'dd HH':'mm':'ss'Z'";
+	} else if (formatSpec == "U") { // universal full date/time
+		formatSpec = "dddd, dd MMMM yyyy HH:mm:ss";
+	} else if (formatSpec == "Y" or formatSpec == "y") {	// year-month
+		formatSpec = "yyyy MMMM";
+	} else if (formatSpec.LengthB() == 1) {
+		// invalid
+		return "";
+	}
+	
+	// Otherwise, parse individual parts.
 	StringList result;
-	size_t posB = 0, lenB = formatSpec.LengthB();
+	size_t lenB = formatSpec.LengthB();
 	while (posB < lenB) {
 		if (Match(formatSpec, &posB, "yyyy")) {			// year
 			result.Add(String::Format(dateTime.tm_year + 1900, "%04d"));
@@ -166,6 +225,16 @@ String FormatDate(time_t t, const String formatSpec) {
 				char c = formatSpec[endPosB];
 				if (c == '\\') endPosB++;
 				else if (c == '"') break;
+			}
+			result.Add(formatSpec.Substring(posB + 1, endPosB - endPosB - 1));
+			posB = endPosB + 1;
+		} else if (formatSpec[posB] == '\'') {
+			// Find the closing quote, and output the contained string literal
+			size_t endPosB = posB + 1;
+			while (endPosB < lenB) {
+				char c = formatSpec[endPosB];
+				if (c == '\\') endPosB++;
+				else if (c == '\'') break;
 			}
 			result.Add(formatSpec.Substring(posB + 1, endPosB - endPosB - 1));
 			posB = endPosB + 1;

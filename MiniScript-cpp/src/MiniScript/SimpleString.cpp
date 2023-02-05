@@ -120,28 +120,24 @@ namespace MiniScript {
 	int String::IntValue(const char* formatSpec) const {
 		int retval = 0;
 		sscanf(c_str(), formatSpec, &retval);
-		if (retval == 0 and BooleanValue()) return 1;
 		return retval;
 	}
 
 	long String::LongValue(const char* formatSpec) const {
 		long retval = 0;
 		sscanf(c_str(), formatSpec, &retval);
-		if (retval == 0 and BooleanValue()) return 1;
 		return retval;
 	}
 
 	float String::FloatValue(const char* formatSpec) const {
 		float retval = 0;
 		sscanf(c_str(), formatSpec, &retval);
-		if (retval == 0 and BooleanValue()) return 1;
 		return retval;
 	}
 
 	double String::DoubleValue(const char* formatSpec) const {
 		double retval = 0;
 		sscanf(c_str(), formatSpec, &retval);
-		if (retval == 0 and BooleanValue()) return 1;
 		return retval;
 	}
 

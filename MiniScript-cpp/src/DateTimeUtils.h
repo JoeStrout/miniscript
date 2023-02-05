@@ -15,7 +15,7 @@
 
 namespace MiniScript {
 
-String FormatDate(time_t dateTime, const String formatSpec);
+String FormatDate(time_t dateTime, String formatSpec);
 
 inline String FormatDate(time_t dateTime) {
 	return FormatDate(dateTime, "yyyy-MM-dd HH:mm:ss");

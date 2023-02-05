@@ -345,8 +345,7 @@ static IntrinsicResult intrinsic_dateStr(Context *context, IntrinsicResult parti
 	} else if (date.type == ValueType::Number) {
 		d = date.DoubleValue() + dateTimeEpoch();
 	} else {
-		// ToDo: parse a date string
-		d = 0;
+		d = ParseDate(date.ToString());
 	}
 	return IntrinsicResult(FormatDate((time_t)d, formatStr));
 }

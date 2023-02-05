@@ -249,7 +249,23 @@ namespace Miniscript {
 			//public long valueIndex;
 		}
 		
-	
+		// Helper method to get a stack trace, as a list of ValStrings.
+		// This is the heart of the stackTrace intrinsic.
+		// Public in case you want to call it from other places (for debugging, etc.).
+		public static ValList StackList(TAC.Machine vm) {
+			ValList result = new ValList();
+			if (vm == null) return result;
+			foreach (SourceLoc loc in vm.GetStack()) {
+				if (loc == null) continue;
+				string s = loc.context;
+				if (string.IsNullOrEmpty(s)) s = "(current program)";
+				s += " line " + loc.lineNum;
+				result.values.Add(new ValString(s));
+			}
+			return result;
+		}
+
+
 		/// <summary>
 		/// InitIfNeeded: called automatically during script setup to make sure
 		/// that all our standard intrinsics are defined.  Note how we use a
@@ -1292,6 +1308,22 @@ namespace Miniscript {
 			f.AddParam("x", 0);
 			f.code = (context, partialResult) => {
 				return new Intrinsic.Result(Math.Sqrt(context.GetLocalDouble("x")));
+			};
+
+			// stackTrace: get a list describing the call stack.
+			f = Intrinsic.Create("stackTrace");
+			f.code = (context, partialResult) => {
+				TAC.Machine vm = context.vm;
+				var _stackAtBreak = new ValString("_stackAtBreak");
+				if (vm.globalContext.variables.ContainsKey(_stackAtBreak)) {
+					// We have a stored stack from a break or exit.
+					// So, display that.  The host app should clear this when starting a 'run'
+					// so it never interferes with showing a more up-to-date stack during a run.
+					return new Intrinsic.Result(vm.globalContext.variables.map[_stackAtBreak]);
+				}
+				// Otherwise, build a stack now from the state of the VM.
+				ValList result = StackList(vm);
+				return new Intrinsic.Result(result);
 			};
 
 			// str

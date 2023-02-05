@@ -547,33 +547,33 @@ print hash(d1) == hash(d2)
 1
 ======================================================================
 ==== Equality checking in the edge case of a list or dictionary
-==== that contains itself.  In this case, if two such lists are
-==== equal but not the same object, we stop recursing (after delving
-==== 16 levels deep) and return 0.5 for "maybe".
-====a = [1, 2, 3]
-====a[1] = a
-====b = [1, 2, 3]
-====b[1] = b
-====print hash(a) == hash(b)
-====print(a == a)	// prints 1, as they're the same object
-====print(a == b)	// prints 0.5, because it's too hard to tell
-====b[2] = 42		// but they're now truly different
-====print(a == b)	// so this prints 0
-====d1 = {1:"foo"}
-====d1["recurse"] = d1
-====d2 = {1:"foo"}
-====d2["recurse"] = d2
-====print(d1 == d1)	// prints 1, as they're the same object
-====print(d1 == d2)	// prints 0.5, because it's too hard to tell
-====d2[1] = "bar"	// but they're now truly different
-====print(d2 == d2)	// so this prints 0
+==== that contains itself.  This actually works now; our equality
+==== checker is smart about recursive data.
+a = [1, 2, 3]
+a[1] = a
+b = [1, 2, 3]
+b[1] = b
+print hash(a) == hash(b)
+print(a == a)	// prints 1, as they're the same object
+print(a == b)	// prints 1, because they are equivalent
+b[2] = 42		// but they're now truly different
+print(a == b)	// so this prints 0
+d1 = {1:"foo"}
+d1["recurse"] = d1
+d2 = {1:"foo"}
+d2["recurse"] = d2
+print(d1 == d1)	// prints 1, as they're the same object
+print(d1 == d2)	// prints 1, because they are equivalent
+d2[1] = "bar"	// but they're now truly different
+print(d1 == d2)	// so this prints 0
 ----------------------------------------------------------------------
-====1
-====0.5
-====0
-====1
-====0.5
-====0
+1
+1
+1
+0
+1
+1
+0
 ======================================================================
 ==== Mixed-type equality testing.  Should return null for any ordering
 ==== comparisons, but 0/1 for equal/not-equal tests.
@@ -816,6 +816,12 @@ a.__isa = b
 x = a.foo
 ----------------------------------------------------------------------
 Runtime Error: __isa depth exceeded (perhaps a reference loop?) [line 4]
+======================================================================
+==== Test some expected runtime errors.
+a = ["zero"]
+a[42]
+----------------------------------------------------------------------
+Runtime Error: Index Error (list index 42 out of range) [line 2]
 ======================================================================
 ==== Test the range() intrinsic.
 print range(1,10)
