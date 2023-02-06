@@ -264,7 +264,7 @@ int main(int argc, const char * argv[]) {
 	std::cout << "total RefCountedStorage instances left (includes 2 Unicode case maps): " << RefCountedStorage::instanceCount << std::endl;
 #endif
 	
-	MiniScript::hostVersion = 1.1;
+	MiniScript::hostVersion = 1.2;
 #if _WIN32 || _WIN64
 	MiniScript::hostName = "Command-Line (Windows)";
 #elif defined(__APPLE__) || defined(__FreeBSD__)

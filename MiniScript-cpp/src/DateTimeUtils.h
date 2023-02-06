@@ -11,7 +11,7 @@
 
 #include <stdio.h>
 #include <time.h>
-#include "SimpleString.h"
+#include "MiniScript/SimpleString.h"
 
 namespace MiniScript {
 

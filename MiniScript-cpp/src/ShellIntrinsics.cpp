@@ -19,7 +19,7 @@
 #include "MiniScript/MiniscriptInterpreter.h"
 #include "OstreamSupport.h"
 #include "MiniScript/SplitJoin.h"
-#include "whereami.h"
+#include "whereami/whereami.h"
 #include "DateTimeUtils.h"
 
 #include <stdio.h>
@@ -855,13 +855,25 @@ static IntrinsicResult intrinsic_env(Context *context, IntrinsicResult partialRe
 void AddScriptPathVar(const char* scriptPartialPath) {
 	String scriptDir;
 	if (!scriptPartialPath || scriptPartialPath[0] == 0) {
-		char* s = realpath(".", NULL);
-		scriptDir = s;
-		free(s);
+		#if WINDOWS
+			char s[512];
+			_fullpath(s, ".", sizeof(s));
+			scriptDir = s;
+		#else
+			char* s = realpath(".", NULL);
+			scriptDir = s;
+			free(s);
+		#endif
 	} else {
-		char* s = realpath(scriptPartialPath, NULL);
-		String scriptFullPath(s);
-		free(s);
+		#if WINDOWS
+			char s[512];
+			_fullpath(s, scriptPartialPath, sizeof(s));
+			String scriptFullPath = s;
+		#else
+			char* s = realpath(scriptPartialPath, NULL);
+			String scriptFullPath(s);
+			free(s);
+		#endif
 		scriptDir = dirname(scriptFullPath);
 	}
 	setEnvVar("MS_SCRIPT_DIR", scriptDir.c_str());

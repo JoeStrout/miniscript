@@ -182,12 +182,6 @@ Version 1.6: Feb 06, 2023
 
 - New: `print` now takes an optional second argument, `delimiter` which defaults to the line break character (specify "" for no delimiter at all)
 
-- New: command-line MiniScript, on launch, adds MS_SCRIPT_DIR and MS_EXE_DIR to the environment variables, as well as MS_IMPORT_PATH if not already defined
-
-- New: command-line MiniScript now supports `import` intrinsic, searching directories in MS_IMPORT_PATH for the specified import module
-
-- New: command-line MiniScript now ships with a set of 11 standard import modules, including date/time functions, JSON and tab-separated value converters, misc. utilities, and VTxxx terminal control
-
 - New: intrinsic `refEquals` checks two values for reference equality
 
 - New: intrinsic `stackTrace` returns the current call stack

@@ -7,9 +7,16 @@
 //
 
 #include "DateTimeUtils.h"
-#include "SplitJoin.h"
+#include "MiniScript/SplitJoin.h"
 #include <time.h>
 #include <math.h>
+
+#if _WIN32 || _WIN64
+struct tm *localtime_r( const time_t *timer, struct tm *buf ) {
+	*buf = *_localtime64(timer);
+	return buf;
+}
+#endif
 
 namespace  MiniScript {
 
