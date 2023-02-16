@@ -673,7 +673,7 @@ namespace Miniscript {
 
 		// Evaluation override function: Allows map to be fully backed
 		// by a C# object.
-		public delegate Value EvalOverrideFunc(Value key);
+		public delegate bool EvalOverrideFunc(Value key, out Value value);
 		public EvalOverrideFunc evalOverride;
 
 		public ValMap() {
@@ -766,8 +766,7 @@ namespace Miniscript {
 		{
 			if (map.TryGetValue(key, out value)) return true;
 			if (evalOverride == null) return false;
-			value = evalOverride(key);
-			return true;
+			return evalOverride(key, out value);
 		}
 
 		/// <summary>
