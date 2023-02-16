@@ -206,7 +206,7 @@ namespace Miniscript {
 					if (mapA.map.Count != mapB.map.Count) return false;
 					foreach (KeyValuePair<Value, Value> kv in mapA.map) {
 						Value valFromB;
-						if (!mapB.map.TryGetValue(kv.Key, out valFromB)) return false;
+						if (!mapB.TryGetValue(kv.Key, out valFromB)) return false;
 						Value valFromA = mapA.map[kv.Key];
 						var newPair = new ValuePair() {  a = valFromA, b = valFromB };
 						if (!visited.Contains(newPair)) toDo.Push(newPair);
@@ -667,6 +667,15 @@ namespace Miniscript {
 		public delegate bool AssignOverrideFunc(Value key, Value value);
 		public AssignOverrideFunc assignOverride;
 
+		// Can store arbitrary data. Useful for retaining a C# object
+		// passed into scripting.
+		public object userData;
+
+		// Evaluation override function: Allows map to be fully backed
+		// by a C# object.
+		public delegate Value EvalOverrideFunc(Value key);
+		public EvalOverrideFunc evalOverride;
+
 		public ValMap() {
 			this.map = new Dictionary<Value, Value>(RValueEqualityComparer.instance);
 		}
@@ -740,11 +749,27 @@ namespace Miniscript {
 		/// <returns>true if found, false if not</returns>
 		public bool TryGetValue(string identifier, out Value value) {
 			var idVal = TempValString.Get(identifier);
-			bool result = map.TryGetValue(idVal, out value);
+			bool result = TryGetValue(idVal, out value);
 			TempValString.Release(idVal);
 			return result;
 		}
-		
+
+		/// <summary>
+		/// Look up the given identifier in the backing map, _unless_ and
+		/// evalOverride has been defined, in which case the delegate will
+		/// return the value instead.
+		/// </summary>
+		/// <param name="key">identifier to look up</param>
+		/// <param name="value">Corresponding value, if found</param>
+		/// <returns>true if found, false if not</returns>
+		public bool TryGetValue(Value key, out Value value)
+		{
+			if (map.TryGetValue(key, out value)) return true;
+			if (evalOverride == null) return false;
+			value = evalOverride(key);
+			return true;
+		}
+
 		/// <summary>
 		/// Look up a value in this dictionary, walking the __isa chain to find
 		/// it in a parent object if necessary.  
@@ -757,9 +782,9 @@ namespace Miniscript {
 			ValMap obj = this;
 			int chainDepth = 0;
 			while (obj != null) {
-				if (obj.map.TryGetValue(key, out result)) return result;
+				if (obj.TryGetValue(key, out result)) return result;
 				Value parent;
-				if (!obj.map.TryGetValue(ValString.magicIsA, out parent)) break;
+				if (!obj.TryGetValue(ValString.magicIsA, out parent)) break;
 				if (chainDepth++ > maxIsaDepth) {
 					throw new LimitExceededException("__isa depth exceeded (perhaps a reference loop?)");
 				}
@@ -767,7 +792,7 @@ namespace Miniscript {
 			}
 			return null;
 		}
-		
+
 		/// <summary>
 		/// Look up a value in this dictionary, walking the __isa chain to find
 		/// it in a parent object if necessary; return both the value found and
@@ -781,12 +806,12 @@ namespace Miniscript {
 			ValMap obj = this;
 			int chainDepth = 0;
 			while (obj != null) {
-				if (obj.map.TryGetValue(key, out result)) {
+				if (obj.TryGetValue(key, out result)) {
 					valueFoundIn = obj;
 					return result;
 				}
 				Value parent;
-				if (!obj.map.TryGetValue(ValString.magicIsA, out parent)) break;
+				if (!obj.TryGetValue(ValString.magicIsA, out parent)) break;
 				if (chainDepth++ > maxIsaDepth) {
 					throw new LimitExceededException("__isa depth exceeded (perhaps a reference loop?)");
 				}
@@ -856,7 +881,7 @@ namespace Miniscript {
 			// one of those.  Otherwise, we have to walk the __isa chain.
 			if (type == vm.mapType) return true;
 			Value p = null;
-			map.TryGetValue(ValString.magicIsA, out p);
+			TryGetValue(ValString.magicIsA, out p);
 			int chainDepth = 0;
 			while (p != null) {
 				if (p == type) return true;
@@ -864,7 +889,7 @@ namespace Miniscript {
 				if (chainDepth++ > maxIsaDepth) {
 					throw new LimitExceededException("__isa depth exceeded (perhaps a reference loop?)");
 				}
-				((ValMap)p).map.TryGetValue(ValString.magicIsA, out p);
+				((ValMap)p).TryGetValue(ValString.magicIsA, out p);
 			}
 			return false;
 		}
@@ -1109,7 +1134,7 @@ namespace Miniscript {
 					// If the map contains this identifier, return its value.
 					Value result = null;
 					var idVal = TempValString.Get(identifier);
-					bool found = ((ValMap)sequence).map.TryGetValue(idVal, out result);
+					bool found = ((ValMap)sequence).TryGetValue(idVal, out result);
 					TempValString.Release(idVal);
 					if (found) {
 						valueFoundIn = (ValMap)sequence;
@@ -1118,7 +1143,7 @@ namespace Miniscript {
 					
 					// Otherwise, if we have an __isa, try that next.
 					if (loopsLeft < 0) throw new LimitExceededException("__isa depth exceeded (perhaps a reference loop?)"); 
-					if (!((ValMap)sequence).map.TryGetValue(ValString.magicIsA, out sequence)) {
+					if (!((ValMap)sequence).TryGetValue(ValString.magicIsA, out sequence)) {
 						// ...and if we don't have an __isa, try the generic map type if allowed
 						if (!includeMapType) throw new KeyException(identifier);
 						sequence = context.vm.mapType ?? Intrinsics.MapType();
