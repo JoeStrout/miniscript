@@ -65,15 +65,13 @@ The `break` statement jumps out of a `while` or `for` loop.  The `continue` stat
 
 All numbers are stored in full-precision format.  Numbers also represent true (1) and false (0).  Operators:
 
-+, -, \*, /	standard math
-
-%	mod (remainder)
-
-^	power
-
-and, or, not	logical operators
-
-==, !=, >, >=, <, <=	comparison
+|Operator|Meaning|
+|-----|-----|
+`+`, `-`, `*`, `/`|standard math
+`%`|mod (remainder)
+`^`|power
+`and`, `or`, `not`|logical operators
+`==`, `!=`, `>`, `>=`, `<`, `<=`|comparison
 
 ## Strings
 
@@ -85,17 +83,14 @@ print "OK, ""Bob""."
 
 Operators:
 
-\+	string concatenation
-
-\-	string subtraction (chop)
-
-\*, /	replication, division
-
-==, !=, >, >=, <, <=	comparison
-
-[i]	get character i
-
-[i:j]	get slice from i up to j
+|Operator|Meaning|
+|-----|-----|
+`+`|string concatenation
+`-`|string subtraction (chop)
+`*`, `/`|replication, division
+`==`, `!=`, `>`, `>=`, `<`, `<=`|comparison
+`[i]`|get character i
+`[i:j]`|get slice from i up to j
 
 ## Lists
 
@@ -111,13 +106,12 @@ x[2]=5 // x now [2,4,5,8]
 
 Operators:
 
-\+	list concatenation
-
-\*, /	replication, division
-
-[i]	get/set element i
-
-[i:j]	get slice from i up to j
+|Operator|Meaning|
+|-----|-----|
+`+`|list concatenation
+`*`, `/`|replication, division
+`[i]`|get/set element i
+`[i:j]`|get slice from i up to j
 
 ## Maps
 
@@ -131,11 +125,11 @@ m[2] = "dos"
 
 Operators:
 
-\+	map concatenation
-
-[k]	get/set value with key k
-
-.ident	get/set value by identifier
+|Operator|Meaning|
+|-----|-----|
+`+`|map concatenation
+`[k]`|get/set value with key k
+`.`*ident*|get/set value by identifier
 
 # Functions
 
