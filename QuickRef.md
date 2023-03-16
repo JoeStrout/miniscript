@@ -172,38 +172,38 @@ x.degrees   // 360
 
 ## Numeric
 
-abs(x)	acos(x)	asin(x)
-
-atan(y,x)	ceil(x)	char(i)	cos(r)	floor(x)	log(x,b)	round(x,d)	rnd	rnd(seed)	pi		sign(x)	sin(r)	sqrt(x)	str(x)	tan(r)	
+|   |   |   |
+|---|---|---|
+abs(x)|acos(x)|asin(x)
+|atan(y,x)|ceil(x)|char(i)
+|cos(r)|floor(x)|log(x,b)
+|round(x,d)|rnd|rnd(seed)|
+|pi|sign(x)|sin(r)|
+sqrt(x)|str(x)|tan(r)	
 
 ## String
 
-.indexOf(s)	.insert(i,s)
-
-.len	.val	.code
-
-.remove(s)	.lower	.upper
-
-.replace(a,b)	.split(d)
+|   |   |   |
+|---|---|---|
+.indexOf(s)|.insert(i,s)|.len
+.val|.code|.remove(s)
+.lower|.upper|.replace(a,b)
+.split(d)| |
 
 ## List/Map
 
-.hasIndex(i)	.indexOf(x)
-
-.insert(i,v)	.join(s)
-
-.push(x)	.pop	.pull
-
-.indexes	.values
-
-.len	.sum	.sort
-
-.shuffle	.remove(i)
-
-range(from,to,step)
+|   |   |   |
+|---|---|---|
+.hasIndex(i)|.indexOf(x)|.insert(i,v)
+.join(s)|.push(x)|.pop
+.pull|.indexes|.values
+.len|.sum|.sort
+.shuffle|.remove(i)|range(from,to,step)
 
 ## Other
 
-print(s)	time	wait(sec)
-
-locals	outer	globals	yield
+|   |   |   |
+|---|---|---|
+print s|time|wait sec
+locals|outer|globals
+yield| |
