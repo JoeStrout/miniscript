@@ -212,7 +212,7 @@ namespace Miniscript {
 						if (!visited.Contains(newPair)) toDo.Push(newPair);
 					}
 				} else if (pair.a == null || pair.b == null) {
-					return pair.a == null && pair.b == null;
+					if (pair.a != null || pair.b != null) return false;
 				} else {
 					// No other types can recurse, so we can safely do:
 					if (pair.a.Equality(pair.b) == 0) return false;

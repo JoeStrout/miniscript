@@ -289,8 +289,13 @@ static String dirname(String pathStr) {
 	char dirBuf[256];
 	_splitpath_s(pathBuf, driveBuf, sizeof(driveBuf), dirBuf, sizeof(dirBuf), NULL, 0, NULL, 0);
 	String result = String(driveBuf) + String(dirBuf);
-#else
+#elseif defined(__APPLE__) || defined(__FreeBSD__)
 	String result(dirname((char*)pathStr.c_str()));
+#else
+	// Linux dirname modifies the argument passed in, so:
+	char *duplicate = strdup((char*)pathStr.c_str());
+	String result(dirname(duplicate));
+	free(duplicate);
 #endif
 	return result;
 }
