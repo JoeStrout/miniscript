@@ -286,7 +286,7 @@ namespace MiniScript {
 		Assert(s == "foooobarbazaroooo");
 		
 		s = "another simple String";
-		char *str = new char[22];
+		char *str = new char[23];
 		strcpy(str,"an array of characters");
 		s.takeoverBuffer(str);
 		Assert(s == "an array of characters");
