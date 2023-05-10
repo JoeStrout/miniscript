@@ -14,11 +14,11 @@ miniscript: src/*.h src/*.cpp src/MiniScript/*.h src/MiniScript/*.cpp src/editli
 install:
 	chmod ugo+x miniscript
 	rm -f /usr/local/bin/miniscript
-	ln -s miniscript /usr/local/bin/
+	ln -s ${shell pwd}/miniscript /usr/local/bin/
 
 clean:
 	rm *.o
 
 uninstall:
-	rm *.o
+	rm -f *.o
 	rm -f miniscript /usr/local/bin/miniscript
