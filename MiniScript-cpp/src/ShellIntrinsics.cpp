@@ -32,6 +32,7 @@
 	#include <direct.h>
 	#define getcwd _getcwd
 	#define setenv _setenv
+	#define PATHSEP '\\'
 #else
 	#include <fcntl.h>
 	#include <unistd.h>
@@ -45,6 +46,7 @@
 	#else
 		#include <sys/sendfile.h>
 	#endif
+	#define PATHSEP '/'
 #endif
 
 extern "C" {
@@ -303,7 +305,13 @@ static String dirname(String pathStr) {
 static IntrinsicResult intrinsic_dirname(Context *context, IntrinsicResult partialResult) {
 	Value path = context->GetVar("path");
 	if (path.IsNull()) return IntrinsicResult(Value::zero);
-	return IntrinsicResult(dirname(path.ToString()));
+	String pathStr = path.ToString();
+	if (pathStr.LengthB() > 0 && pathStr[pathStr.LengthB()-1] == PATHSEP) {
+		// For consistency across platforms: always strip a trailing path separator
+		// (MacOS dirname ignores this, but Windows does not).
+		pathStr = pathStr.SubstringB(0, pathStr.LengthB() - 1);
+	}
+	return IntrinsicResult(dirname(pathStr));
 }
 
 static IntrinsicResult intrinsic_exists(Context *context, IntrinsicResult partialResult) {
@@ -819,13 +827,7 @@ static IntrinsicResult intrinsic_import(Context *context, IntrinsicResult partia
 	for (long i=0, len=libDirs.Count(); i<len; i++) {
 		String path = libDirs[i];
 		if (path.empty()) path = ".";
-		else if (path[path.LengthB() - 1] != '/') {
-#if WINDOWS
-			path += "\\";
-#else
-			path += "/";
-#endif
-		}
+		else if (path[path.LengthB() - 1] != PATHSEP) path += String(PATHSEP);
 		path += libname + ".ms";
 		path = ExpandVariables(path);
 		FILE *handle = fopen(path.c_str(), "r");
