@@ -289,7 +289,7 @@ static String dirname(String pathStr) {
 	char dirBuf[256];
 	_splitpath_s(pathBuf, driveBuf, sizeof(driveBuf), dirBuf, sizeof(dirBuf), NULL, 0, NULL, 0);
 	String result = String(driveBuf) + String(dirBuf);
-#elseif defined(__APPLE__) || defined(__FreeBSD__)
+#elif defined(__APPLE__) || defined(__FreeBSD__)
 	String result(dirname((char*)pathStr.c_str()));
 #else
 	// Linux dirname modifies the argument passed in, so:
