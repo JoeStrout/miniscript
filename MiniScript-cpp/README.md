@@ -30,7 +30,7 @@ Install the [Visual Studio Command-Line Tools](https://docs.microsoft.com/en-us/
 
 `cl /EHsc /wd4068 *.cpp MiniScript/*.cpp whereami/*.c /Fe..\miniscript.exe`
 
-The output will be called `miniscript.exe` and located in the same directory.
+The output will be called `miniscript.exe` and located in the parent directory, next to the `lib` folder.
 
 ## About the lib folder
 
