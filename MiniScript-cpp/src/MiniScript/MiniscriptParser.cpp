@@ -229,7 +229,7 @@ namespace MiniScript {
 			String keyword = tokens.Dequeue().text;
 			if (keyword == "return") {
 				Value returnValue;
-				if (tokens.Peek().type != Token::Type::EOL) {
+				if (tokens.Peek().type != Token::Type::EOL && tokens.Peek().text != "else") {
 					returnValue = ParseExpr(tokens);
 				}
 				output->Add(TACLine(Value::Temp(0), TACLine::Op::ReturnA, returnValue));

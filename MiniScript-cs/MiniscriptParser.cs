@@ -234,7 +234,7 @@ namespace Miniscript {
 				default:
 					return true;
 				}
-			} catch (LexerException e) {
+			} catch (LexerException) {
 				return false;
 			}
 		}
@@ -378,7 +378,7 @@ namespace Miniscript {
 				case "return":
 					{
 						Value returnValue = null;
-						if (tokens.Peek().type != Token.Type.EOL) {
+						if (tokens.Peek().type != Token.Type.EOL && tokens.Peek().text != "else") {
 							returnValue = ParseExpr(tokens);
 						}
 						output.Add(new TAC.Line(TAC.LTemp(0), TAC.Line.Op.ReturnA, returnValue));

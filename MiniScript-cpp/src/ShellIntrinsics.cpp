@@ -99,38 +99,29 @@ Intrinsic *i_freadLine = NULL;
 Intrinsic *i_fposition = NULL;
 Intrinsic *i_feof = NULL;
 
-#if !_WIN32 && !_WIN64
 // Copy a file.  Return 0 on success, or some value < 0 on error.
 static int UnixishCopyFile(const char* source, const char* destination) {
-	// Based on: https://stackoverflow.com/questions/2180079
+#if WINDOWS
+	bool success = CopyFile(source, destination, false);
+	return success ? 0 : -1;
+#elif defined(__APPLE__) || defined(__FreeBSD__)
+	// fcopyfile works on FreeBSD and OS X 10.5+
 	int input, output;
-	if ((input = open(source, O_RDONLY)) == -1)	{
-		return -1;
-	}
+	if ((input = open(source, O_RDONLY)) == -1)	return -1;
 	if ((output = creat(destination, 0660)) == -1) {
 		close(input);
 		return -1;
 	}
-	
-	//Here we use kernel-space copying for performance reasons
-#if defined(__APPLE__) || defined(__FreeBSD__)
-	//fcopyfile works on FreeBSD and OS X 10.5+
 	int result = fcopyfile(input, output, 0, COPYFILE_ALL);
-#else
-	//sendfile will work with non-socket output (i.e. regular file) on Linux 2.6.33+
-	off_t bytesCopied = 0;
-	struct stat fileinfo = {0};
-	fstat(input, &fileinfo);
-	int result = sendfile(output, input, &bytesCopied, fileinfo.st_size);
-	if (result > 0) result = 0;  // sendfile returns # of bytes copied; any value >= 0 is success.
-#endif
-	
 	close(input);
 	close(output);
-	
 	return result;
-}
+#else
+	// on Linux, the best way to copy a file with metadata is to let the shell do it:
+	String command = String("cp -p \"") + source + "\" \"" + destination + "\"";
+	return system(command.c_str());
 #endif
+}
 
 // Expand any occurrences of $VAR, $(VAR) or ${VAR} on all platforms,
 // and also of %VAR% under Windows only, using variables from GetEnvMap().
@@ -471,14 +462,7 @@ static IntrinsicResult intrinsic_rename(Context *context, IntrinsicResult partia
 static IntrinsicResult intrinsic_copy(Context *context, IntrinsicResult partialResult) {
 	String oldPath = context->GetVar("oldPath").ToString();
 	String newPath = context->GetVar("newPath").ToString();
-	
-	#if _WIN32 || _WIN64
-		bool success = CopyFile(oldPath.c_str(), newPath.c_str(), false);
-		int result = success ? 0 : 1;
-	#else
-		int result = UnixishCopyFile(oldPath.c_str(), newPath.c_str());
-	#endif
-
+	int result = UnixishCopyFile(oldPath.c_str(), newPath.c_str());
 	return IntrinsicResult(Value::Truth(result == 0));
 }
 

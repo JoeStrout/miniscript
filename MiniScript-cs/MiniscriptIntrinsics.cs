@@ -1512,7 +1512,7 @@ namespace Miniscript {
 			f = Intrinsic.Create("version");
 			f.code = (context, partialResult) => {
 				if (context.vm.versionMap == null) {
-					UnityEngine.Debug.Log("in version intrinsic, and versionMap == null");
+					//UnityEngine.Debug.Log("in version intrinsic, and versionMap == null");
 					var d = new ValMap();
 					d["miniscript"] = new ValString("1.6.1");
 			

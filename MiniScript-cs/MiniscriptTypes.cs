@@ -1153,6 +1153,7 @@ namespace Miniscript {
 			Value baseSeq = sequence;
 			if (sequence == ValVar.self) {
 				baseSeq = context.self;
+				if (baseSeq == null) throw new UndefinedIdentifierException("self");
 			}
 			valueFoundIn = null;
 			Value idxVal = index == null ? null : index.Val(context);
