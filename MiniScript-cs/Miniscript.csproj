@@ -5,7 +5,7 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>Miniscript</RootNamespace>
     <AssemblyName>Miniscript</AssemblyName>
-    <TargetFrameworks>net45;net5.0</TargetFrameworks>
+    <TargetFrameworks>net45;net5.0;net7.0</TargetFrameworks>
     <VersionPrefix>1.5.1</VersionPrefix>
     <RepositoryUrl>https://github.com/JoeStrout/miniscript</RepositoryUrl>
   </PropertyGroup>

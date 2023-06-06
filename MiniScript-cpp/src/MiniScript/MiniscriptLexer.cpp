@@ -219,6 +219,14 @@ namespace MiniScript {
 						gotEndQuote = true;
 						break;
 					}
+				} else if (c == '\n') {
+					ls->lineNum++;
+				} else if (c == '\r') {
+					// Careful; DOS may use \r\n, so we need to check for that too.
+					if (ls->positionB < ls->inputLengthB && ls->input[ls->positionB] == '\n') {
+						ls->positionB++;
+					}
+					ls->lineNum++;
 				}
 			}
 			if (!gotEndQuote) LexerException("missing closing quote (\")").raise();
@@ -403,6 +411,11 @@ namespace MiniScript {
 		check(Lexer::LastToken("x = [\"foo\", \"//bar\"]"), Token::Type::RSquare);
 		check(Lexer::LastToken("print 1 // line 1\nprint 2"), Token::Type::Number, "2");
 		check(Lexer::LastToken("print \"Hi\"\"Quote\" // foo bar"), Token::Type::String, "Hi\"Quote");
+		
+		lex = Lexer("\"\n\"");
+		check(lex.Dequeue(), Token::Type::String, "\n");
+		Assert(lex.lineNum() == 2);
+		Assert(lex.atEnd());
 	}
 	
 	RegisterUnitTest(TestLexer);

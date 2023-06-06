@@ -236,6 +236,14 @@ namespace Miniscript {
 							gotEndQuote = true;
 							break;
 						}
+					} else if (c == '\n') {
+						lineNum++;
+					} else if (c == '\r') {
+						// Careful; DOS may use \r\n, so we need to check for that too.
+						if (position < inputLength && input[position] == '\n') {
+							position++;
+						}
+						lineNum++;
 					}
 				}
 				if (!gotEndQuote) throw new LexerException("missing closing quote (\")");
@@ -425,6 +433,11 @@ namespace Miniscript {
 			Check(LastToken("x = [\"foo\", \"//bar\"]"), Token.Type.RSquare);
 			Check(LastToken("print 1 // line 1\nprint 2"), Token.Type.Number, "2");			
 			Check(LastToken("print \"Hi\"\"Quote\" // foo bar"), Token.Type.String, "Hi\"Quote");			
+			
+			lex = new Lexer("\"\n\"");
+			Check(lex.Dequeue(), Token.Type.String, "\n");
+			CheckLineNum(lex.lineNum, 2);
+			UnitTest.ErrorIf(!lex.AtEnd, "AtEnd not set when it should be");
 		}
 	}
 }
