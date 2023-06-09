@@ -28,9 +28,9 @@ Other make options you can use:
 
 Install the [Visual Studio Command-Line Tools](https://docs.microsoft.com/en-us/cpp/build/walkthrough-compiling-a-native-cpp-program-on-the-command-line?view=vs-2019), and then you can build by `cd`ing into the `src` directory, and using this command:
 
-`cl /EHsc /wd4068 *.cpp MiniScript/*.cpp whereami/*.c /Fe..\miniscript.exe`
+`cl /EHsc /wd4068 *.cpp MiniScript/*.cpp whereami/*.c /Feminiscript.exe`
 
-The output will be called `miniscript.exe` and located in the parent directory, next to the `lib` folder.
+The output will be called `miniscript.exe` and located in the same directory.
 
 ## About the lib folder
 

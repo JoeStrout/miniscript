@@ -752,7 +752,9 @@ namespace MiniScript {
 	List<SourceLoc> Machine::GetStack() {
 		long count = stack.Count();
 		List<SourceLoc> result(count);
-		for (long i=0; i<count; i++) {
+		// Careful: we want to return the stack in reverse order, i.e., the
+		// newest call context first, and the oldest (global) context last.
+		for (long i=count-1; i>=0; i--) {
 			result.Add(stack[i]->GetSourceLoc());
 		}
 		return result;

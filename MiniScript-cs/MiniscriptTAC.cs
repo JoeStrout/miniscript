@@ -1043,6 +1043,9 @@ namespace Miniscript {
 			
 			public List<SourceLoc> GetStack() {
 				var result = new List<SourceLoc>();
+				// NOTE: C# iteration over a Stack goes in reverse order.
+				// This will return the newest call context first, and the
+				// oldest (global) call context last.
 				foreach (var context in stack) {
 					result.Add(context.GetSourceLoc());
 				}
