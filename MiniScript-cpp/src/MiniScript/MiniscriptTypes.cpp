@@ -158,13 +158,8 @@ namespace MiniScript {
 				return String("{") + Join(", ", strs) + String("}");
 			}
 				
-			case ValueType::Var:
-			case ValueType::Temp:
-			case ValueType::Handle:
-				return ToString(vm);
-
 			default:
-				return String();
+				return ToString(vm);
 		}
 	}
 	
