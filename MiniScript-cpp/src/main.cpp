@@ -75,11 +75,6 @@ static int DoREPL() {
 	ConfigInterpreter(interp);
 	
 	while (true) {
-		if (!interp.Done()) {
-			interp.RunUntilDone();
-			continue;
-		}
-		
 		const char *prompt;
 		if (interp.NeedMoreInput()) {
 			prompt = ">>> ";
