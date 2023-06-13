@@ -739,6 +739,18 @@ namespace Miniscript {
 		/// <param name="identifier">identifier to look up</param>
 		/// <returns>true if found, false if not</returns>
 		public bool TryGetValue(string identifier, out Value value) {
+			if (map.Count < 5) {
+				// new approach: just iterate!  This is faster for small maps (which are common).
+				foreach (var kv in map) {
+					if (kv.Key is ValString ks && ks.value == identifier) {
+						value = kv.Value;
+						return true;
+					}
+				}
+				value = null;
+				return false;
+			}
+			// old method, and still better on big maps: use dictionary look-up.
 			var idVal = TempValString.Get(identifier);
 			bool result = map.TryGetValue(idVal, out value);
 			TempValString.Release(idVal);

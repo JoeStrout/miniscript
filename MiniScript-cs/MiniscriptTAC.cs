@@ -691,20 +691,31 @@ namespace Miniscript {
 			/// <returns>value of that identifier</returns>
 			public Value GetVar(string identifier, ValVar.LocalOnlyMode localOnly=ValVar.LocalOnlyMode.Off) {
 				// check for special built-in identifiers 'locals', 'globals', etc.
-				if (identifier == "self") return self;
-				if (identifier == "locals") {
-					if (variables == null) variables = new ValMap();
-					return variables;
-				}
-				if (identifier == "globals") {
-					if (root.variables == null) root.variables = new ValMap();
-					return root.variables;
-				}
-				if (identifier == "outer") {
-					// return module variables, if we have them; else globals
-					if (outerVars != null) return outerVars;
-					if (root.variables == null) root.variables = new ValMap();
-					return root.variables;
+				switch (identifier.Length)
+				{
+				case 4:
+					if (identifier == "self") return self;
+					break;
+				case 5:
+					if (identifier == "outer") {
+						// return module variables, if we have them; else globals
+						if (outerVars != null) return outerVars;
+						if (root.variables == null) root.variables = new ValMap();
+						return root.variables;
+					}
+					break;
+				case 6:
+					if (identifier == "locals") {
+						if (variables == null) variables = new ValMap();
+						return variables;
+					}
+					break;
+				case 7:
+					if (identifier == "globals") {
+						if (root.variables == null) root.variables = new ValMap();
+						return root.variables;
+					}
+					break;
 				}
 				
 				// check for a local variable
