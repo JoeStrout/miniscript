@@ -70,5 +70,8 @@ jobs:
             && dotnet pack -c Release \
             || dotnet pack -c Release --version-suffix $(git rev-parse --short HEAD)
 
-      - name: Publish Nuget package
+      - name: Publish to GitHub Packages
         run: dotnet nuget push "bin/Release/Miniscript.*.nupkg" --source "github" --api-key "${{ secrets.GHPR_TOKEN }}"
+
+      - name: Publish to NuGet
+        run: dotnet nuget push "bin/Release/Miniscript.*.nupkg" --api-key "${{ secrets.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json
