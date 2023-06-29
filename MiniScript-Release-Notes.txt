@@ -214,3 +214,15 @@ Version 1.6: Feb 06, 2023
 
 - Fixed: loops in the __isa chain could cause the app to lock up; now generates runtime error
 
+
+Version 1.6.1: Jun 29, 2023
+===========================
+- Fixed: map comparisons could erronously report as equal two maps with parallel structures that contain `null` at the same place in both
+
+- Fixed: single-line `if` using `return` before `else` improperly required a return value
+
+- Fixed [C++ only]: printing a map containing a function reference failed to print FUNCTION() like the C# version
+
+- Fixed [C++ only]: when entering a `for` loop at the REPL, C++ MiniScript immediately executed the first time through, instead of until `end for` to execute even once; and with an if block, it would execute the body even if the condition is false
+
+- Fixed [C++ only]: the result of `stackTrace` was reversed; the most immediate call frame should be first in the list, rather than last
