@@ -231,6 +231,7 @@ namespace Miniscript {
 			double startTime = vm.runTime;
 			int startImpResultCount = vm.globalContext.implicitResultCounter;
 			vm.storeImplicit = (implicitOutput != null);
+			vm.yielding = false;
 
 			try {
 				if (sourceLine != null) parser.Parse(sourceLine, true);

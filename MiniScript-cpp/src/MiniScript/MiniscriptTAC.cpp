@@ -611,7 +611,7 @@ namespace MiniScript {
 //
 //	}
 	
-	Machine::Machine(Context *root, TextOutputMethod output) : stack(16), storeImplicit(false), standardOutput(output), startTime(0) {
+	Machine::Machine(Context *root, TextOutputMethod output) : stack(16), storeImplicit(false), standardOutput(output), startTime(0), yielding(false) {
 		// Note: this constructor adopts the given context, and destroys it later.
 		root->vm = this;
 		stack.Add(root);
