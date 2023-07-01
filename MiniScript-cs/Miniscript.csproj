@@ -1,14 +1,25 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Copyright>Copyright © $([System.DateTime]::UtcNow.Year) Joe Strout ($([System.DateTime]::UtcNow.ToString("s")))</Copyright>
     <ProjectGuid>{C3806B8F-9702-4B39-B6D9-9ECBC298565F}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <RootNamespace>Miniscript</RootNamespace>
     <AssemblyName>Miniscript</AssemblyName>
     <TargetFrameworks>net45;net5.0</TargetFrameworks>
+    <PackageId>org.miniscript.MiniScript</PackageId>
     <VersionPrefix>1.6.1</VersionPrefix>
+    <Authors>Joe Strout</Authors>
+    <Title>MiniScript</Title>
+    <Description>C# implementation of the MiniScript scripting language</Description>
+    <Copyright>Copyright © $([System.DateTime]::UtcNow.Year) Joe Strout ($([System.DateTime]::UtcNow.ToString("s")))</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://miniscript.org/</PackageProjectUrl>
+    <PackageIcon>Icon.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>miniscript;programming language</PackageTags>
+    <PackageReleaseNotes>Please visit https://github.com/JoeStrout/miniscript/blob/master/MiniScript-Release-Notes.txt to read the release notes.</PackageReleaseNotes>
     <RepositoryUrl>https://github.com/JoeStrout/miniscript</RepositoryUrl>
   </PropertyGroup>
+
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
@@ -29,4 +40,10 @@
     <Externalconsole>true</Externalconsole>
     <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="../Icon.png" Pack="true" PackagePath="/"/>
+    <None Include="../README.md" Pack="true" PackagePath="/"/>
+  </ItemGroup>
+
 </Project>
