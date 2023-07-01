@@ -125,6 +125,7 @@ namespace MiniScript {
 		Context *globalContext = vm->GetGlobalContext();
 		long startImpResultCount = globalContext->implicitResultCounter;
 		vm->storeImplicit = (implicitOutput != nullptr);
+		vm->yielding = false;
 		
 		try {
 			if (not sourceLine.empty()) parser->Parse(sourceLine, true);

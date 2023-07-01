@@ -7,7 +7,7 @@ miniscript: src/*.h src/*.cpp src/MiniScript/*.h src/MiniScript/*.cpp src/editli
 	$(CC) $(CFLAGS) src/editline/complete.c src/editline/editline.c src/editline/sysunix.c src/whereami/whereami.c
 	$(CC) $(CPPFLAGS) src/*.cpp src/MiniScript/*.cpp
 	$(CC) -o miniscript *.o $(LIBS)
-	rm *.o
+	rm -f *.o
 
 .PHONY: clean
 
@@ -17,7 +17,8 @@ install:
 	ln -s ${shell pwd}/miniscript /usr/local/bin/
 
 clean:
-	rm *.o
+	rm -f *.o
+	rm -f miniscript
 
 uninstall:
 	rm -f *.o
