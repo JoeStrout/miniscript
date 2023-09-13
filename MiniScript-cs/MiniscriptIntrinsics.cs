@@ -606,11 +606,11 @@ namespace Miniscript {
 				} else if (self is ValMap) {
 					ValMap map = (ValMap)self;
 					bool sawAfter = (after == null);
-					foreach (Value k in map.map.Keys) {
+					foreach (var kv in map.map) {
 						if (!sawAfter) {
-							if (k.Equality(after) == 1) sawAfter = true;
+							if (kv.Key.Equality(after) == 1) sawAfter = true;
 						} else {
-							if (map.map[k].Equality(value) == 1) return new Intrinsic.Result(k);
+							if (kv.Value == null ? value == null : kv.Value.Equality(value) == 1) return new Intrinsic.Result(kv.Key);
 						}
 					}
 				}
