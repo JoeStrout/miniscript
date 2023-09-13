@@ -226,3 +226,8 @@ Version 1.6.1: Jun 29, 2023
 - Fixed [C++ only]: when entering a `for` loop at the REPL, C++ MiniScript immediately executed the first time through, instead of until `end for` to execute even once; and with an if block, it would execute the body even if the condition is false
 
 - Fixed [C++ only]: the result of `stackTrace` was reversed; the most immediate call frame should be first in the list, rather than last
+
+
+(Not Yet Released)
+==================
+- Fixed [C# only]: bug causing map.indexOf to bail out and return null if it hits a null value before the value being sought.
