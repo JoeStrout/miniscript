@@ -1557,7 +1557,7 @@ namespace Miniscript {
 			// yield
 			//	Pause the execution of the script until the next "tick" of
 			//	the host app.  In Mini Micro, for example, this waits until
-			//	the next 60Hz frame.  Exact meaning may very, but generally
+			//	the next 60Hz frame.  Exact meaning may vary, but generally
 			//	if you're doing something in a tight loop, calling yield is
 			//	polite to the host app or other scripts.
 			f = Intrinsic.Create("yield");
