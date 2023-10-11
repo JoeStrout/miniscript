@@ -28,7 +28,7 @@ bool printHeaderInfo = true;
 static bool dumpTAC = false;
 
 static void Print(String s, bool lineBreak=true) {
-	std::cout << s.c_str();
+	std::cout << s.c_str() << std::flush;
 	if (lineBreak) std::cout << std::endl;
 }
 
