@@ -158,6 +158,38 @@ namespace MiniScript {
 		return parser and parser->NeedMoreInput();
 	}
 
+
+	/// <summary>
+    /// Get a value from the global namespace of this interpreter.
+    /// </summary>
+    /// <param name="varName">name of global variable to get</param>
+    /// <returns>Value of the named variable, or null if not found</returns>
+    Value Interpreter::GetGlobalValue(String varName) {
+        if (not vm) return Value::null;
+
+		Context* globalContext = vm->GetGlobalContext();
+        if (globalContext == NULL) return Value::null;
+        try
+        {
+            return globalContext->GetVar(varName);
+
+		} catch (const MiniscriptException& mse) {
+            ReportError(mse);
+            return Value::null;
+        }
+	}
+
+
+    /// <summary>
+    /// Set a value in the global namespace of this interpreter.
+    /// </summary>
+    /// <param name="varName">name of global variable to set</param>
+    /// <param name="value">value to set</param>	
+	void Interpreter::SetGlobalValue(String varName, Value value)
+    {
+        if (vm) vm->GetGlobalContext()->SetVar(varName, value);
+	}
+
 	/// <summary>
 	/// Helper method that checks whether we have a new implicit result, and if
 	/// so, invokes the implicitOutput callback (if any).  This is how you can
