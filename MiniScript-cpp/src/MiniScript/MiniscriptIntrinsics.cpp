@@ -11,7 +11,7 @@
 #include "MiniscriptTAC.h"
 #include "UnicodeUtil.h"
 #include "SplitJoin.h"
-#include <math.h>
+#include <cmath>
 #include <ctime>
 #include <algorithm>
 
@@ -72,23 +72,33 @@ namespace MiniScript {
 		if (x == 1.0) return IntrinsicResult(atan(y));
 		return IntrinsicResult(atan2(y, x));
 	}
+
+	static std::pair<bool, uint64_t> doubleToUnsignedSplit(double val) {
+		return { std::signbit(val), std::abs(val) };
+	}
 	
 	static IntrinsicResult intrinsic_bitAnd(Context *context, IntrinsicResult partialResult) {
-		Value i = context->GetVar("i");
-		Value j = context->GetVar("j");
-		return IntrinsicResult(i.IntValue() & j.IntValue());
+		auto i = doubleToUnsignedSplit(context->GetVar("i").DoubleValue());
+		auto j = doubleToUnsignedSplit(context->GetVar("j").DoubleValue());
+		auto sign = i.first & j.first;
+		double val = i.second & j.second;
+		return IntrinsicResult(sign ? -val : val);
 	}
 	
 	static IntrinsicResult intrinsic_bitOr(Context *context, IntrinsicResult partialResult) {
-		Value i = context->GetVar("i");
-		Value j = context->GetVar("j");
-		return IntrinsicResult(i.IntValue() | j.IntValue());
+		auto i = doubleToUnsignedSplit(context->GetVar("i").DoubleValue());
+		auto j = doubleToUnsignedSplit(context->GetVar("j").DoubleValue());
+		auto sign = i.first | j.first;
+		double val = i.second | j.second;
+		return IntrinsicResult(sign ? -val : val);
 	}
 	
 	static IntrinsicResult intrinsic_bitXor(Context *context, IntrinsicResult partialResult) {
-		Value i = context->GetVar("i");
-		Value j = context->GetVar("j");
-		return IntrinsicResult(i.IntValue() ^ j.IntValue());
+		auto i = doubleToUnsignedSplit(context->GetVar("i").DoubleValue());
+		auto j = doubleToUnsignedSplit(context->GetVar("j").DoubleValue());
+		auto sign = i.first ^ j.first;
+		double val = i.second ^ j.second;
+		return IntrinsicResult(sign ? -val : val);
 	}
 
 	static IntrinsicResult intrinsic_char(Context *context, IntrinsicResult partialResult) {
