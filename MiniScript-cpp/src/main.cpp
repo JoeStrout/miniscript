@@ -10,7 +10,6 @@
 #include <fstream>
 #include "MiniScript/SimpleString.h"
 #include "MiniScript/UnicodeUtil.h"
-#include "MiniScript/UnitTest.h"
 #include "MiniScript/SimpleVector.h"
 #include "MiniScript/List.h"
 #include "MiniScript/Dictionary.h"
@@ -251,8 +250,6 @@ int main(int argc, const char * argv[]) {
 	std::cout << "StringStorage instances at start (from static keywords, etc.): " << StringStorage::instanceCount << std::endl;
 	std::cout << "total RefCountedStorage instances at start (from static keywords, etc.): " << RefCountedStorage::instanceCount << std::endl;
 #endif
-
-	UnitTest::RunAllTests();
 
 #if(DEBUG)
 	std::cout << "StringStorage instances left: " << StringStorage::instanceCount << std::endl;
