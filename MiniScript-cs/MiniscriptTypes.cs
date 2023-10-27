@@ -190,10 +190,12 @@ namespace Miniscript {
 			toDo.Push(new ValuePair() { a = this, b = rhs });
 			while (toDo.Count > 0) {
 				var pair = toDo.Pop();
+
 				visited.Add(pair);
 				if (pair.a is ValList listA) {
 					var listB = pair.b as ValList;
 					if (listB == null) return false;
+					if (Object.ReferenceEquals(listA, listB)) continue;
 					int aCount = listA.values.Count;
 					if (aCount != listB.values.Count) return false;
 					for (int i = 0; i < aCount; i++) {
@@ -203,6 +205,7 @@ namespace Miniscript {
 				} else if (pair.a is ValMap mapA) {
 					var mapB = pair.b as ValMap;
 					if (mapB == null) return false;
+					if (Object.ReferenceEquals(mapA, mapB)) continue;
 					if (mapA.map.Count != mapB.map.Count) return false;
 					foreach (KeyValuePair<Value, Value> kv in mapA.map) {
 						Value valFromB;
@@ -265,6 +268,18 @@ namespace Miniscript {
 	struct ValuePair {
 		public Value a;
 		public Value b;
+		public override bool Equals(object obj) {
+			if (obj is ValuePair other) {
+				return ReferenceEquals(a, other.a) && ReferenceEquals(b, other.b);
+			}
+			return false;
+		}
+
+		public override int GetHashCode() {
+			unchecked {
+				return ((a != null ? a.GetHashCode() : 0) * 397) ^ (b != null ? b.GetHashCode() : 0);
+			}
+		}
 	}
 
 	public class ValueSorter : IComparer<Value>

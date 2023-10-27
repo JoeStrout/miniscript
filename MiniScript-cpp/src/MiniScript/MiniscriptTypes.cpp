@@ -700,7 +700,7 @@ namespace MiniScript {
 			ValuePair(const Value& inA, const Value& inB) : a(inA), b(inB) {}
 			ValuePair() {}
 			bool operator==(const ValuePair& rhs) {
-				// Careful: we muste use RefEqual here to detect reference loops
+				// Careful: we must use RefEqual here to detect reference loops
 				// below; if we used ==, which does a deep comparison, it could
 				// just send us into an infinite recursion right here.
 				return Value::RefEqual(a, rhs.a) && Value::RefEqual(b, rhs.b);
@@ -718,6 +718,7 @@ namespace MiniScript {
 				long aCount = listA.Count();
 				ValueList listB((ListStorage<Value>*)pair.b.data.ref);
 				if (listB.Count() != aCount) return false;
+				if (Value::RefEqual(pair.a, pair.b)) continue;
 				for (int i=0; i < aCount; i++) {
 					ValuePair newPair(listA[i], listB[i]);
 					if (!visited.Contains(newPair)) toDo.push_back(newPair);
@@ -728,6 +729,7 @@ namespace MiniScript {
 				long countA = dictA.Count();
 				ValueDict dictB((DictionaryStorage<Value, Value>*)pair.b.data.ref);
 				if (dictB.Count() != countA) return false;
+				if (Value::RefEqual(pair.a, pair.b)) continue;
 				ValueList keys = dictA.Keys();
 				for (int i=0; i<countA; i++) {
 					Value key = keys[i];
