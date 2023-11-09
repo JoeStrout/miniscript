@@ -199,6 +199,11 @@ static void DoOneIntegrationTest(List<String> sourceLines, long sourceLineNum,
 void RunIntegrationTests(String path) {
 	std::ifstream infile(path.c_str());
 
+	if (!infile.is_open()) {
+		Print(String("\nFailed to open ") + path + "\n");
+		return;
+	}
+	
 	List<String> sourceLines;
 	List<String> expectedOutput;
 	long testLineNum = 0;
