@@ -1735,3 +1735,214 @@ end function
 print titlecase("AND NOW for something completely different")
 ----------------------------------------------------------------------
 And Now For Something Completely Different
+======================================================================
+==== Order of operations: assignment
+p = function(first, second)
+	print first
+	return @second
+end function
+m = {}
+m[p("LEFT", "x")] = p("RIGHT", 3)
+m[p("LEFT", "x")] += p("RIGHT", 3)
+m[p("LEFT", "x")] -= p("RIGHT", 3)
+m[p("LEFT", "x")] *= p("RIGHT", 3)
+m[p("LEFT", "x")] /= p("RIGHT", 3)
+m[p("LEFT", "x")] ^= p("RIGHT", 3)
+m[p("LEFT", "x")] %= p("RIGHT", 3)
+----------------------------------------------------------------------
+LEFT
+RIGHT
+LEFT
+RIGHT
+LEFT
+RIGHT
+LEFT
+RIGHT
+LEFT
+RIGHT
+LEFT
+RIGHT
+LEFT
+RIGHT
+======================================================================
+==== Order of operations: boolean
+p = function(first, second)
+	print first
+	return @second
+end function
+print p("LEFT", false) or p("RIGHT", true)
+print p("LEFT", true) and p("RIGHT", false)
+----------------------------------------------------------------------
+LEFT
+RIGHT
+1
+LEFT
+RIGHT
+0
+======================================================================
+==== Order of operations: isa
+p = function(first, second)
+	print first
+	return @second
+end function
+print p("LEFT", {}) isa p("RIGHT", {})
+----------------------------------------------------------------------
+LEFT
+RIGHT
+0
+======================================================================
+==== Order of operations: comparisons
+p = function(first, second)
+	print first
+	return @second
+end function
+print p("LEFT", 1) == p("RIGHT", 1)
+print p("LEFT", 1) != p("RIGHT", 1)
+print p("LEFT", 1) > p("RIGHT", 1)
+print p("LEFT", 1) < p("RIGHT", 1)
+print p("LEFT", 1) >= p("RIGHT", 1)
+print p("LEFT", 1) <= p("RIGHT", 1)
+print   p("A", 1) ==
+		p("B", 1) !=
+		p("C", 1) >
+		p("D", 1) <
+		p("E", 1) >=
+		p("F", 1) <=
+		p("G", 1)
+----------------------------------------------------------------------
+LEFT
+RIGHT
+1
+LEFT
+RIGHT
+0
+LEFT
+RIGHT
+0
+LEFT
+RIGHT
+0
+LEFT
+RIGHT
+1
+LEFT
+RIGHT
+1
+A
+B
+C
+D
+E
+F
+G
+0
+======================================================================
+==== Order of operations: add and subtract
+p = function(first, second)
+	print first
+	return @second
+end function
+print p("LEFT", 2) + p("RIGHT", 3)
+print p("LEFT", 2) - p("RIGHT", 3)
+print   p("A", 2) +
+		p("B", 3) -
+		p("C", 4) +
+		p("D", 5)
+----------------------------------------------------------------------
+LEFT
+RIGHT
+5
+LEFT
+RIGHT
+-1
+A
+B
+C
+D
+6
+======================================================================
+==== Order of operations: multiply, divide, modulo
+p = function(first, second)
+	print first
+	return @second
+end function
+print p("LEFT", 3) * p("RIGHT", 2)
+print p("LEFT", 3) / p("RIGHT", 2)
+print p("LEFT", 3) % p("RIGHT", 2)
+print   p("A", 2) *
+		p("B", 3) /
+		p("C", 4) %
+		p("D", 5) *
+		p("E", 6)
+----------------------------------------------------------------------
+LEFT
+RIGHT
+6
+LEFT
+RIGHT
+1.5
+LEFT
+RIGHT
+1
+A
+B
+C
+D
+E
+9
+======================================================================
+==== Order of operations: power
+p = function(first, second)
+	print first
+	return @second
+end function
+print p("LEFT", 2) ^ p("RIGHT", 3)
+----------------------------------------------------------------------
+LEFT
+RIGHT
+8
+======================================================================
+==== Order of operations: indexing and slicing
+p = function(first, second)
+	print first
+	return @second
+end function
+print p("OBJECT", {"x": "hello"})[
+		p("KEY", "x") ]
+print p("OBJECT", range(4))[
+		p("START", 1) :
+		p("STOP", -1) ]
+----------------------------------------------------------------------
+OBJECT
+KEY
+hello
+OBJECT
+START
+STOP
+[3, 2, 1]
+======================================================================
+==== Order of operations: call operation and statement
+p = function(first, second)
+	print first
+	return @second
+end function
+sum3 = function(a, b, c)
+	return a + b + c
+end function
+print p("CALLABLE", {"f": @sum3}).f(
+		p("ARG1", "a"),
+		p("ARG2", "b"),
+		p("ARG3", "c") )
+p("CALLABLE", @sum3)    p("ARG1", "a"),
+					    p("ARG2", "b"),
+					    p("ARG3", "c")
+----------------------------------------------------------------------
+CALLABLE
+ARG1
+ARG2
+ARG3
+abc
+CALLABLE
+ARG1
+ARG2
+ARG3
