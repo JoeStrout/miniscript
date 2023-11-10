@@ -29,7 +29,7 @@ static bool dumpTAC = false;
 
 static void Print(String s, bool lineBreak=true) {
 	std::cout << s.c_str();
-	if (lineBreak) std::cout << std::endl;
+	if (lineBreak) std::cout << std::endl; else std::cout << std::flush;
 }
 
 static void PrintErr(String s, bool lineBreak=true) {
@@ -203,7 +203,7 @@ void RunIntegrationTests(String path) {
 		Print(String("\nFailed to open ") + path + "\n");
 		return;
 	}
-	
+
 	List<String> sourceLines;
 	List<String> expectedOutput;
 	long testLineNum = 0;
