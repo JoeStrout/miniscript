@@ -67,14 +67,6 @@ namespace Miniscript {
 		}
 		
 		/// <summary>
-		/// Get the numeric value of this Value as an unsigned integer.
-		/// </summary>
-		/// <returns>this value, as unsigned int</returns>
-		public virtual uint UIntValue() {
-			return (uint)DoubleValue();
-		}
-		
-		/// <summary>
 		/// Get the numeric value of this Value as a single-precision float.
 		/// </summary>
 		/// <returns>this value, as a float</returns>
