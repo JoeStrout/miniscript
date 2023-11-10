@@ -1292,10 +1292,24 @@ print log(50, 5)
 print bitAnd(14, 7)	// binary 1110 & 0111 = 0110
 print bitOr(14, 7)	// binary 1110 | 0111 = 1111
 print bitXor(14, 7)	// binary 1110 ^ 0111 = 1001
+print bitAnd(1099511627774, 962072674207) // too many bits. use your calc.
+print bitAnd(-224883, 222678)
+print bitAnd(-224883, -222678)
+print bitOr(17592186044414, 87960930222009)
+print bitOr(-12345, 54321)
+print bitXor(192763993632181, 168643457158587)
+print bitXor(-23453455467, -76598387347)
 ----------------------------------------------------------------------
 6
 15
 9
+962072674206
+222290
+-222290
+87960930222079
+-62521
+59579786731534
+88591169272
 ======================================================================
 ==== Check various edge cases with function calls and implicit results.
 func = function

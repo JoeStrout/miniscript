@@ -13,6 +13,8 @@
 #include "List.h"
 #include "Dictionary.h"
 
+#include <cstdint>
+
 namespace MiniScript {
 	
 	extern const String VERSION;
@@ -127,11 +129,13 @@ namespace MiniScript {
 		inline ~Value() { if (usesRef()) release(); }
 
 		// conversions
-		String ToString(Machine *vm=NULL);
+		String ToString(Machine *vm=nullptr);
 		String CodeForm(Machine *vm, int recursionLimit=-1);
-		long IntValue();
-		bool BoolValue();
-		double DoubleValue() const { return type == ValueType::Number ? data.number : 0; }
+		int32_t IntValue() const noexcept;
+		uint32_t UIntValue() const noexcept;
+		float FloatValue() const noexcept;
+		bool BoolValue() const noexcept;
+		double DoubleValue() const noexcept { return type == ValueType::Number ? data.number : 0; }
 		
 		// Looking up the inner value, *without* conversion.
 		// Note that these do NOT return a temp string/list/dict; they return

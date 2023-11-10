@@ -225,12 +225,19 @@ namespace MiniScript {
 		}
 	}
 	
-	long Value::IntValue() {
-		if (type == ValueType::Number) return data.number;
-		return 0;
+	int32_t Value::IntValue() const noexcept {
+		return type == ValueType::Number ? data.number : 0;
+	}
+
+	uint32_t Value::UIntValue() const noexcept {
+		return type == ValueType::Number ? data.number : 0;
+	}
+
+	float Value::FloatValue() const noexcept {
+		return type == ValueType::Number ? data.number : 0;
 	}
 	
-	bool Value::BoolValue() {
+	bool Value::BoolValue() const noexcept {
 		switch (type) {
 			case ValueType::Number:
 				// Any nonzero value is considered true, when treated as a bool.
