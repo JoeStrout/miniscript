@@ -1933,9 +1933,9 @@ print p("CALLABLE", {"f": @sum3}).f(
 		p("ARG1", "a"),
 		p("ARG2", "b"),
 		p("ARG3", "c") )
-p("CALLABLE", @sum3)    p("ARG1", "a"),
-					    p("ARG2", "b"),
-					    p("ARG3", "c")
+p("CALLABLE", @sum3) p("ARG1", "a"),
+					p("ARG2", "b"),
+					p("ARG3", "c")
 ----------------------------------------------------------------------
 CALLABLE
 ARG1
@@ -1946,3 +1946,28 @@ CALLABLE
 ARG1
 ARG2
 ARG3
+======================================================================
+==== Order of operations: list and map literals
+p = function(first, second)
+	print first
+	return @second
+end function
+print [ p("ELEM_1", 1), p("ELEM_2", 2), p("ELEM_3", 3) ]
+m = { p("KEY_1", 10): p("VALUE_1", 15), p("KEY_2", 20): p("VALUE_2", 25), p("KEY_3", 30): p("VALUE_3", 35) }
+print m[10]
+print m[20]
+print m[30]
+----------------------------------------------------------------------
+ELEM_1
+ELEM_2
+ELEM_3
+[1, 2, 3]
+KEY_1
+VALUE_1
+KEY_2
+VALUE_2
+KEY_3
+VALUE_3
+15
+25
+35
