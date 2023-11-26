@@ -126,30 +126,37 @@ class MainClass {
 	}
 
 	public static void Main(string[] args) {
-		
-		Miniscript.HostInfo.name = "Test harness";
-		
-		Print("Miniscript test harness.\n");
 
-		Print("Running unit tests.\n");
-		UnitTest.Run();
+		if (args.Length > 0 && args[0] == "--test") {
+			Miniscript.HostInfo.name = "Test harness";
 
-		Print("Running test suite.\n");
-		RunTestSuite("../../../TestSuite.txt");
+			if (args.Length > 2 && args[1] == "--integration") {
+				var file = string.IsNullOrEmpty(args[2]) ? "../../../TestSuite.txt" : args[2];
+				Print("Running test suite.\n");
+				RunTestSuite(file);
+				return;
+			}
 
-		Print("\n");
+			Print("Miniscript test harness.\n");
 
-		const string quickTestFilePath = "../../../QuickTest.ms";
+			Print("Running unit tests.\n");
+			UnitTest.Run();
 
-		if (File.Exists(quickTestFilePath)) {
-			Print("Running quick test.\n");
-			var stopwatch = new System.Diagnostics.Stopwatch();
-			stopwatch.Start();
-			RunFile(quickTestFilePath, true);
-			stopwatch.Stop();
-			Print($"Run time: {stopwatch.Elapsed.TotalSeconds} sec");
-		} else {
-			Print("Quick test not found, skipping...\n");
+			Print("\n");
+
+			const string quickTestFilePath = "../../../QuickTest.ms";
+
+			if (File.Exists(quickTestFilePath)) {
+				Print("Running quick test.\n");
+				var stopwatch = new System.Diagnostics.Stopwatch();
+				stopwatch.Start();
+				RunFile(quickTestFilePath, true);
+				stopwatch.Stop();
+				Print($"Run time: {stopwatch.Elapsed.TotalSeconds} sec");
+			} else {
+				Print("Quick test not found, skipping...\n");
+			}
+			return;
 		}
 
 		if (args.Length > 0) {
