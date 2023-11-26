@@ -317,6 +317,8 @@ namespace MiniScript {
 					// string indexing
 					return opA.GetElem(opB);
 				}
+				default:
+					break;
 			}
 			if (opB.IsNull() or opB.type == ValueType::String) {
 				switch (op) {

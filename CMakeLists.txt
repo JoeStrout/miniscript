@@ -85,7 +85,6 @@ if(NOT WIN32)
 	set(EDITLINE_SRC
 		MiniScript-cpp/src/editline/complete.c
 		MiniScript-cpp/src/editline/editline.c
-		MiniScript-cpp/src/editline/sysos9.c
 		MiniScript-cpp/src/editline/sysunix.c
 	)
 endif()
@@ -99,8 +98,11 @@ add_executable(minicmd
 	${EDITLINE_SRC}
 	${MINICMD_HEADERS}
 )
-target_include_directories(minicmd PRIVATE src/editline)
+target_include_directories(minicmd PRIVATE MiniScript-cpp/src/editline)
 target_link_libraries(minicmd PRIVATE miniscript-cpp)
+
+set_target_properties(miniscript-cpp minicmd PROPERTIES CXX_STANDARD 14)
+set_target_properties(miniscript-cpp minicmd PROPERTIES CXX_STANDARD_REQUIRED ON)
 
 if(MINISCRIPT_BUILD_TESTING)
 	enable_testing()
@@ -117,6 +119,8 @@ if(MINISCRIPT_BUILD_TESTING)
 		set_target_properties(tests-cs PROPERTIES
 			VS_GLOBAL_ROOTNAMESPACE "Miniscript"
 			VS_DOTNET_REFERENCES "${DOTNET_REFS}"
+			CXX_STANDARD 14
+			CXX_STANDARD_REQUIRED ON
 		)
 		add_test(NAME Miniscript.cs.UnitTests COMMAND tests-cs --test)
 		add_test(NAME Miniscript.cs.Integration COMMAND tests-cs --test --integration ${CMAKE_SOURCE_DIR}/TestSuite.txt)
