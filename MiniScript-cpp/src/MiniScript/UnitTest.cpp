@@ -111,3 +111,9 @@ namespace MiniScript {
 
 }
 
+#ifdef UNIT_TEST_MAIN
+int main(int, const char*[]) {
+	MiniScript::UnitTest::RunAllTests();
+}
+#endif
+

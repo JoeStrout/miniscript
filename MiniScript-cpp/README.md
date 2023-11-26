@@ -2,35 +2,25 @@
 
 This folder contains the source code of the C++ implementation of the [MiniScript scripting language](http://miniscript.org), including the command-line host program.
 
-## Building for macOS
+## Building
 
-Open the Xcode project (MiniScript.xcodeproj).  Build.
+MiniScript is built with CMake. You can generate your desired flavour of build files as usual from either the CMake GUI or using `cmake` on the commandline. If you are unfamiliar with CMake and want to build right now, use the GUI. If you cannot use the GUI, make a directory somewhere and, while in that directory, run `cmake path/to/miniscript` followed by `cmake --build`
 
-(Note that if you run within XCode, it will work, but every input keystroke in the console will be doubled, because the readline library doesn't quite work properly with Xcode's console.  It works fine in a real Terminal window though.)
+Miniscript itself will be output as a shared library for you to link to. You can even `include()` the CMakeLists.txt of this project inside your own for clean dependency management.
 
-You can also follow the Linux procedure, if you prefer command-line tools.
+If you are only interested in the C# edition of MiniScript, there is a project file provided in the respective directory.
 
-## Building for Linux
+### CMake Build Options
 
-Prerequisites: You will need make, gcc, and g++ installed.
+Options can be controlled in the usual way - either within the CMake GUI or by passing `-D<OPTION>=ON` from your terminal.
 
-Then use `make` in the directory containing this README to build the miniscript executable.  The executable, `miniscript` should appear in the same directory.
+#### MINISCRIPT_BUILD_TESTING
 
-Other make options you can use:
+This option controls whether or not unit tests binaries are built and added to CTest. For an overview of the flags passed to the binaries to cause them to execute tests, take a look in the testing section at the bottom of the `CMakeLists.txt` - however, rather than doing this, you can simply run `ctest` after building. Most IDEs integrate with CMake/CTest and will detect the tests. If you generated a multi-configuration build (such as a VS project) you would need to run `ctest -C <Debug/Release>`
 
-- `make install`: ensures the executable has the proper `x` bits set, then installs a symbolic link to it in /usr/local/bin.  Note that if you move the executable (or the directory it's in) somewhere else on your file system, this symbolic link will no longer work.  You can fix it manually, or by running `make install` again from the new location.
+### MINISCRIPT_BUILD_CSHARP
 
-- `make clean`: deletes all the object (.o) files from the directory.  You shouldn't need this unless something goes wrong during the normal `make` process.
-
-- `make uninstall`: deletes the executable and the symbolic link in /usr/local/bin.
-
-## Building for Windows
-
-Install the [Visual Studio Command-Line Tools](https://docs.microsoft.com/en-us/cpp/build/walkthrough-compiling-a-native-cpp-program-on-the-command-line?view=vs-2019), and then you can build by `cd`ing into the `src` directory, and using this command:
-
-`cl /EHsc /wd4068 *.cpp MiniScript/*.cpp whereami/*.c /Feminiscript.exe`
-
-The output will be called `miniscript.exe` and located in the same directory.
+This option is only supported when outputting a Visual Studio project. Attempting to enable this in any other environment will likely result in a build error - consult the documentation for your version of CMake as support for other platforms may become possible in the future.
 
 ## About the lib folder
 
