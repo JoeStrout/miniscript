@@ -3,6 +3,8 @@ project(Miniscript VERSION 1.6.2 LANGUAGES C CXX)
 
 option(MINISCRIPT_BUILD_TESTING "Build unit test executable" OFF)
 option(MINISCRIPT_BUILD_CSHARP "Build CSharp binaries" OFF)
+set(MINISCRIPT_CMD_NAME "miniscript" CACHE STRING
+	"Specifies the command-line MiniScript executable filename")
 
 if(MINISCRIPT_BUILD_CSHARP)
 	enable_language(CSharp)
@@ -79,7 +81,7 @@ add_library(miniscript-cpp
 	${MINISCRIPT_HEADERS}
 )
 
-target_include_directories(miniscript-cpp PUBLIC src/MiniScript)
+target_include_directories(miniscript-cpp PUBLIC MiniScript-cpp/src/MiniScript)
 
 if(NOT WIN32)
 	set(EDITLINE_SRC
@@ -101,8 +103,10 @@ add_executable(minicmd
 target_include_directories(minicmd PRIVATE MiniScript-cpp/src/editline)
 target_link_libraries(minicmd PRIVATE miniscript-cpp)
 
-set_target_properties(miniscript-cpp minicmd PROPERTIES CXX_STANDARD 14)
-set_target_properties(miniscript-cpp minicmd PROPERTIES CXX_STANDARD_REQUIRED ON)
+set_target_properties(miniscript-cpp minicmd PROPERTIES
+	CXX_STANDARD 14
+	CXX_STANDARD_REQUIRED ON)
+set_target_properties(minicmd PROPERTIES OUTPUT_NAME ${MINISCRIPT_CMD_NAME})
 
 if(MINISCRIPT_BUILD_TESTING)
 	enable_testing()
@@ -127,3 +131,5 @@ if(MINISCRIPT_BUILD_TESTING)
 		set_tests_properties(Miniscript.cs.UnitTests Miniscript.cs.Integration PROPERTIES FAIL_REGULAR_EXPRESSION "FAIL|Error")
 	endif()
 endif()
+
+install(TARGETS miniscript-cpp minicmd)
