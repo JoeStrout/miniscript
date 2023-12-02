@@ -127,7 +127,7 @@ namespace Miniscript {
 			/// Patches up all the branches for a single open if block.  That includes
 			/// the last "else" block, as well as one or more "end if" jumps.
 			/// </summary>
-			public void PatchIfBlock() {
+			public void PatchIfBlock(bool singleLineIf) {
 				Value target = TAC.Num(code.Count);
 
 				int idx = backpatches.Count - 1;
@@ -144,7 +144,17 @@ namespace Miniscript {
 						// Not the expected keyword, but "break"; this is always OK.
 					} else {
 						// Not the expected patch, and not "break"; we have a mismatched block start/end.
-						throw new CompilerException("'end if' without matching 'if'");
+						string msg;
+						if (singleLineIf) {
+							if (bp.waitingFor == "end for" || bp.waitingFor == "end while") {
+								msg = "loop is invalid within single-line 'if'";
+							} else {
+								msg = "invalid control structure within single-line 'if'";
+							}
+						} else {
+							msg = "'end if' without matching 'if'";
+						}
+						throw new CompilerException(msg);
 					}
 					idx--;
 				}
@@ -411,7 +421,7 @@ namespace Miniscript {
 							} else {
 								RequireEitherToken(tokens, Token.Type.Keyword, "else", Token.Type.EOL);
 							}
-							output.PatchIfBlock();	// terminate the single-line if
+							output.PatchIfBlock(true);	// terminate the single-line if
 						} else {
 							tokens.Dequeue();	// skip EOL
 						}
@@ -433,7 +443,7 @@ namespace Miniscript {
 					// OK, this is tricky.  We might have an open "else" block or we might not.
 					// And, we might have multiple open "end if" jumps (one for the if part,
 					// and another for each else-if part).  Patch all that as a special case.
-					output.PatchIfBlock();
+					output.PatchIfBlock(false);
 					break;
 				case "while":
 					{
@@ -507,6 +517,10 @@ namespace Miniscript {
 				case "break":
 					{
 						// Emit a jump to the end, to get patched up later.
+						if (output.jumpPoints.Count == 0) {
+							throw new CompilerException(errorContext, tokens.lineNum,
+								"'break' without open loop block");
+						}
 						output.Add(new TAC.Line(null, TAC.Line.Op.GotoA));
 						output.AddBackpatch("break");
 					}

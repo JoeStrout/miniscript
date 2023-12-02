@@ -79,7 +79,7 @@ namespace MiniScript {
 	/// Patches up all the branches for a single open if block.  That includes
 	/// the last "else" block, as well as one or more "end if" jumps.
 	/// </summary>
-	void ParseState::PatchIfBlock() {
+	void ParseState::PatchIfBlock(bool singleLineIf) {
 		Value target = code.Count();
 		
 		long idx = backpatches.Count() - 1;
@@ -96,7 +96,17 @@ namespace MiniScript {
 				// Not the expected keyword, but "break"; this is always OK.
 			} else {
 				// Not the expected patch, and not "break"; we have a mismatched block start/end.
-				CompilerException("'end if' without matching 'if'").raise();
+				String msg;
+				if (singleLineIf) {
+					if (bp.waitingFor == "end for" or bp.waitingFor == "end while") {
+						msg = "loop is invalid within single-line 'if'";
+					} else {
+						msg = "invalid control structure within single-line 'if'";
+					}
+				} else {
+					msg = "'end if' without matching 'if'";
+				}
+				CompilerException(msg).raise();
 			}
 			idx--;
 		}
@@ -260,7 +270,7 @@ namespace MiniScript {
 					} else {
 						RequireEitherToken(tokens, Token::Type::Keyword, "else", Token::Type::EOL);
 					}
-					output->PatchIfBlock();	// terminate the single-line if
+					output->PatchIfBlock(true);	// terminate the single-line if
 				} else {
 					tokens.Dequeue();	// skip EOL
 				}
@@ -278,7 +288,7 @@ namespace MiniScript {
 				// OK, this is tricky.  We might have an open "else" block or we might not.
 				// And, we might have multiple open "end if" jumps (one for the if part,
 				// and another for each else-if part).  Patch all that as a special case.
-				output->PatchIfBlock();
+				output->PatchIfBlock(false);
 			} else if (keyword == "while") {
 				// We need to note the current line, so we can jump back up to it at the end.
 				output->AddJumpPoint(keyword);
@@ -338,6 +348,10 @@ namespace MiniScript {
 				output->Patch(keyword, "break");
 			} else if (keyword == "break") {
 				// Emit a jump to the end, to get patched up later.
+				if (output->jumpPoints.Count() == 0) {
+					CompilerException(errorContext, tokens.lineNum(),
+					  "'break' without open loop block").raise();
+				}
 				output->Add(TACLine(TACLine::Op::GotoA, Value::null));
 				output->AddBackpatch("break");
 			} else if (keyword == "continue") {

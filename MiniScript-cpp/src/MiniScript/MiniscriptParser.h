@@ -105,7 +105,7 @@ namespace MiniScript {
 		/// Patches up all the branches for a single open if block.  That includes
 		/// the last "else" block, as well as one or more "end if" jumps.
 		/// </summary>
-		void PatchIfBlock();
+		void PatchIfBlock(bool singleLineIf);
 	};
 	
 	class Parser {

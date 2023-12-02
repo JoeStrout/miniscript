@@ -1041,6 +1041,21 @@ end while
 ----------------------------------------------------------------------
 Compiler Error: 'end for' without matching 'for' [line 5]
 ======================================================================
+==== Check that "break" outside of a loop generates the proper error.
+break
+----------------------------------------------------------------------
+Compiler Error: 'break' without open loop block [line 1]
+======================================================================
+==== Check error when you try to stick a loop inside a single-line "if".
+if true then for i in "abc"
+----------------------------------------------------------------------
+Compiler Error: loop is invalid within single-line 'if' [line 1]
+======================================================================
+==== Same as above, but with a while loop instead of a for loop.
+if true then while true
+----------------------------------------------------------------------
+Compiler Error: loop is invalid within single-line 'if' [line 1]
+======================================================================
 ==== Testing that objects are distinct, even when new'd in a function.
 ==== (This was a bug in an early version of MiniScript.)
 Vec = {"x":0, "y":0}
