@@ -687,7 +687,9 @@ namespace Miniscript {
 		public object userData;
 
 		// Evaluation override function: Allows map to be fully backed
-		// by a C# object.
+		// by a C# object (or otherwise intercept map indexing).
+		// Return true to return the out value to the caller, or false
+		// to proceed with normal map look-up.
 		public delegate bool EvalOverrideFunc(Value key, out Value value);
 		public EvalOverrideFunc evalOverride;
 
@@ -782,18 +784,16 @@ namespace Miniscript {
 		}
 
 		/// <summary>
-		/// Look up the given identifier in the backing map, _unless_ and
-		/// evalOverride has been defined, in which case the delegate will
-		/// return the value instead.
+		/// Look up the given identifier in the backing map (unless overridden
+		/// by the evalOverride function).
 		/// </summary>
 		/// <param name="key">identifier to look up</param>
 		/// <param name="value">Corresponding value, if found</param>
 		/// <returns>true if found, false if not</returns>
 		public bool TryGetValue(Value key, out Value value)
 		{
-			if (map.TryGetValue(key, out value)) return true;
-			if (evalOverride == null) return false;
-			return evalOverride(key, out value);
+			if (evalOverride != null && evalOverride(key, out value)) return true;
+			return map.TryGetValue(key, out value);
 		}
 
 		/// <summary>
