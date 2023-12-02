@@ -42,7 +42,7 @@ namespace MiniScript {
 	template <class K, class V>
 	class DictionaryStorage : public RefCountedStorage {
 	private:
-		DictionaryStorage() : RefCountedStorage(), mSize(0), assignOverride(NULL) { for (int i=0; i<TABLE_SIZE; i++) mTable[i] = nullptr; }
+		DictionaryStorage() : RefCountedStorage(), mSize(0), assignOverride(NULL), evalOverride(NULL) { for (int i=0; i<TABLE_SIZE; i++) mTable[i] = nullptr; }
 		~DictionaryStorage() { RemoveAll(); }
 
 		void RemoveAll() {
@@ -59,6 +59,7 @@ namespace MiniScript {
 		HashMapEntry<K, V> *mTable[TABLE_SIZE];
 
 		void *assignOverride;
+		void *evalOverride;
 		
 		template <class K2, class V2, unsigned int HASH(const K2&)> friend class Dictionary;
 		template <class K2, class V2> friend class DictIterator;
@@ -137,6 +138,15 @@ namespace MiniScript {
 			if (ds == NULL or ds->assignOverride == NULL) return false;
 			AssignOverrideCallback cb = (AssignOverrideCallback)(ds->assignOverride);
 			return cb(*this, key, value);
+		}
+		
+		/// LOOKUP OVERRIDE
+		typedef bool (*EvalOverrideCallback)(Dictionary<K,V,HASH> &dict, K key, V& outValue);
+		void SetEvalOverride(EvalOverrideCallback callback) { ensureStorage(); ds->evalOverride = (void*)callback; }
+		bool ApplyEvalOverride(K key, V& outValue) {
+			if (ds == NULL or ds->evalOverride == NULL) return false;
+			EvalOverrideCallback cb = (EvalOverrideCallback)(ds->evalOverride);
+			return cb(*this, key, outValue);
 		}
 		
 		/// DEBUGGING

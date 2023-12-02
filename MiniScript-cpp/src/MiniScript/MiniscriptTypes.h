@@ -199,6 +199,7 @@ namespace MiniScript {
 			Value obj = *this;
 			while (obj.type == ValueType::Map) {
 				ValueDict d = obj.GetDict();
+				if (d.ApplyEvalOverride(key, result)) return result;
 				if (d.Get(key, &result)) return result;
 				if (!d.Get(Value::magicIsA, &obj)) break;
 			}
