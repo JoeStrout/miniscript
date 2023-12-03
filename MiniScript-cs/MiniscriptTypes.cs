@@ -312,7 +312,7 @@ namespace Miniscript {
 		}
 		
 		public override bool IsA(Value type, TAC.Machine vm) {
-			return false;
+			return type == null;
 		}
 
 		public override int Hash() {
@@ -398,6 +398,7 @@ namespace Miniscript {
 		}
 
 		public override bool IsA(Value type, TAC.Machine vm) {
+			if (type == null) return false;
 			return type == vm.numberType;
 		}
 
@@ -474,6 +475,7 @@ namespace Miniscript {
 		}
 
 		public override bool IsA(Value type, TAC.Machine vm) {
+			if (type == null) return false;
 			return type == vm.stringType;
 		}
 
@@ -620,6 +622,7 @@ namespace Miniscript {
 		}
 
 		public override bool IsA(Value type, TAC.Machine vm) {
+			if (type == null) return false;
 			return type == vm.listType;
 		}
 
@@ -903,6 +906,7 @@ namespace Miniscript {
 		}
 
 		public override bool IsA(Value type, TAC.Machine vm) {
+			if (type == null) return false;
 			// If the given type is the magic 'map' type, then we're definitely
 			// one of those.  Otherwise, we have to walk the __isa chain.
 			if (type == vm.mapType) return true;
@@ -1041,6 +1045,7 @@ namespace Miniscript {
 		}
 
 		public override bool IsA(Value type, TAC.Machine vm) {
+			if (type == null) return false;
 			return type == vm.functionType;
 		}
 

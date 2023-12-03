@@ -1382,6 +1382,9 @@ var2: globalVar2
 new var2: local
 ======================================================================
 ==== Test isa.
+print 42 isa null
+print funcRef isa null
+print null isa null
 print 42 isa number
 print 42 isa string
 print "foo" isa string
@@ -1392,6 +1395,9 @@ e = new d
 print e isa d
 print d isa d
 ----------------------------------------------------------------------
+0
+0
+1
 1
 0
 1

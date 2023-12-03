@@ -508,6 +508,7 @@ namespace MiniScript {
 	/// in the context of the given virtual machine.
 	/// </summary>
 	bool Value::IsA(Value type, Machine *vm) {
+		if (type.IsNull()) return IsNull();
 		switch (this->type) {
 			case ValueType::Number:
 				return RefEqual(type, vm->numberType);
