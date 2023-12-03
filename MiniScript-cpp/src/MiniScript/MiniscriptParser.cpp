@@ -781,7 +781,7 @@ namespace MiniScript {
 	}
 
 	Value Parser::ParseNew(Lexer tokens, bool asLval, bool statementStart) {
-		Value (Parser::*nextLevel)(Lexer tokens, bool asLval, bool statementStart) = &Parser::ParseAddressOf;
+		Value (Parser::*nextLevel)(Lexer tokens, bool asLval, bool statementStart) = &Parser::ParsePower;
 		if (tokens.Peek().type != Token::Type::Keyword or tokens.Peek().text != "new") return (*this.*nextLevel)(tokens, asLval, statementStart);
 		tokens.Dequeue();		// skip 'new'
 
@@ -800,18 +800,8 @@ namespace MiniScript {
 		return result;
 	}
 	
-	Value Parser::ParseAddressOf(Lexer tokens, bool asLval, bool statementStart) {
-		Value (Parser::*nextLevel)(Lexer tokens, bool asLval, bool statementStart) = &Parser::ParsePower;
-		if (tokens.Peek().type != Token::Type::AddressOf) return (*this.*nextLevel)(tokens, asLval, statementStart);
-		tokens.Dequeue();
-		AllowLineBreak(tokens); // allow a line break after a unary operator
-		Value val = (*this.*nextLevel)(tokens, true, statementStart);
-		val.noInvoke = true;
-		return val;
-	}
-
 	Value Parser::ParsePower(Lexer tokens, bool asLval, bool statementStart) {
-		Value (Parser::*nextLevel)(Lexer tokens, bool asLval, bool statementStart) = &Parser::ParseCallExpr;
+		Value (Parser::*nextLevel)(Lexer tokens, bool asLval, bool statementStart) = &Parser::ParseAddressOf;
 		Value val = (*this.*nextLevel)(tokens, asLval, statementStart);
 		Token tok = tokens.Peek();
 		while (tok.type == Token::Type::OpPower) {
@@ -827,6 +817,16 @@ namespace MiniScript {
 
 			tok = tokens.Peek();
 		}
+		return val;
+	}
+
+	Value Parser::ParseAddressOf(Lexer tokens, bool asLval, bool statementStart) {
+		Value (Parser::*nextLevel)(Lexer tokens, bool asLval, bool statementStart) = &Parser::ParseCallExpr;
+		if (tokens.Peek().type != Token::Type::AddressOf) return (*this.*nextLevel)(tokens, asLval, statementStart);
+		tokens.Dequeue();
+		AllowLineBreak(tokens); // allow a line break after a unary operator
+		Value val = (*this.*nextLevel)(tokens, true, statementStart);
+		val.noInvoke = true;
 		return val;
 	}
 

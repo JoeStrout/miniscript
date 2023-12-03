@@ -965,7 +965,7 @@ namespace Miniscript {
 		}
 
 		Value ParseNew(Lexer tokens, bool asLval=false, bool statementStart=false) {
-			ExpressionParsingMethod nextLevel = ParseAddressOf;
+			ExpressionParsingMethod nextLevel = ParsePower;
 			if (tokens.Peek().type != Token.Type.Keyword || tokens.Peek().text != "new") return nextLevel(tokens, asLval, statementStart);
 			tokens.Dequeue();		// skip 'new'
 
@@ -984,22 +984,8 @@ namespace Miniscript {
 			return result;
 		}
 
-		Value ParseAddressOf(Lexer tokens, bool asLval=false, bool statementStart=false) {
-			ExpressionParsingMethod nextLevel = ParsePower;
-			if (tokens.Peek().type != Token.Type.AddressOf) return nextLevel(tokens, asLval, statementStart);
-			tokens.Dequeue();
-			AllowLineBreak(tokens); // allow a line break after a unary operator
-			Value val = nextLevel(tokens, true, statementStart);
-			if (val is ValVar) {
-				((ValVar)val).noInvoke = true;
-			} else if (val is ValSeqElem) {
-				((ValSeqElem)val).noInvoke = true;
-			}
-			return val;
-		}
-
 		Value ParsePower(Lexer tokens, bool asLval=false, bool statementStart=false) {
-			ExpressionParsingMethod nextLevel = ParseCallExpr;
+			ExpressionParsingMethod nextLevel = ParseAddressOf;
 			Value val = nextLevel(tokens, asLval, statementStart);
 			Token tok = tokens.Peek();
 			while (tok.type == Token.Type.OpPower) {
@@ -1018,6 +1004,20 @@ namespace Miniscript {
 			return val;
 		}
 
+
+		Value ParseAddressOf(Lexer tokens, bool asLval=false, bool statementStart=false) {
+			ExpressionParsingMethod nextLevel = ParseCallExpr;
+			if (tokens.Peek().type != Token.Type.AddressOf) return nextLevel(tokens, asLval, statementStart);
+			tokens.Dequeue();
+			AllowLineBreak(tokens); // allow a line break after a unary operator
+			Value val = nextLevel(tokens, true, statementStart);
+			if (val is ValVar) {
+				((ValVar)val).noInvoke = true;
+			} else if (val is ValSeqElem) {
+				((ValSeqElem)val).noInvoke = true;
+			}
+			return val;
+		}
 
 		Value FullyEvaluate(Value val, ValVar.LocalOnlyMode localOnlyMode = ValVar.LocalOnlyMode.Off) {
 			if (val is ValVar) {
