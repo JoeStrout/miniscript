@@ -1108,7 +1108,8 @@ namespace Miniscript {
 					}
 	
 					RequireToken(tokens, Token.Type.RSquare);
-				} else if ((val is ValVar && !((ValVar)val).noInvoke) || val is ValSeqElem) {
+				} else if ((val is ValVar && !((ValVar)val).noInvoke)
+					    || (val is ValSeqElem && !((ValSeqElem)val).noInvoke)) {
 					// Got a variable... it might refer to a function!
 					if (!asLval || (tokens.Peek().type == Token.Type.LParen && !tokens.Peek().afterSpace)) {
 						// If followed by parens, definitely a function call, possibly with arguments!

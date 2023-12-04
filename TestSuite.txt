@@ -1771,6 +1771,12 @@ print titlecase("AND NOW for something completely different")
 ----------------------------------------------------------------------
 And Now For Something Completely Different
 ======================================================================
+==== Check for bug #90, where @ was ignored in one special case
+m = {"r":@rnd}
+print (@m.r)
+----------------------------------------------------------------------
+FUNCTION(seed)
+======================================================================
 ==== Order of operations: assignment
 p = function(first, second)
 	print first
