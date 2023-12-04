@@ -383,6 +383,7 @@ if e >= 0.1 then print "wait OK" else print "wait broken"
 print len("hello")
 print len([1,2,3,4])
 print len({1:"one", 2:"two"})
+print @intrinsics.sin
 ----------------------------------------------------------------------
 42
 [10, 20]
@@ -394,6 +395,7 @@ wait OK
 5
 4
 2
+FUNCTION(radians=0)
 ======================================================================
 ==== hasIndex and indexOf on strings, lists, and maps.
 s = "abcde"
