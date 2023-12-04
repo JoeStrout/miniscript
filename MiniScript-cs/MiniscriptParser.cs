@@ -971,16 +971,9 @@ namespace Miniscript {
 
 			AllowLineBreak(tokens); // allow a line break after a unary operator
 
-			// Grab a reference to our __isa value
 			Value isa = nextLevel(tokens);
-			// Now, create a new map, and set __isa on it to that.
-			// NOTE: we must be sure this map gets created at runtime, not here at parse time.
-			// Since it is a mutable object, we need to return a different one each time
-			// this code executes (in a loop, function, etc.).  So, we use Op.CopyA below!
-			ValMap map = new ValMap();
-			map.SetElem(ValString.magicIsA, isa);
 			Value result = new ValTemp(output.nextTempNum++);
-			output.Add(new TAC.Line(result, TAC.Line.Op.CopyA, map));
+			output.Add(new TAC.Line(result, TAC.Line.Op.NewA, isa));
 			return result;
 		}
 

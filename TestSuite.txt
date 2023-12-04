@@ -397,6 +397,27 @@ wait OK
 2
 FUNCTION(radians=0)
 ======================================================================
+==== Errors when misusing the `new` operator
+x = new 42
+----------------------------------------------------------------------
+Runtime Error: argument to 'new' must be a map [line 1]
+==== 
+x = new string
+----------------------------------------------------------------------
+Runtime Error: invalid use of 'new'; to create a string, use quotes, e.g. "foo" [line 1]
+==== 
+x = new list
+----------------------------------------------------------------------
+Runtime Error: invalid use of 'new'; to create a list, use square brackets, e.g. [1,2] [line 1]
+==== 
+x = new number
+----------------------------------------------------------------------
+Runtime Error: invalid use of 'new'; to create a number, use a numeric literal, e.g. 42 [line 1]
+==== 
+x = new funcRef
+----------------------------------------------------------------------
+Runtime Error: invalid use of 'new'; to create a function, use the 'function' keyword [line 1]
+======================================================================
 ==== hasIndex and indexOf on strings, lists, and maps.
 s = "abcde"
 print s.hasIndex(4)		// 1 (true)

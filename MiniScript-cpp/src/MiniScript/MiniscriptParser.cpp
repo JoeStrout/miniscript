@@ -787,16 +787,9 @@ namespace MiniScript {
 
 		AllowLineBreak(tokens); // allow a line break after a unary operator
 		
-		// Grab a reference to our __isa value
 		Value isa = (*this.*nextLevel)(tokens, false, false);
-		// Now, create a new map, and set __isa on it to that.
-		// NOTE: we must be sure this map gets created at runtime, not here at parse time.
-		// Since it is a mutable object, we need to return a different one each time
-		// this code executes (in a loop, function, etc.).  So, we use Op.CopyA below!
-		ValueDict map;
-		map.SetValue(Value::magicIsA, isa);
 		Value result = Value::Temp(output->nextTempNum++);
-		output->Add(TACLine(result, TACLine::Op::CopyA, Value(map)));
+		output->Add(TACLine(result, TACLine::Op::NewA, isa));
 		return result;
 	}
 	
