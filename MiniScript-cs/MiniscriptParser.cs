@@ -388,7 +388,7 @@ namespace Miniscript {
 				case "return":
 					{
 						Value returnValue = null;
-						if (tokens.Peek().type != Token.Type.EOL && tokens.Peek().text != "else") {
+						if (tokens.Peek().type != Token.Type.EOL && tokens.Peek().text != "else" && tokens.Peek().text != "else if") {
 							returnValue = ParseExpr(tokens);
 						}
 						output.Add(new TAC.Line(TAC.LTemp(0), TAC.Line.Op.ReturnA, returnValue));
@@ -418,6 +418,10 @@ namespace Miniscript {
 								tokens.Dequeue();	// skip "else"
 								StartElseClause();
 								ParseStatement(tokens, true);		// parse a single statement for the "else" body
+							} else if (tokens.Peek().type == Token.Type.Keyword && tokens.Peek().text == "else if") {
+								tokens.Peek().text = "if";		// the trick: convert the "else if" token to a regular "if"...
+								StartElseClause();				// but start an else clause...
+								ParseStatement(tokens, true);	// then parse a single statement starting with "if"
 							} else {
 								RequireEitherToken(tokens, Token.Type.Keyword, "else", Token.Type.EOL);
 							}
@@ -573,7 +577,7 @@ namespace Miniscript {
 			Value lhs, rhs;
 			Token peek = tokens.Peek();
 			if (peek.type == Token.Type.EOL ||
-					(peek.type == Token.Type.Keyword && peek.text == "else")) {
+					(peek.type == Token.Type.Keyword && (peek.text == "else" || peek.text == "else if"))) {
 				// No explicit assignment; store an implicit result
 				rhs = FullyEvaluate(expr);
 				output.Add(new TAC.Line(null, TAC.Line.Op.AssignImplicit, rhs));
@@ -622,7 +626,7 @@ namespace Miniscript {
 					output.Add(new TAC.Line(null, TAC.Line.Op.PushParam, arg));
 					argCount++;
 					if (tokens.Peek().type == Token.Type.EOL) break;
-					if (tokens.Peek().type == Token.Type.Keyword && tokens.Peek().text == "else") break;
+					if (tokens.Peek().type == Token.Type.Keyword && (tokens.Peek().text == "else" || tokens.Peek().text == "else if")) break;
 					if (tokens.Peek().type == Token.Type.Comma) {
 						tokens.Dequeue();
 						AllowLineBreak(tokens);

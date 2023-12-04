@@ -153,6 +153,9 @@ if 1 then print "yay" else print"nay"
 if false then print "yo" else print "no"
 if true then x=1 else x=2
 print x
+if 1 then print "A" else if 1 then print "B" else print "C"
+if 0 then print "A" else if 1 then print "B" else print "C"
+if 0 then print "A" else if 0 then print "B" else print "C"
 for i in range(1,10)
 	if i == 3 then continue
 	if i == 6 then break
@@ -168,6 +171,9 @@ Yep
 yay
 no
 1
+A
+B
+C
 1
 2
 4

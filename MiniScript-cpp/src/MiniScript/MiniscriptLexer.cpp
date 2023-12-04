@@ -243,6 +243,10 @@ namespace MiniScript {
 		return ls->pending[0];
 	}
 
+	void Lexer::Poke(Token tokenToInsert) {
+		ls->pending.Insert(tokenToInsert, 0);
+	}
+
 	void Lexer::SkipWhitespaceAndComment() {
 		while (!atEnd() && IsWhitespace(ls->input[ls->positionB])) {
 			ls->positionB++;

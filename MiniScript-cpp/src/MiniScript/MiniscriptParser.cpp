@@ -239,7 +239,7 @@ namespace MiniScript {
 			String keyword = tokens.Dequeue().text;
 			if (keyword == "return") {
 				Value returnValue;
-				if (tokens.Peek().type != Token::Type::EOL && tokens.Peek().text != "else") {
+				if (tokens.Peek().type != Token::Type::EOL && tokens.Peek().text != "else" && tokens.Peek().text != "else if") {
 					returnValue = ParseExpr(tokens);
 				}
 				output->Add(TACLine(Value::Temp(0), TACLine::Op::ReturnA, returnValue));
@@ -267,6 +267,13 @@ namespace MiniScript {
 						tokens.Dequeue();	// skip "else"
 						StartElseClause();
 						ParseStatement(tokens, true);		// parse a single statement for the "else" body
+					} else if (tokens.Peek().type == Token::Type::Keyword and tokens.Peek().text == "else if") {
+						Token altered = tokens.Dequeue();	// the trick: convert the "else if" token to a regular "if"...
+						altered.text = "if";
+						tokens.Poke(altered);
+						Assert(tokens.Peek().text == "if");
+						StartElseClause();					// but start an else clause...
+						ParseStatement(tokens, true);		// then parse a single statement for the "else" body
 					} else {
 						RequireEitherToken(tokens, Token::Type::Keyword, "else", Token::Type::EOL);
 					}
@@ -399,7 +406,7 @@ namespace MiniScript {
 		Value lhs, rhs;
 		Token peek = tokens.Peek();
 		if (peek.type == Token::Type::EOL ||
-				(peek.type == Token::Type::Keyword && peek.text == "else")) {
+				(peek.type == Token::Type::Keyword && (peek.text == "else" || peek.text == "else if"))) {
 			// No explicit assignment; store an implicit result
 			rhs = FullyEvaluate(expr);
 			output->Add(TACLine(TACLine::Op::AssignImplicit, rhs));
@@ -447,9 +454,10 @@ namespace MiniScript {
 				Value arg = ParseExpr(tokens);
 				output->Add(TACLine(TACLine::Op::PushParam, arg));
 				argCount++;
-				if (tokens.Peek().type == Token::Type::EOL) break;
-				if (tokens.Peek().type == Token::Type::Keyword and tokens.Peek().text == "else") break;
-				if (tokens.Peek().type == Token::Type::Comma) {
+				Token peek = tokens.Peek();
+				if (peek.type == Token::Type::EOL) break;
+				if (peek.type == Token::Type::Keyword and (peek.text == "else" || peek.text == "else if")) break;
+				if (peek.type == Token::Type::Comma) {
 					tokens.Dequeue();
 					AllowLineBreak(tokens);
 					continue;
