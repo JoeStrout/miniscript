@@ -313,6 +313,8 @@ namespace MiniScript {
 						CheckType(opB, ValueType::Number, "String division");
 						factor = 1.0 / opB.data.number;
 					}
+					int factorClass = std::fpclassify(factor);
+					if (factorClass == FP_NAN || factorClass == FP_INFINITE) return Value::null;
 					if (factor <= 0) return Value::emptyString;
 					int repeats = (int)factor;
 					size_t lenB = sA.LengthB();
@@ -410,6 +412,8 @@ namespace MiniScript {
 					CheckType(opB, ValueType::Number, "list division");
 					factor = 1.0 / opB.data.number;
 				}
+				int factorClass = std::fpclassify(factor);
+				if (factorClass == FP_NAN || factorClass == FP_INFINITE) return Value::null;
 				if (factor <= 0) return ValueList();
 				long listCount = list.Count();
 				long finalCount = (long)(listCount * factor);

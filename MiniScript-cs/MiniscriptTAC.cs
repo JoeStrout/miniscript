@@ -370,8 +370,9 @@ namespace Miniscript {
 							Check.Type(opB, typeof(ValNumber), "string division");
 							factor = 1.0 / ((ValNumber)opB).value;								
 						}
+						if (double.IsNaN(factor) || double.IsInfinity(factor)) return null;
+						if (factor <= 0) return ValString.empty;
 						int repeats = (int)factor;
-						if (repeats < 0) return ValString.empty;
 						if (repeats * sA.Length > ValString.maxSize) throw new LimitExceededException("string too large");
 						var result = new System.Text.StringBuilder();
 						for (int i = 0; i < repeats; i++) result.Append(sA);
@@ -448,6 +449,7 @@ namespace Miniscript {
 							Check.Type(opB, typeof(ValNumber), "list division");
 							factor = 1.0 / ((ValNumber)opB).value;								
 						}
+						if (double.IsNaN(factor) || double.IsInfinity(factor)) return null;
 						if (factor <= 0) return new ValList();
 						int finalCount = (int)(list.Count * factor);
 						if (finalCount > ValList.maxSize) throw new LimitExceededException("list too large");

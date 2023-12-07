@@ -1525,6 +1525,28 @@ print B.two
 1
 202
 ======================================================================
+==== Test handling of NaN and Infinity in various ways.
+==== (Note that conversion of these to string is currently undefined.)
+NaN = 0/0
+Inf = 1/0
+print "foo"*NaN == null
+print "Inf"*NaN == null
+print "foo"*Inf == null
+print "Inf"*Inf == null
+print [42]*NaN == null
+print [42]*NaN == null
+print [42]*Inf == null
+print [42]*Inf == null
+----------------------------------------------------------------------
+1
+1
+1
+1
+1
+1
+1
+1
+======================================================================
 ==== Test binding of function context (i.e. outer scope)
 globA = "Global A"
 funcA = function
