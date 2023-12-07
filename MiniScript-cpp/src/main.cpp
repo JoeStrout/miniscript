@@ -146,9 +146,9 @@ static int DoScriptFile(String path) {
 		std::cerr << "Error opening file: " << path.c_str() << std::endl;
 		return -1;
 	}
-	char buf[1024];
-	while (infile.getline(buf, sizeof(buf))) {
-		source.Add(buf);
+	std::string line;
+	while (std::getline(infile, line)) {
+		source.Add(line.c_str());
 	}
 	//Print(String("Read ") + String::Format(source.Count()) + (source.Count() == 1 ? " line" : " lines") + " from: " + path);
 
