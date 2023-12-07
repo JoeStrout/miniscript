@@ -547,6 +547,7 @@ print "not [42]: " + (not [42])
 print "not {3:9}: " + (not {3:9})
 print "not 42: " + (not 42)
 print "not ""a"": " + (not "a")
+if @rnd then print "ok" else print "wrong"
 ----------------------------------------------------------------------
 B
 C
@@ -562,6 +563,7 @@ not [42]: 0
 not {3:9}: 0
 not 42: 0
 not "a": 0
+ok
 ======================================================================
 ==== hashing and dictionary key uniqueness
 ==== (Note that hash(a) should == hash(b) wherever a == b)

@@ -267,6 +267,12 @@ namespace MiniScript {
 				return result;
 			}
 
+			case ValueType::Function:
+			{
+				// Functions are always true.
+				return true;
+			}
+			
 			case ValueType::Handle:
 			{
 				// Any handle at all is true.
