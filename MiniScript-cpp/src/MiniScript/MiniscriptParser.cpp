@@ -169,6 +169,7 @@ namespace MiniScript {
 			bool isPartial = EndsWithLineContinuation(sourceCode);
 			if (isPartial) {
 				partialInput += Lexer::TrimComment(sourceCode);
+				partialInput += " ";
 				return;
 			}
 		}
