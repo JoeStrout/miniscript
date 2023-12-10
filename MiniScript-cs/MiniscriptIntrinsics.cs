@@ -19,6 +19,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Globalization;
+using static Miniscript.TAC;
+using System.IO;
+using Miniscript.Helpers;
 
 namespace Miniscript {
 	/// <summary>
@@ -195,8 +198,8 @@ namespace Miniscript {
 			/// <summary>
 			/// Result constructor for a simple string result.
 			/// </summary>
-			public Result(string resultStr) {
-				this.done = true;
+			public Result(string resultStr, bool done = true) {
+				this.done = done;
 				if (string.IsNullOrEmpty(resultStr)) this.result = ValString.empty;
 				else this.result = new ValString(resultStr);
 			}
@@ -205,7 +208,7 @@ namespace Miniscript {
 			/// Result.Null: static Result representing null (no value).
 			/// </summary>
 			public static Result Null { get { return _null; } }
-			static Result _null = new Result(null, true);
+			static Result _null = new Result((Value)null, true);
 			
 			/// <summary>
 			/// Result.EmptyString: static Result representing "" (empty string).
@@ -230,7 +233,7 @@ namespace Miniscript {
 			/// with no in-progress value.
 			/// </summary>
 			public static Result Waiting { get { return _waiting; } }
-			static Result _waiting = new Result(null, false);
+			static Result _waiting = new Result((Value)null, false);
 		}
 	}
 	
@@ -1566,7 +1569,59 @@ namespace Miniscript {
 				return Intrinsic.Result.Null;
 			};
 
-		}
+
+            f = Intrinsic.Create("import");
+            f.AddParam("libname", "");
+            f.code = (context, partialResult) => {
+				if (partialResult != null && partialResult.result != ValNull.instance) {
+					Value importedValues = context.GetTemp(0);
+					string resultLibname = partialResult.result.ToString();
+					Context callerContext = context.parent;
+					callerContext.SetVar(resultLibname, importedValues);
+					return Intrinsic.Result.Null;
+				}
+
+				string libRelativeFilePath = context.GetLocalString("libname");
+				if (string.IsNullOrEmpty(libRelativeFilePath)) {
+					throw new RuntimeException("'libname' argument is empty.");
+				}
+
+				string libCode = "";
+				bool found = false;
+				string libname = null;
+				foreach (var libsBaseFolder in context.vm.PossibleLibFolders) {
+					var combinedPath = FileHelper.SecurePathCombine(libsBaseFolder, libRelativeFilePath + ".ms");
+
+					if (string.IsNullOrWhiteSpace(combinedPath)) {
+						continue;
+					}
+
+					if (!File.Exists(combinedPath)) {
+						continue;
+					}
+
+					libname = Path.GetFileNameWithoutExtension(combinedPath);
+
+                    found = true;
+                    foreach (var line in File.ReadAllLines(combinedPath)) {
+                        libCode += line + Environment.NewLine;
+                    }
+				}
+
+				if (!found || string.IsNullOrEmpty(libname)) {
+                    throw new RuntimeException("Library not found or was empty.");
+                }
+
+				Parser parser = new Parser();
+				parser.errorContext = libRelativeFilePath + ".ms";
+				parser.Parse(libCode);
+				Function import = parser.CreateImport();
+				context.vm.ManuallyPushCall(new ValFunction(import), new ValTemp(0));
+
+				return new Intrinsic.Result(libname, false);
+            };
+
+        }
 
 		static Random random;	// TODO: consider storing this on the context, instead of global!
 

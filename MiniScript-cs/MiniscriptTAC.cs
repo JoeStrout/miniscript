@@ -877,6 +877,8 @@ namespace Miniscript {
 			public ValMap numberType;
 			public ValMap stringType;
 			public ValMap versionMap;
+
+			public List<string> PossibleLibFolders = new List<string>() {}; 
 			
 			public Context globalContext {			// contains global variables
 				get { return _globalContext; }
