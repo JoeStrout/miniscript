@@ -99,8 +99,10 @@ namespace MiniScript {
 	
 	class KeyException : public RuntimeException {
 	public:
-		KeyException(String msg="Key Error") : RuntimeException(msg) {}
-		KeyException(String context, int lineNum, String msg) : RuntimeException(context, lineNum, msg) {}
+		KeyException(String key) : RuntimeException(
+			String("Key Not Found: '") + key + "' not found in map") {}
+		KeyException(String context, int lineNum, String key) : RuntimeException(
+			context, lineNum, String("Key Not Found: '") + key + "' not found in map") {}
 		virtual void raise() { throw *this; }
 	};
 	
