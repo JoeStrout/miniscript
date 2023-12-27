@@ -372,15 +372,20 @@ namespace Miniscript {
 			// Convert to a string in the standard MiniScript way.
 			if (value % 1.0 == 0.0) {
 				// integer values as integers
-				return value.ToString("0", CultureInfo.InvariantCulture);
+				string result = value.ToString("0", CultureInfo.InvariantCulture);
+				if (result == "-0") result = "0";
+				return result;
 			} else if (value > 1E10 || value < -1E10 || (value < 1E-6 && value > -1E-6)) {
 				// very large/small numbers in exponential form
 				string s = value.ToString("E6", CultureInfo.InvariantCulture);
 				s = s.Replace("E-00", "E-0");
 				return s;
 			} else {
-				// all others in decimal form, with 1-6 digits past the decimal point
-				return value.ToString("0.0#####", CultureInfo.InvariantCulture);
+				// all others in decimal form, with 1-6 digits past the decimal point;
+				// and take care not to display "-0" for "negative" 0.0
+				string result = value.ToString("0.0#####", CultureInfo.InvariantCulture);
+				if (result == "-0") result = "0";
+				return result;
 			}
 		}
 

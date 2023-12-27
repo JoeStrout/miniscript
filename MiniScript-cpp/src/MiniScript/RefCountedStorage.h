@@ -9,6 +9,8 @@
 #ifndef REFCOUNTEDSTORAGE_H
 #define REFCOUNTEDSTORAGE_H
 
+#include <stdio.h>
+
 namespace MiniScript {
 	
 	class RefCountedStorage {
@@ -20,11 +22,13 @@ namespace MiniScript {
 		RefCountedStorage() : refCount(1) {
 #if(DEBUG)
 			instanceCount++;
+			printf("+++ %ld instances\n", instanceCount);
 #endif
 		}
 		virtual ~RefCountedStorage() {
 #if(DEBUG)
 			instanceCount--;
+			printf("--- %ld instances\n", instanceCount);
 #endif
 		}
 		
