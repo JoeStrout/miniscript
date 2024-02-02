@@ -31,6 +31,13 @@
 #include <array>
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <string.h>
+
+
+#include <stdio.h>
 #include <time.h>
 #if _WIN32 || _WIN64
 	#define WINDOWS 1
@@ -706,25 +713,67 @@ static IntrinsicResult intrinsic_writeLines(Context *context, IntrinsicResult pa
 	return IntrinsicResult((int)written);
 }
 
+
+// Function to read from file descriptor into string
+std::string readFromFd(int fd) {
+    std::string output;
+    const int bufferSize = 128;
+    char buffer[bufferSize];
+    ssize_t bytesRead;
+
+    while ((bytesRead = read(fd, buffer, bufferSize - 1)) > 0) {
+        buffer[bytesRead] = '\0';
+        output += buffer;
+    }
+
+    return output;
+}
+
 static IntrinsicResult intrinsic_exec(Context *context, IntrinsicResult partialResult) {
 	String cmd = context->GetVar("path").ToString();
 
-    std::array<char, 128> buffer;
-    std::string output;
+    int stdoutPipe[2];
+    int stderrPipe[2];
+    pipe(stdoutPipe); // Create pipe for stdout
+    pipe(stderrPipe); // Create pipe for stderr
 
-	FILE* pipe = popen(cmd.c_str(), "r");
-    if (!pipe) {
-        Error("Couldn't start command.");
+    pid_t pid = fork(); // Fork the process
+
+    if (pid == -1) {
+		Error("Failed to fork the child process.");
+    } else if (pid == 0) {
+        // Child process.
+
+        dup2(stdoutPipe[1], STDOUT_FILENO); // Redirect stdout to pipe
+        dup2(stderrPipe[1], STDERR_FILENO); // Redirect stderr to pipe
+        close(stdoutPipe[0]); // Close read end of stdout pipe
+        close(stderrPipe[0]); // Close read end of stderr pipe
+
+		int returnCode = std::system(cmd.c_str());
+
+        // execl only returns on error
+        exit(1);
     }
 
-    while (fgets(buffer.data(), 128, pipe) != NULL) {
-        output += buffer.data();
-    }
-    int returnCode = pclose(pipe);
+	// Parent process.
+	close(stdoutPipe[1]); // Close write end of stdout pipe
+	close(stderrPipe[1]); // Close write end of stderr pipe
 
-	static ValueDict result;
+	// Wait for child process to finish
+	int returnCode = 12345;
+	wait(&returnCode);
+
+	// Read from pipes
+	std::string stdoutContent = readFromFd(stdoutPipe[0]);
+	std::string stderrContent = readFromFd(stderrPipe[0]);
+
+	close(stdoutPipe[0]);
+	close(stderrPipe[1]);
+
+	ValueDict result;
 	if (result.Count() == 0) {
-		result.SetValue("output", Value(output.c_str()));
+		result.SetValue("stdout", Value(stdoutContent.c_str()));
+		result.SetValue("stderr", Value(stderrContent.c_str()));
 		result.SetValue("returnCode", Value(returnCode));
 	} else {
 		Error("Unable to generate results.");
