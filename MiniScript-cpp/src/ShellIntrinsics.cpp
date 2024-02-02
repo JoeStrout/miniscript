@@ -24,6 +24,11 @@
 
 #include <cstdlib>
 #include <sstream>
+#include <iostream>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <array>
 
 #include <stdio.h>
 #include <time.h>
@@ -702,22 +707,28 @@ static IntrinsicResult intrinsic_writeLines(Context *context, IntrinsicResult pa
 }
 
 static IntrinsicResult intrinsic_exec(Context *context, IntrinsicResult partialResult) {
-	String path = context->GetVar("path").ToString();
-	Value args = context->GetVar("args");
+	String cmd = context->GetVar("path").ToString();
 
-	std::stringstream ss;
-	ss << path.c_str();
-	
-	if (args.type == ValueType::List) {
-		ValueList lst = args.GetList();
-		for (int n = 0; n < lst.Count(); n++) {
-			ss << " " << lst[n].ToString().c_str();
-		}
-	} else if (args.type != ValueType::Null) {
-		ss << " " << args.ToString().c_str();
+    std::array<char, 128> buffer;
+    std::string output;
+
+	FILE* pipe = popen(cmd.c_str(), "r");
+    if (!pipe) {
+        Error("Couldn't start command.");
+    }
+
+    while (fgets(buffer.data(), 128, pipe) != NULL) {
+        output += buffer.data();
+    }
+    int returnCode = pclose(pipe);
+
+	static ValueDict result;
+	if (result.Count() == 0) {
+		result.SetValue("output", Value(output.c_str()));
+		result.SetValue("returnCode", Value(returnCode));
+	} else {
+		Error("Unable to generate results.");
 	}
-
-	int result = std::system(ss.str().c_str());
 	return IntrinsicResult(result);
 }
 
@@ -1032,6 +1043,5 @@ void AddShellIntrinsics() {
 	
 	f = Intrinsic::Create("exec");
 	f->AddParam("path");
-	f->AddParam("args", Value());
 	f->code = &intrinsic_exec;
 }
