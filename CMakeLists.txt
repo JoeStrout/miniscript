@@ -55,7 +55,6 @@ set(MINICMD_HEADERS
 	MiniScript-cpp/src/editline/config.h
 	MiniScript-cpp/src/editline/editline.h
 	MiniScript-cpp/src/editline/editline_internal.h
-	MiniScript-cpp/src/editline/os9.h
 	MiniScript-cpp/src/editline/unix.h
 	MiniScript-cpp/src/whereami/whereami.h
 )
@@ -85,7 +84,6 @@ if(NOT WIN32)
 	set(EDITLINE_SRC
 		MiniScript-cpp/src/editline/complete.c
 		MiniScript-cpp/src/editline/editline.c
-		MiniScript-cpp/src/editline/sysos9.c
 		MiniScript-cpp/src/editline/sysunix.c
 	)
 endif()
@@ -99,7 +97,7 @@ add_executable(minicmd
 	${EDITLINE_SRC}
 	${MINICMD_HEADERS}
 )
-target_include_directories(minicmd PRIVATE src/editline)
+target_include_directories(minicmd PRIVATE MiniScript-cpp/src/editline)
 target_link_libraries(minicmd PRIVATE miniscript-cpp)
 
 if(MINISCRIPT_BUILD_TESTING)
