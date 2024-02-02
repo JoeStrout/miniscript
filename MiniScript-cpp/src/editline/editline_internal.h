@@ -23,7 +23,7 @@
 #ifndef EDITLINE_PRIVATE_H_
 #define EDITLINE_PRIVATE_H_
 
-#include "config.h"
+#include <config.h>
 #include <stdio.h>
 #ifdef HAVE_MALLOC_H
 #include <malloc.h>
