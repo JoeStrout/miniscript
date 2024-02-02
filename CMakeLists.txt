@@ -54,7 +54,6 @@ set(MINICMD_HEADERS
 	MiniScript-cpp/src/ShellIntrinsics.h
 	MiniScript-cpp/src/editline/config.h
 	MiniScript-cpp/src/editline/editline.h
-	MiniScript-cpp/src/editline/editline_internal.h
 	MiniScript-cpp/src/editline/unix.h
 	MiniScript-cpp/src/whereami/whereami.h
 )
