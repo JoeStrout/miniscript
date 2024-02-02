@@ -22,6 +22,9 @@
 #include "whereami/whereami.h"
 #include "DateTimeUtils.h"
 
+#include <cstdlib>
+#include <sstream>
+
 #include <stdio.h>
 #include <time.h>
 #if _WIN32 || _WIN64
@@ -698,8 +701,28 @@ static IntrinsicResult intrinsic_writeLines(Context *context, IntrinsicResult pa
 	return IntrinsicResult((int)written);
 }
 
+static IntrinsicResult intrinsic_exec(Context *context, IntrinsicResult partialResult) {
+	String path = context->GetVar("path").ToString();
+	Value args = context->GetVar("args");
+
+	std::stringstream ss;
+	ss << path.c_str();
+	
+	if (args.type == ValueType::List) {
+		ValueList lst = args.GetList();
+		for (int n = 0; n < lst.Count(); n++) {
+			ss << " " << lst[n].ToString().c_str();
+		}
+	} else if (args.type != ValueType::Null) {
+		ss << " " << args.ToString().c_str();
+	}
+
+	int result = std::system(ss.str().c_str());
+	return IntrinsicResult(result);
+}
+
 static bool disallowAssignment(ValueDict& dict, Value key, Value value) {
-	return true;
+return true;
 }
 
 static IntrinsicResult intrinsic_File(Context *context, IntrinsicResult partialResult) {
@@ -1007,4 +1030,8 @@ void AddShellIntrinsics() {
 	i_writeLines->AddParam("lines");
 	i_writeLines->code = &intrinsic_writeLines;
 	
+	f = Intrinsic::Create("exec");
+	f->AddParam("path");
+	f->AddParam("args", Value());
+	f->code = &intrinsic_exec;
 }
