@@ -748,59 +748,96 @@ String readFromFd(int fd, bool trimTrailingNewline=true) {
 }
 
 static IntrinsicResult intrinsic_exec(Context *context, IntrinsicResult partialResult) {
-	String cmd = context->GetVar("cmd").ToString();
+	double now = context->vm->RunTime();
+	if (partialResult.Done()) {
+		// This is the initial entry into `exec`.  Fork a subprocess to execute the
+		// given command, and return a partial result we can use to check on its progress.
+		String cmd = context->GetVar("cmd").ToString();
+		double timeout = context->GetVar("timeout").DoubleValue();
 
-	// Create a pipe each for stdout and stderr.
-	// File descriptor 0 of each is the read end; element 1 is the write end.
-    int stdoutPipe[2];
-    int stderrPipe[2];
-    pipe(stdoutPipe);
-    pipe(stderrPipe);
+		// Create a pipe each for stdout and stderr.
+		// File descriptor 0 of each is the read end; element 1 is the write end.
+		int stdoutPipe[2];
+		int stderrPipe[2];
+		pipe(stdoutPipe);
+		pipe(stderrPipe);
+		
+		pid_t pid = fork(); // Fork the process
+		
+		if (pid == -1) {
+			Error("Failed to fork the child process.");
+		} else if (pid == 0) {
+			// Child process.
+			
+			// Redirect stdout and stderr to our pipes, and then close the read ends.
+			dup2(stdoutPipe[1], STDOUT_FILENO);
+			dup2(stderrPipe[1], STDERR_FILENO);
+			close(stdoutPipe[0]);
+			close(stderrPipe[0]);
+			
+			// Call the host environment's command processor.  Or if the command
+			// is empty, then return a nonzero value iff the command processor exists.
+			const char* cmdPtr = cmd.empty() ? NULL : cmd.c_str();
+			int cmdResult = std::system(cmdPtr);
+			cmdResult = WEXITSTATUS(cmdResult);
+			
+			// All done!  Exit the child process and return the result.
+			exit(cmdResult);
+		}
+		// Parent process.
+		
+		// Close the write end of the pipes.
+		close(stdoutPipe[1]);
+		close(stderrPipe[1]);
+		
+		// As our partial result, return a list with the pid, the two read pipes, and the final time.
+		ValueList data;
+		data.Add(Value(pid));
+		data.Add(Value(stdoutPipe[0]));
+		data.Add(Value(stderrPipe[0]));
+		data.Add(Value(now + timeout));
+		return IntrinsicResult(data, false);
+	}
+	
+	// This is a subsequent entry to intrinsic_exec, where we've already forked
+	// the subprocess, and now we're waiting for it to finish.
+	// Start by getting the pid, the two read pipes, and the final time out of the partial result.
+	ValueList data = partialResult.Result().GetList();
+	int pid = data[0].IntValue();
+	int stdoutPipe = data[1].IntValue();
+	int stderrPipe = data[2].IntValue();
+	double finalTime = data[3].DoubleValue();
+	
+	// Then, see if the child process has finished.
+	int returnCode;
+	String stdoutContent, stderrContent;
+	int waitResult = waitpid(pid, &returnCode, WUNTRACED | WNOHANG);
+	//std::cout << "waitpid returned " << waitResult << ", returnCode is " << returnCode << std::endl;
+	if (waitResult <= 0) {
+		// Child process not finished yet.
+		if (now < finalTime) {
+			// Not timed out, either — keep waiting.
+			return IntrinsicResult(data, false);
+		}
 
-    pid_t pid = fork(); // Fork the process
-
-    if (pid == -1) {
-		Error("Failed to fork the child process.");
-    } else if (pid == 0) {
-        // Child process.
-
-		// Redirect stdout and stderr to our pipes, and then close the read ends.
-        dup2(stdoutPipe[1], STDOUT_FILENO);
-        dup2(stderrPipe[1], STDERR_FILENO);
-        close(stdoutPipe[0]);
-        close(stderrPipe[0]);
-
-		// Call the host environment's command processor.  Or if the command
-		// is empty, then return a nonzero value iff the command processor exists.
-		const char* cmdPtr = cmd.empty() ? NULL : cmd.c_str();
-		int cmdResult = std::system(cmdPtr);
-
-		// All done!  Exit the child process and return the result.
-        exit(cmdResult);
-    }
-	// Parent process.
-
-	// Close the write end of the pipes.
-	close(stdoutPipe[1]);
-	close(stderrPipe[1]);
-
-	// Wait for child process to finish.
-	// ToDo: make this not block the parent process, by using partialResult.
-	int returnCode = 12345;
-	wait(&returnCode);		// for some reason, this is not modifying returnCode as it should!
-
-	// Read output from pipes, then close them.
-	String stdoutContent = readFromFd(stdoutPipe[0]);
-	String stderrContent = readFromFd(stderrPipe[0]);
-
-	close(stdoutPipe[0]);
-	close(stderrPipe[1]);
+		// We've waited too long.  Time out.
+		stderrContent = "Timed out";
+		returnCode = 124 << 8;	// (124 is status code used by `timeout` command)
+	} else {
+		// Child process completed successfully.  Huzzah!
+		// Read output from pipes.
+		stdoutContent = readFromFd(stdoutPipe);
+		stderrContent = readFromFd(stderrPipe);
+	}
+	// Close our pipes.
+	close(stdoutPipe);
+	close(stderrPipe);
 
 	// Build our result map.
 	ValueDict result;
 	result.SetValue("output", Value(stdoutContent.c_str()));
 	result.SetValue("errors", Value(stderrContent.c_str()));
-	result.SetValue("result", Value(returnCode));
+	result.SetValue("status", Value(WEXITSTATUS(returnCode)));
 	return IntrinsicResult(result);
 }
 
@@ -1115,5 +1152,6 @@ void AddShellIntrinsics() {
 	
 	f = Intrinsic::Create("exec");
 	f->AddParam("cmd");
+	f->AddParam("timeout", 30);
 	f->code = &intrinsic_exec;
 }
