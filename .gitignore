@@ -40,3 +40,11 @@ DerivedData
 .vs
 obj/
 bin/
+
+# Build Artifacts
+.vscode
+CMakeFiles
+cmake_install.cmake
+CMakeCache.txt
+Makefile
+miniscript
