@@ -113,6 +113,9 @@ static int        Searching = 0;
 static const char *(*search_move)(void);
 static const char *old_prompt = NULL;
 static rl_vcpfunc_t *line_handler = NULL;
+static char       *line_up = "\x1b[A";
+static char       *line_down = "\x1b[B";
+int prompt_len = 0;
 
 int               el_no_echo = 0; /* e.g., under Emacs */
 int               el_no_hist = 0;
@@ -134,7 +137,6 @@ extern char     *tgetstr(const char *, char **);
 extern int      tgetent(char *, const char *);
 extern int      tgetnum(const char *);
 #endif
-
 
 /*
 **  Misc. local helper functions.
@@ -142,11 +144,11 @@ extern int      tgetnum(const char *);
 static int is_alpha_num(unsigned char c)
 {
     if (isalnum(c))
-	return 1;
+        return 1;
     if (ISMETA(c))
-	return 1;
+        return 1;
     if (ISCTL(c))
-	return 1;
+        return 1;
 
     return 0;
 }
@@ -160,24 +162,28 @@ static void tty_flush(void)
     ssize_t res;
 
     if (!ScreenCount)
-	return;
+        return;
 
     if (!el_no_echo) {
-	res = write(el_outfd, Screen, ScreenCount);
-	if (res > 0)
-	    ScreenCount = 0;
+        res = write(el_outfd, Screen, ScreenCount);
+        if (res > 0)
+            ScreenCount = 0;
     }
 }
 
 static void tty_put(const char c)
 {
     if (el_no_echo)
-	return;
+        return;
 
     Screen[ScreenCount] = c;
     if (++ScreenCount >= ScreenSize) {
+	char *ptr;
+
         ScreenSize += SCREEN_INC;
-        Screen = realloc(Screen, sizeof(char) * ScreenSize);
+        ptr = realloc(Screen, sizeof(char) * ScreenSize);
+	if (ptr)
+	    Screen = ptr;
     }
 }
 
@@ -206,8 +212,15 @@ static void tty_show(unsigned char c)
 
 static void tty_string(char *p)
 {
-    while (*p)
+    int i = rl_point + prompt_len + 1;
+
+    while (*p) {
         tty_show(*p++);
+        if ((i++) % tty_cols == 0) {
+            tty_put(' ');
+            tty_put('\b');
+        }
+    }
 }
 
 static void tty_push(int c)
@@ -222,7 +235,7 @@ int rl_getc(void)
     char c;
 
     do {
-	r = (int)read(el_infd, &c, 1);
+        r = read(el_infd, &c, 1);
     } while (r == -1 && errno == EINTR);
 
     return r == 1 ? c : EOF;
@@ -251,11 +264,18 @@ static void tty_backn(int n)
         tty_back();
 }
 
+static void tty_forwardn(int n)
+{
+    char buf[12];
+
+    snprintf(buf, sizeof(buf), "\x1b[%dC", n);
+    tty_puts(buf);
+}
+
 static void tty_info(void)
 {
     rl_reset_terminal(NULL);
 }
-
 
 /*
 **  Glue routines to rl_ttyset()
@@ -284,50 +304,99 @@ void el_print_columns(int ac, char **av)
     int         skip;
     int         longest;
     int         cols;
+    int         colwidth;
 
     /* Find longest name, determine column count from that. */
     for (longest = 0, i = 0; i < ac; i++) {
-        if ((j = (int)strlen((char *)av[i])) > longest)
+        if ((j = strlen((char *)av[i])) > longest)
             longest = j;
     }
-    cols = tty_cols / (longest + 3);
+
+    colwidth = longest + 3;
+    if (colwidth > tty_cols)
+        colwidth = tty_cols;
+    cols = tty_cols / colwidth;
 
     tty_puts(NEWLINE);
     for (skip = ac / cols + 1, i = 0; i < skip; i++) {
         for (j = i; j < ac; j += skip) {
-            for (p = av[j], len = (int)strlen((char *)p), k = len; --k >= 0; p++)
+            for (p = av[j], len = strlen((char *)p), k = len; --k >= 0; p++)
                 tty_put(*p);
 
             if (j + skip < ac) {
-                while (++len < longest + 3)
+                while (++len < colwidth)
                     tty_put(' ');
-	    }
+            }
         }
 
         tty_puts(NEWLINE);
     }
 }
 
-static void reposition(void)
+static void reposition(int key)
 {
-    int i;
+    int len_with_prompt = prompt_len + rl_end;
+    int n =  len_with_prompt / tty_cols;                  /* determine the number of lines */
+    int i = 0;
 
     tty_put('\r');
-    tty_puts(rl_prompt);
-    for (i = 0; i < rl_point; i++)
+
+    if (n > 0) {
+        int line;
+
+	/* determine num of current line */
+        if (key == CTL('A') || key == CTL('E') || key == rl_kill)
+            line = (prompt_len + old_point) / tty_cols;
+        else
+            line = len_with_prompt / tty_cols;
+
+	/* move to end of line(s) */
+        if (key == CTL('E')) {
+	    int k;
+
+            for (k = line; k < n; k++)
+                tty_puts(line_down);
+
+	    /* determine reminder of last line and redraw only it */
+            i = rl_point - (len_with_prompt % tty_cols);
+        } else {
+	    int k;
+
+	    /* CTRL-A, CTRL-U, insert (end, middle), remove (end, middle) */
+            for (k = line; k > 0; k--)
+                tty_puts(line_up); /* redraw characters until changed data */
+
+            tty_puts(rl_prompt);
+        }
+    } else if (n == 0) {
+        tty_puts(rl_prompt);
+    }
+
+    for (; i < rl_point; i++) {
         tty_show(rl_line_buffer[i]);
+
+	/* move to the next line */
+        if ((i + prompt_len + 1) % tty_cols == 0)
+            tty_put('\n');
+    }
 }
 
 static void left(el_status_t Change)
 {
     if (rl_point) {
-	tty_back();
-	if (ISMETA(rl_line_buffer[rl_point - 1])) {
-	    if (rl_meta_chars) {
-		tty_back();
-		tty_back();
-	    }
-	} else if (ISCTL(rl_line_buffer[rl_point - 1])) {
+        if ((rl_point + prompt_len) % tty_cols == 0) {
+            tty_puts(line_up);
+            tty_forwardn(tty_cols);
+        } else {
+            tty_back();
+        }
+
+        if (ISMETA(rl_line_buffer[rl_point - 1])) {
+            if (rl_meta_chars) {
+                tty_back();
+                tty_back();
+            }
+        } else if (ISCTL(rl_line_buffer[rl_point - 1])) {
             tty_back();
         }
     }
@@ -338,7 +407,10 @@ static void left(el_status_t Change)
 
 static void right(el_status_t Change)
 {
-    tty_show(rl_line_buffer[rl_point]);
+    if ((rl_point + prompt_len + 1) % tty_cols == 0)
+        tty_put('\n');
+    else
+        tty_show(rl_line_buffer[rl_point]);
 
     if (Change == CSmove)
         rl_point++;
@@ -379,23 +451,23 @@ static el_status_t do_forward(el_status_t move)
     do {
         p = &rl_line_buffer[rl_point];
 
-	/* Skip leading whitespace, like FSF Readline */
+        /* Skip leading whitespace, like FSF Readline */
         for ( ; rl_point < rl_end && (p[0] == ' ' || !is_alpha_num(p[0])); rl_point++, p++) {
             if (move == CSmove)
                 right(CSstay);
-	}
+        }
 
-	/* Skip to end of word, if inside a word. */
+        /* Skip to end of word, if inside a word. */
         for (; rl_point < rl_end && is_alpha_num(p[0]); rl_point++, p++) {
             if (move == CSmove)
                 right(CSstay);
-	}
+        }
 
-	/* Skip to next word, or skip leading white space if outside a word. */
+        /* Skip to next word, or skip leading white space if outside a word. */
         for ( ; rl_point < rl_end && (p[0] == ' ' || !is_alpha_num(p[0])); rl_point++, p++) {
             if (move == CSmove)
                 right(CSstay);
-	}
+        }
 
         if (rl_point == rl_end)
             break;
@@ -421,7 +493,7 @@ static el_status_t do_case(el_case_t type)
             end = rl_end;
 
         for (i = rl_point, p = &rl_line_buffer[i]; rl_point < end; p++) {
-	    if ((type == TOupper) || (type == TOcapitalize && rl_point == i)) {
+            if ((type == TOupper) || (type == TOcapitalize && rl_point == i)) {
                 if (islower(*p))
                     *p = toupper(*p);
             } else if (isupper(*p)) {
@@ -457,33 +529,54 @@ static void ceol(void)
 
     while (rl_point < 0) {
         tty_put(' ');
-	rl_point++;
-	extras++;
+        rl_point++;
     }
 
     for (i = rl_point, p = &rl_line_buffer[i]; i <= rl_end; i++, p++) {
-        tty_put(' ');
+        if ((i + prompt_len + 1) % tty_cols == 0){
+            tty_put(' ');
+            tty_put('\n');
+        }
+        else
+            tty_put(' ');
         if (ISMETA(*p)) {
-	    if (rl_meta_chars) {
-		tty_put(' ');
-		tty_put(' ');
-		extras += 2;
-	    }
-	} else if (ISCTL(*p)) {
+            if (rl_meta_chars) {
+                tty_put(' ');
+                tty_put(' ');
+                extras += 2;
+            }
+        } else if (ISCTL(*p)) {
             tty_put(' ');
             extras++;
         }
     }
 
-    for (i += extras; i > rl_point; i--)
-        tty_back();
+    for (i += extras; i > rl_point; i--) {
+        if ((i + prompt_len) % tty_cols == 0) {
+            tty_puts(line_up);
+            tty_forwardn(tty_cols);
+        } else {
+            tty_back();
+        }
+    }
 }
 
 static void clear_line(void)
 {
+    int n = (rl_point + prompt_len) / tty_cols;
     rl_point = -(int)strlen(rl_prompt);
-    tty_put('\r');
+
+    if (n > 0) {
+        for(int k = 0; k < n; k++)
+            tty_puts(line_up);
+        tty_put('\r');
+    }
+    else {
+        tty_put('\r');
+    }
+
     ceol();
+
     rl_point = 0;
     rl_end = 0;
     rl_line_buffer[0] = '\0';
@@ -498,7 +591,7 @@ static el_status_t insert_string(const char *p)
 
     len = strlen(p);
     if (rl_end + len >= Length) {
-	line = malloc(sizeof(char) * (Length + len + MEM_INC));
+        line = malloc(sizeof(char) * (Length + len + MEM_INC));
         if (!line)
             return CSstay;
 
@@ -533,28 +626,36 @@ int rl_insert_text(const char *text)
     return rl_point - mark;
 }
 
-static el_status_t redisplay(void)
+static el_status_t redisplay(int cls)
 {
-    /* XXX: Use "\r\e[K" to get really neat effect on ANSI capable terminals. */
-    tty_puts(CLEAR);
-    tty_puts(rl_prompt);
-    tty_string(rl_line_buffer);
+    if (cls)
+        tty_puts(CLEAR);
+    else
+        tty_puts("\r\e[K");
 
+    tty_puts(rl_prompt);
+    rl_point = 0;
+    tty_string(rl_line_buffer);
+    rl_point = rl_end;
     return CSmove;
+}
+
+static el_status_t refresh(void)
+{
+    return redisplay(1);
 }
 
 int rl_refresh_line(int ignore1 __attribute__((unused)), int ignore2 __attribute__((unused)))
 {
-    redisplay();
+    redisplay(0);
     return 0;
 }
 
 static el_status_t toggle_meta_mode(void)
 {
     rl_meta_chars = ! rl_meta_chars;
-    return redisplay();
+    return redisplay(0);
 }
-
 
 const char *el_next_hist(void)
 {
@@ -574,7 +675,7 @@ static el_status_t do_insert_hist(const char *p)
     clear_line();
 
     rl_point = 0;
-    reposition();
+    reposition(EOF);
     rl_end = 0;
 
     return insert_string(p);
@@ -596,7 +697,7 @@ static el_status_t do_hist(const char *(*move)(void))
 static el_status_t h_next(void)
 {
     if (el_no_hist)
-	return CSstay;
+        return CSstay;
 
     return do_hist(el_next_hist);
 }
@@ -604,7 +705,7 @@ static el_status_t h_next(void)
 static el_status_t h_prev(void)
 {
     if (el_no_hist)
-	return CSstay;
+        return CSstay;
 
     return do_hist(el_prev_hist);
 }
@@ -663,7 +764,7 @@ static const char *search_hist(const char *search, const char *(*move)(void))
         match = substrcmp;
         pat = search;
     }
-    len = (int)strlen(pat);
+    len = strlen(pat);
 
     pos = H.Pos;		/* Save H.Pos */
     while (move()) {
@@ -680,16 +781,17 @@ static el_status_t h_search_end(const char *p)
     rl_prompt = old_prompt;
     Searching = 0;
 
-    if (p == NULL && el_intr_pending > 0) {
+    if (el_intr_pending > 0) {
         el_intr_pending = 0;
         clear_line();
-        return redisplay();
+        return redisplay(0);
     }
 
     p = search_hist(p, search_move);
     if (p == NULL) {
         el_ring_bell();
-        return redisplay();
+        clear_line();
+        return redisplay(0);
     }
 
     return do_insert_hist(p);
@@ -708,8 +810,8 @@ static el_status_t h_search(void)
 
     search_move = Repeat == NO_ARG ? el_prev_hist : el_next_hist;
     if (line_handler) {
-	editinput(0);
-	return CSstay;
+        editinput(0);
+        return CSstay;
     }
 
     return h_search_end(editinput(1));
@@ -780,6 +882,7 @@ static el_status_t delete_string(int count)
     for (p = &rl_line_buffer[rl_point], i = rl_end - (rl_point + count) + 1; --i >= 0; p++)
         p[0] = p[count];
     ceol();
+
     rl_end -= count;
     tty_string(&rl_line_buffer[rl_point]);
 
@@ -820,7 +923,7 @@ static el_status_t kill_line(void)
         if (Repeat < rl_point) {
             i = rl_point;
             rl_point = Repeat;
-            reposition();
+            reposition(EOF);
             delete_string(i - rl_point);
         } else if (Repeat > rl_point) {
             right(CSmove);
@@ -889,7 +992,7 @@ static el_status_t end_line(void)
 
 static el_status_t del_char(void)
 {
-    return delete_string(Repeat == NO_ARG ? 1 : Repeat);
+    return delete_string(Repeat == NO_ARG ? CSeof : Repeat);
 }
 
 el_status_t el_del_char(void)
@@ -934,43 +1037,43 @@ static el_status_t meta(void)
     /* Also include VT-100 arrows. */
     if (c == '[' || c == 'O') {
         switch (tty_get()) {
-	case EOF:  return CSeof;
-	case '1':
-	{
-	    char seq[4] = { 0 };
+        case EOF:  return CSeof;
+        case '1':
+        {
+            char seq[4] = { 0 };
 
-	    for (c = 0; c < 3; c++)
-		seq[c] = tty_get();
+            for (c = 0; c < 3; c++)
+                seq[c] = tty_get();
 
-	    if (!strncmp(seq, ";5C", 3))
-		return fd_word(); /* Ctrl+Right */
-	    if (!strncmp(seq, ";5D", 3))
-		return bk_word(); /* Ctrl+Left */
+            if (!strncmp(seq, ";5C", 3))
+                return fd_word(); /* Ctrl+Right */
+            if (!strncmp(seq, ";5D", 3))
+                return bk_word(); /* Ctrl+Left */
 
-	    break;
-	}
-	case '2':  tty_get(); return CSstay;     /* Insert */
-	case '3':  tty_get(); return del_char(); /* Delete */
-	case '5':  tty_get(); return CSstay;     /* PgUp */
-	case '6':  tty_get(); return CSstay;     /* PgDn */
-	case 'A':  return h_prev();              /* Up */
-	case 'B':  return h_next();              /* Down */
-	case 'C':  return fd_char();             /* Left */
-	case 'D':  return bk_char();             /* Right */
-	case 'F':  return end_line();            /* End */
-	case 'H':  return beg_line();            /* Home */
-	default:                                 /* Fall through */
-	    break;
+            break;
+        }
+        case '2':  tty_get(); return CSstay;     /* Insert */
+        case '3':  tty_get(); return del_char(); /* Delete */
+        case '5':  tty_get(); return CSstay;     /* PgUp */
+        case '6':  tty_get(); return CSstay;     /* PgDn */
+        case 'A':  return h_prev();              /* Up */
+        case 'B':  return h_next();              /* Down */
+        case 'C':  return fd_char();             /* Left */
+        case 'D':  return bk_char();             /* Right */
+        case 'F':  return end_line();            /* End */
+        case 'H':  return beg_line();            /* Home */
+        default:                                 /* Fall through */
+            break;
         }
 
-	return el_ring_bell();
+        return el_ring_bell();
     }
 #endif /* CONFIG_ANSI_ARROWS */
 
     if (isdigit(c)) {
         for (Repeat = c - '0'; (c = tty_get()) != EOF && isdigit(c); )
             Repeat = Repeat * 10 + c - '0';
-	tty_push(c);
+        tty_push(c);
 
         return CSstay;
     }
@@ -995,7 +1098,7 @@ static el_status_t emacs(int c)
     old_point = rl_point;
 
     if (rl_meta_chars && ISMETA(c)) {
-	tty_push(UNMETA(c));
+        tty_push(UNMETA(c));
         return meta();
     }
 
@@ -1005,11 +1108,11 @@ static el_status_t emacs(int c)
     }
 
     if (kp->Function) {
-	s = kp->Function();
-	if (s == CSdispatch)	/* If Function is inhibited. */
-	    s = insert_char(c);
+        s = kp->Function();
+        if (s == CSdispatch)	/* If Function is inhibited. */
+            s = insert_char(c);
     } else {
-	s = insert_char(c);
+        s = insert_char(c);
     }
 
     if (!el_pushed) {
@@ -1047,12 +1150,13 @@ static el_status_t tty_special(int c)
 
     if (c == rl_kill) {
         if (rl_point != 0) {
+            old_point = rl_point;
             rl_point = 0;
-            reposition();
+            reposition(c);
         }
         Repeat = NO_ARG;
 
-	return kill_line();
+        return kill_line();
     }
 
 #ifdef CONFIG_EOF
@@ -1068,47 +1172,47 @@ static char *editinput(int complete)
     int c;
 
     do {
-	c = tty_get();
-	if (c == EOF)
-	    break;
+        c = tty_get();
+        if (c == EOF)
+            break;
 
         switch (tty_special(c)) {
-	case CSdone:
-	    return rl_line_buffer;
+        case CSdone:
+            return rl_line_buffer;
 
-	case CSeof:
-	    return NULL;
+        case CSeof:
+            return NULL;
 
-	case CSsignal:
-	    return (char *)"";
+        case CSsignal:
+            return (char *)"";
 
-	case CSmove:
-	    reposition();
-	    break;
+        case CSmove:
+            reposition(c);
+            break;
 
-	case CSdispatch:
-	    switch (emacs(c)) {
-	    case CSdone:
-		return rl_line_buffer;
+        case CSdispatch:
+            switch (emacs(c)) {
+            case CSdone:
+                return rl_line_buffer;
 
-	    case CSeof:
-		return NULL;
+            case CSeof:
+                return NULL;
 
-	    case CSsignal:
-		return (char *)"";
+            case CSsignal:
+                return (char *)"";
 
-	    case CSmove:
-		reposition();
-		break;
+            case CSmove:
+                reposition(c);
+                break;
 
-	    case CSdispatch:
-	    case CSstay:
-		break;
-	    }
-	    break;
+            case CSdispatch:
+            case CSstay:
+                break;
+            }
+            break;
 
-	case CSstay:
-	    break;
+        case CSstay:
+            break;
         }
     } while (complete);
 
@@ -1118,7 +1222,7 @@ static char *editinput(int complete)
 static void hist_alloc(void)
 {
     if (!H.Lines)
-	H.Lines = calloc(el_hist_size, sizeof(char *));
+        H.Lines = calloc(el_hist_size, sizeof(char *));
 }
 
 static void hist_add(const char *p)
@@ -1127,7 +1231,7 @@ static void hist_add(const char *p)
     char *s;
 
 #ifdef CONFIG_UNIQUE_HISTORY
-    if (H.Pos && strcmp(p, H.Lines[H.Pos - 1]) == 0)
+    if (H.Size && strcmp(p, H.Lines[H.Size - 1]) == 0)
         return;
 #endif
 
@@ -1155,17 +1259,20 @@ static char *read_redirected(void)
 
     p = line = malloc(sizeof(char) * size);
     if (!p)
-	return NULL;
+        return NULL;
 
     end = p + size;
     while (1) {
         if (p == end) {
-            long oldpos = end - line;
+            int oldpos = end - line;
 
             size += MEM_INC;
-            p = line = realloc(line, sizeof(char) * size);
-	    if (!p)
-		return NULL;
+            p = realloc(line, sizeof(char) * size);
+            if (!p) {
+		free(line);
+                return NULL;
+	    }
+	    line = p;
             end = p + size;
 
             p += oldpos;        /* Continue where we left off... */
@@ -1177,7 +1284,7 @@ static char *read_redirected(void)
             return NULL;
         }
 
-	if (*p == '\n')
+        if (*p == '\n')
             break;
         p++;
     }
@@ -1209,31 +1316,31 @@ void rl_reset_terminal(const char *terminal_name)
 #ifdef CONFIG_USE_TERMCAP
     bp = buf;
     if (-1 != tgetent(buf, el_term)) {
-	if ((backspace = tgetstr("le", &bp)) != NULL)
-	    backspace = strdup(backspace);
-	tty_cols = tgetnum("co");
-	tty_rows = tgetnum("li");
+        if ((backspace = tgetstr("le", &bp)) != NULL)
+            backspace = strdup(backspace);
+        tty_cols = tgetnum("co");
+        tty_rows = tgetnum("li");
     }
     /* Make sure to check width & rows and fallback to TIOCGWINSZ if available. */
 #endif
 
     if (tty_cols <= 0 || tty_rows <= 0) {
 #ifdef TIOCGWINSZ
-	if (ioctl(el_outfd, TIOCGWINSZ, &W) >= 0 && W.ws_col > 0 && W.ws_row > 0) {
-	    tty_cols = (int)W.ws_col;
-	    tty_rows = (int)W.ws_row;
-	    return;
-	}
+        if (ioctl(el_outfd, TIOCGWINSZ, &W) >= 0 && W.ws_col > 0 && W.ws_row > 0) {
+            tty_cols = (int)W.ws_col;
+            tty_rows = (int)W.ws_row;
+            return;
+        }
 #endif
-	tty_cols = SCREEN_COLS;
-	tty_rows = SCREEN_ROWS;
+        tty_cols = SCREEN_COLS;
+        tty_rows = SCREEN_ROWS;
     }
 }
 
 void rl_initialize(void)
 {
     if (!rl_prompt)
-	rl_prompt = "? ";
+        rl_prompt = "? ";
 
     hist_alloc();
 
@@ -1252,24 +1359,24 @@ void rl_uninitialize(void)
 
     /* Uninitialize the history */
     if (H.Lines) {
-	for (i = 0; i < el_hist_size; i++) {
-	    if (H.Lines[i])
-		free(H.Lines[i]);
-	    H.Lines[i] = NULL;
-	}
-	free(H.Lines);
-	H.Lines = NULL;
+        for (i = 0; i < el_hist_size; i++) {
+            if (H.Lines[i])
+                free(H.Lines[i]);
+            H.Lines[i] = NULL;
+        }
+        free(H.Lines);
+        H.Lines = NULL;
     }
     H.Size = 0;
     H.Pos = 0;
 
     if (old_search)
-	free(old_search);
+        free(old_search);
     old_search = NULL;
 
     /* Uninitialize the line buffer */
     if (rl_line_buffer)
-	free(rl_line_buffer);
+        free(rl_line_buffer);
     rl_line_buffer = NULL;
     Length = 0;
 }
@@ -1283,7 +1390,7 @@ void rl_save_prompt(void)
 void rl_restore_prompt(void)
 {
     if (rl_saved_prompt)
-	rl_prompt = rl_saved_prompt;
+        rl_prompt = rl_saved_prompt;
 }
 
 void rl_set_prompt(const char *prompt)
@@ -1298,7 +1405,7 @@ void rl_clear_message(void)
 
 void rl_forced_update_display()
 {
-    redisplay();
+    redisplay(0);
     tty_flush();
 }
 
@@ -1308,9 +1415,9 @@ static int el_prep(const char *prompt)
 
     if (!rl_line_buffer) {
         Length = MEM_INC;
-	rl_line_buffer = malloc(sizeof(char) * Length);
+        rl_line_buffer = malloc(sizeof(char) * Length);
         if (!rl_line_buffer)
-	    return -1;
+            return -1;
     }
 
     tty_info();
@@ -1319,18 +1426,20 @@ static int el_prep(const char *prompt)
     ScreenSize = SCREEN_INC;
     Screen = malloc(sizeof(char) * ScreenSize);
     if (!Screen)
-	return -1;
+        return -1;
 
     rl_prompt = prompt ? prompt : NILSTR;
-    if (el_no_echo) {
-	int old = el_no_echo;
+    prompt_len = strlen(rl_prompt);
 
-	el_no_echo = 0;
-	tty_puts(rl_prompt);
-	tty_flush();
-	el_no_echo = old;
+    if (el_no_echo) {
+        int old = el_no_echo;
+
+        el_no_echo = 0;
+        tty_puts(rl_prompt);
+        tty_flush();
+        el_no_echo = old;
     } else {
-	tty_puts(rl_prompt);
+        tty_puts(rl_prompt);
     }
 
     Repeat = NO_ARG;
@@ -1351,8 +1460,8 @@ static char *el_deprep(char *line)
 
     rl_deprep_term_function();
     if (Screen) {
-	free(Screen);
-	Screen = NULL;
+        free(Screen);
+        Screen = NULL;
     }
 
     free(H.Lines[--H.Size]);
@@ -1360,14 +1469,14 @@ static char *el_deprep(char *line)
 
     /* Add to history, unless no-echo or no-history mode ... */
     if (!el_no_echo && !el_no_hist) {
-	if (line != NULL && *line != '\0')
-	    hist_add(line);
+        if (line != NULL && *line != '\0')
+            hist_add(line);
     }
 
     if (el_intr_pending > 0) {
-	int signo = el_intr_pending;
+        int signo = el_intr_pending;
 
-	el_intr_pending = 0;
+        el_intr_pending = 0;
         kill(getpid(), signo);
     }
 
@@ -1377,7 +1486,7 @@ static char *el_deprep(char *line)
 void rl_callback_handler_install(const char *prompt, rl_vcpfunc_t *lhandler)
 {
     if (!lhandler)
-	return;
+        return;
     line_handler = lhandler;
 
     /*
@@ -1405,8 +1514,8 @@ void rl_callback_read_char(void)
     char *line;
 
     if (!line_handler) {
-	errno = EINVAL;
-	return;
+        errno = EINVAL;
+        return;
     }
 
     /*
@@ -1414,26 +1523,26 @@ void rl_callback_read_char(void)
      * This is the only point where we can tell user
      */
     if (!Screen || !rl_line_buffer) {
-	errno = ENOMEM;
-	line_handler(el_deprep(NULL));
-	return;
+        errno = ENOMEM;
+        line_handler(el_deprep(NULL));
+        return;
     }
 
     line = editinput(0);
     if (line) {
-	char *l;
+        char *l;
 
-	if (Searching) {
-	    h_search_end(line);
-	    tty_flush();
-	    return;
-	}
+        if (Searching) {
+            h_search_end(line);
+            tty_flush();
+            return;
+        }
 
-	l = el_deprep(line);
-	line_handler(l);
+        l = el_deprep(line);
+        line_handler(l);
 
-	if (el_prep(rl_prompt))
-	    line_handler(NULL);
+        if (el_prep(rl_prompt))
+            line_handler(NULL);
     }
     tty_flush();
 }
@@ -1441,7 +1550,7 @@ void rl_callback_read_char(void)
 void rl_callback_handler_remove(void)
 {
     if (!line_handler)
-	return;
+        return;
 
     el_deprep(NULL);
     line_handler = NULL;
@@ -1459,7 +1568,7 @@ char *readline(const char *prompt)
     }
 
     if (el_prep(prompt))
-	return NULL;
+        return NULL;
 
     return el_deprep(editinput(1));
 }
@@ -1483,41 +1592,39 @@ int read_history(const char *filename)
     char buf[SCREEN_INC];
 
     hist_alloc();
+
     fp = fopen(filename, "r");
-    if (fp) {
-	H.Size = 0;
-	while (H.Size < el_hist_size) {
-	    if (!fgets(buf, SCREEN_INC, fp))
-		break;
+    if (!fp)
+	return EOF;
 
-	    buf[strlen(buf) - 1] = 0; /* Remove '\n' */
-	    add_history(buf);
-	}
+    H.Size = 0;
+    while (H.Size < el_hist_size) {
+	if (!fgets(buf, SCREEN_INC, fp))
+	    break;
 
-	return fclose(fp);
+	buf[strlen(buf) - 1] = 0; /* Remove '\n' */
+	add_history(buf);
     }
 
-    return errno;
+    return fclose(fp);
 }
 
 int write_history(const char *filename)
 {
     FILE *fp;
+    int i = 0;
 
     hist_alloc();
+
     fp = fopen(filename, "w");
-    if (fp) {
-	int i = 0;
+    if (!fp)
+	return EOF;
 
-	while (i < H.Size)
-	    fprintf(fp, "%s\n", H.Lines[i++]);
+    while (i < H.Size)
+	fprintf(fp, "%s\n", H.Lines[i++]);
 
-	return fclose(fp);
-    }
-
-    return errno;
+    return fclose(fp);
 }
-
 
 /*
 **  Move back to the beginning of the current word and return an
@@ -1551,7 +1658,7 @@ char *el_find_word(void)
     while (p < &rl_line_buffer[rl_point]) {
         if (*p == '\\') {
             if (++p == &rl_line_buffer[rl_point])
-		break;
+                break;
         }
         *q++ = *p++;
     }
@@ -1591,7 +1698,7 @@ static el_status_t c_complete(void)
     el_status_t s = CSdone;
 
     if (rl_inhibit_complete)
-	return CSdispatch;
+        return CSdispatch;
 
     word = el_find_word();
     p = rl_complete(word, &unique);
@@ -1602,14 +1709,14 @@ static el_status_t c_complete(void)
         word = p;
 
         string = q = malloc(sizeof(char) * (2 * len + 1));
-	if (!string) {
-	    free(word);
-	    return CSstay;
-	}
+        if (!string) {
+            free(word);
+            return CSstay;
+        }
 
         while (*p) {
             if ((*p < ' ' || strchr(SEPS, *p) != NULL)
-		&& (!unique || p[1] != 0)) {
+                && (!unique || p[1] != 0)) {
                 *q++ = '\\';
             }
             *q++ = *p++;
@@ -1627,7 +1734,7 @@ static el_status_t c_complete(void)
         free(string);
 
         if (len > 0)
-	    return s;
+            return s;
     }
 
     return c_possible();
@@ -1767,7 +1874,7 @@ static int argify(char *line, char ***avp)
     i = MEM_INC;
     *avp = p = malloc(sizeof(char *) * i);
     if (!p)
-	return 0;
+        return 0;
 
     for (c = line; isspace(*c); c++)
         continue;
@@ -1777,26 +1884,26 @@ static int argify(char *line, char ***avp)
 
     for (ac = 0, p[ac++] = c; *c && *c != '\n'; ) {
         if (!isspace(*c)) {
-	    c++;
-	    continue;
-	}
+            c++;
+            continue;
+        }
 
-	*c++ = '\0';
-	if (*c && *c != '\n') {
-	    if (ac + 1 == i) {
-		arg = malloc(sizeof(char *) * (i + MEM_INC));
-		if (!arg) {
-		    p[ac] = NULL;
-		    return ac;
-		}
-		
-		memcpy(arg, p, i * sizeof(char *));
-		i += MEM_INC;
-		free(p);
-		*avp = p = arg;
-	    }
-	    p[ac++] = c;
-	}
+        *c++ = '\0';
+        if (*c && *c != '\n') {
+            if (ac + 1 == i) {
+                arg = malloc(sizeof(char *) * (i + MEM_INC));
+                if (!arg) {
+                    p[ac] = NULL;
+                    return ac;
+                }
+
+                memcpy(arg, p, i * sizeof(char *));
+                i += MEM_INC;
+                free(p);
+                *avp = p = arg;
+            }
+            p[ac++] = c;
+        }
     }
 
     *c = '\0';
@@ -1844,7 +1951,7 @@ static el_keymap_t Map[64] = {
     {   CTL('I'),       c_complete      },
     {   CTL('J'),       accept_line     },
     {   CTL('K'),       kill_line       },
-    {   CTL('L'),       redisplay       },
+    {   CTL('L'),       refresh         },
     {   CTL('M'),       accept_line     },
     {   CTL('N'),       h_next          },
     {   CTL('O'),       el_ring_bell    },
@@ -1894,13 +2001,13 @@ static size_t find_key_in_map(int key, el_keymap_t map[], size_t mapsz)
 {
     size_t i;
 
-    for (i = 0; map[i].Function && i < mapsz; i++) {
-	if (map[i].Key == key)
-	    return i;
+    for (i = 0; i < mapsz && map[i].Function; i++) {
+        if (map[i].Key == key)
+            return i;
     }
 
     if (i < mapsz)
-	return i;
+        return i;
 
     return mapsz;
 }
@@ -1912,8 +2019,8 @@ static el_status_t el_bind_key_in_map(int key, el_keymap_func_t function, el_key
     /* Must check that pos is not the next to last array position,
      * otherwise we will write out-of-bounds to terminate the list. */
     if (pos + 1 >= mapsz) {
-	errno = ENOMEM;
-	return CSeof;
+        errno = ENOMEM;
+        return CSeof;
     }
 
     /* Add at end, create new? */
@@ -1925,8 +2032,8 @@ static el_status_t el_bind_key_in_map(int key, el_keymap_func_t function, el_key
 
     /* Terminate list */
     if (creat) {
-	map[pos + 1].Key      = 0;
-	map[pos + 1].Function = NULL;
+        map[pos + 1].Key      = 0;
+        map[pos + 1].Function = NULL;
     }
 
     return CSdone;
@@ -1940,6 +2047,13 @@ el_status_t el_bind_key(int key, el_keymap_func_t function)
 el_status_t el_bind_key_in_metamap(int key, el_keymap_func_t function)
 {
     return el_bind_key_in_map(key, function, MetaMap, NELEMS(MetaMap));
+}
+
+rl_getc_func_t *rl_set_getc_func(rl_getc_func_t *func)
+{
+    rl_getc_func_t *old = rl_getc_function;
+    rl_getc_function = func;
+    return old;
 }
 
 /**

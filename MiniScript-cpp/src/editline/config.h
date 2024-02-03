@@ -7,7 +7,7 @@
 /* Define to include ANSI arrow keys support. */
 #define CONFIG_ANSI_ARROWS 1
 
-/* Define to enable EOF (Ctrl-C) key. */
+/* Define to enable EOF (Ctrl-D) key. */
 #define CONFIG_EOF 1
 
 /* Define to enable SIGINT (Ctrl-C) key. */
@@ -26,7 +26,7 @@
 /* #undef CONFIG_USE_TERMCAP */
 
 /* Define to 1 if `TIOCGWINSZ' requires <sys/ioctl.h>. */
-/* #undef GWINSZ_IN_SYS_IOCTL */
+#define GWINSZ_IN_SYS_IOCTL 1
 
 /* Define to 1 if you have the <dirent.h> header file, and it defines `DIR'.
    */
@@ -54,7 +54,7 @@
 /* #undef HAVE_LIBTINFO */
 
 /* Define to 1 if you have the <malloc.h> header file. */
-/* #undef HAVE_MALLOC_H */
+#define HAVE_MALLOC_H 1
 
 /* Define to 1 if you have the <memory.h> header file. */
 #define HAVE_MEMORY_H 1
@@ -120,14 +120,14 @@
 #define HAVE_TERMIOS_H 1
 
 /* Define to 1 if you have the <termio.h> header file. */
-/* #undef HAVE_TERMIO_H */
+#define HAVE_TERMIO_H 1
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #define HAVE_UNISTD_H 1
 
 /* Define to 1 if `lstat' dereferences a symlink specified with a trailing
    slash. */
-/* #undef LSTAT_FOLLOWS_SLASHED_SYMLINK */
+#define LSTAT_FOLLOWS_SLASHED_SYMLINK 1
 
 /* Define to the sub-directory where libtool stores uninstalled libraries. */
 #define LT_OBJDIR ".libs/"
@@ -142,7 +142,7 @@
 #define PACKAGE_NAME "editline"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "editline 1.16.0"
+#define PACKAGE_STRING "editline 1.17.1"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "editline"
@@ -151,7 +151,7 @@
 #define PACKAGE_URL ""
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "1.16.0"
+#define PACKAGE_VERSION "1.17.1"
 
 /* Define to 1 if the `S_IS*' macros in <sys/stat.h> do not work properly. */
 /* #undef STAT_MACROS_BROKEN */
@@ -163,7 +163,7 @@
 #define SYS_UNIX 1
 
 /* Version number of package */
-#define VERSION "1.16.0"
+#define VERSION "1.17.1"
 
 /* Define to `unsigned int' if <sys/types.h> does not define. */
 /* #undef size_t */
