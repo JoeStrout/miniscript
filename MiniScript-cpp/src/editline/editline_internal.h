@@ -23,34 +23,34 @@
 #ifndef EDITLINE_PRIVATE_H_
 #define EDITLINE_PRIVATE_H_
 
-#include <config.h>
+#include "config.h"
 #include <stdio.h>
-#ifdef HAVE_MALLOC_H
+#if HAVE_MALLOC_H
 #include <malloc.h>
 #endif
-#ifdef HAVE_STDLIB_H
+#if HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
-#ifdef HAVE_STRING_H
+#if HAVE_STRING_H
 #include <string.h>
 #endif
-#ifdef HAVE_DIRENT_H
+#if HAVE_DIRENT_H
 #include <dirent.h>
 #endif
-#ifdef HAVE_SIGNAL_H
+#if HAVE_SIGNAL_H
 #include <signal.h>
 #endif
-#ifdef SYS_UNIX
+#if SYS_UNIX
 #include "unix.h"
 #endif
-#ifdef SYS_OS9
+#if SYS_OS9
 #include "os9.h"
 #endif
 /* The following two are for TIOCGWINSZ */
-#ifdef HAVE_TERMIOS_H
+#if HAVE_TERMIOS_H
 # include <termios.h>
 #endif
-#ifdef GWINSZ_IN_SYS_IOCTL
+#if GWINSZ_IN_SYS_IOCTL
 # include <sys/ioctl.h>
 #endif
 
@@ -70,7 +70,7 @@ extern int	rl_erase;
 extern int	rl_intr;
 extern int	rl_kill;
 extern int	rl_quit;
-#ifdef CONFIG_SIGSTOP
+#if CONFIG_SIGSTOP
 extern int	rl_susp;
 #endif
 void  rl_ttyset(int Reset);
@@ -78,7 +78,7 @@ void  rl_add_slash(char *path, char *p);
 char *rl_complete(char *token, int *match);
 int   rl_list_possib(char *token, char ***av);
 
-#ifndef HAVE_STDLIB_H
+#if !defined(HAVE_STDLIB_H) || (HAVE_STDLIB_H == 0)
 extern char	*getenv(const char *name);
 extern char	*malloc(size_t size);
 extern char	*realloc(void *ptr, size_t size);
@@ -93,7 +93,7 @@ extern int	strlen(const char *s);
 extern int	strncmp(const char *s1, const char *s2, size_t n);
 #endif/* !HAVE_STDLIB_H */
 
-#ifndef HAVE_STRDUP
+#if !defined(HAVE_STRDUP) || (HAVE_STRDUP == 0)
 extern char	*strdup(const char *s);
 #endif
 

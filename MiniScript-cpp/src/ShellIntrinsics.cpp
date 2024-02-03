@@ -27,7 +27,7 @@
 #include <iostream>
 #include <memory>
 #include <stdexcept>
-#include <string>
+//#include <string>
 #include <array>
 
 #include <stdio.h>
@@ -35,9 +35,6 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <string.h>
-
-
-#include <stdio.h>
 #include <time.h>
 #if _WIN32 || _WIN64
 	#define WINDOWS 1
@@ -714,28 +711,51 @@ static IntrinsicResult intrinsic_writeLines(Context *context, IntrinsicResult pa
 }
 
 
-// Function to read from file descriptor into string
-std::string readFromFd(int fd) {
-    std::string output;
-    const int bufferSize = 128;
+// Helper function to read from file descriptor into string
+String readFromFd(int fd, bool trimTrailingNewline=true) {
+    String output;
+    const int bufferSize = 1024;
     char buffer[bufferSize];
     ssize_t bytesRead;
 
+	bool trimmed = false;
     while ((bytesRead = read(fd, buffer, bufferSize - 1)) > 0) {
         buffer[bytesRead] = '\0';
+		if (trimTrailingNewline and bytesRead < bufferSize-1 and bytesRead > 0 and buffer[bytesRead-1] == '\n') {
+			// Efficiently trim \n or \r\n from the end of the buffer
+			buffer[bytesRead-1] = '\0';
+			if (bytesRead > 1 and buffer[bytesRead-2] == '\r') {
+				buffer[bytesRead-2] = '\0';
+			}
+			trimmed = true;
+		}
         output += buffer;
     }
 
+	if (trimTrailingNewline && !trimmed) {
+		// Not-so-efficiently trim our final string, in the case where our data happened
+		// to exactly align with the buffer size, so we couldn't know we were at the
+		// end of it to trim it above.  (This is a rare edge case.)
+		int cut = 0;
+		if (output.LengthB() > 1 and output[-1] == '\n') {
+			cut = 1;
+			if (output.LengthB() > 2 and output[-2] == '\r') cut = 2;
+		}
+		if (cut) output = output.SubstringB(0, output.LengthB() - cut);
+	}
+	
     return output;
 }
 
 static IntrinsicResult intrinsic_exec(Context *context, IntrinsicResult partialResult) {
-	String cmd = context->GetVar("path").ToString();
+	String cmd = context->GetVar("cmd").ToString();
 
+	// Create a pipe each for stdout and stderr.
+	// File descriptor 0 of each is the read end; element 1 is the write end.
     int stdoutPipe[2];
     int stderrPipe[2];
-    pipe(stdoutPipe); // Create pipe for stdout
-    pipe(stderrPipe); // Create pipe for stderr
+    pipe(stdoutPipe);
+    pipe(stderrPipe);
 
     pid_t pid = fork(); // Fork the process
 
@@ -744,45 +764,48 @@ static IntrinsicResult intrinsic_exec(Context *context, IntrinsicResult partialR
     } else if (pid == 0) {
         // Child process.
 
-        dup2(stdoutPipe[1], STDOUT_FILENO); // Redirect stdout to pipe
-        dup2(stderrPipe[1], STDERR_FILENO); // Redirect stderr to pipe
-        close(stdoutPipe[0]); // Close read end of stdout pipe
-        close(stderrPipe[0]); // Close read end of stderr pipe
+		// Redirect stdout and stderr to our pipes, and then close the read ends.
+        dup2(stdoutPipe[1], STDOUT_FILENO);
+        dup2(stderrPipe[1], STDERR_FILENO);
+        close(stdoutPipe[0]);
+        close(stderrPipe[0]);
 
-		int returnCode = std::system(cmd.c_str());
+		// Call the host environment's command processor.  Or if the command
+		// is empty, then return a nonzero value iff the command processor exists.
+		const char* cmdPtr = cmd.empty() ? NULL : cmd.c_str();
+		int cmdResult = std::system(cmdPtr);
 
-        // execl only returns on error
-        exit(1);
+		// All done!  Exit the child process and return the result.
+        exit(cmdResult);
     }
-
 	// Parent process.
-	close(stdoutPipe[1]); // Close write end of stdout pipe
-	close(stderrPipe[1]); // Close write end of stderr pipe
 
-	// Wait for child process to finish
+	// Close the write end of the pipes.
+	close(stdoutPipe[1]);
+	close(stderrPipe[1]);
+
+	// Wait for child process to finish.
+	// ToDo: make this not block the parent process, by using partialResult.
 	int returnCode = 12345;
-	wait(&returnCode);
+	wait(&returnCode);		// for some reason, this is not modifying returnCode as it should!
 
-	// Read from pipes
-	std::string stdoutContent = readFromFd(stdoutPipe[0]);
-	std::string stderrContent = readFromFd(stderrPipe[0]);
+	// Read output from pipes, then close them.
+	String stdoutContent = readFromFd(stdoutPipe[0]);
+	String stderrContent = readFromFd(stderrPipe[0]);
 
 	close(stdoutPipe[0]);
 	close(stderrPipe[1]);
 
+	// Build our result map.
 	ValueDict result;
-	if (result.Count() == 0) {
-		result.SetValue("stdout", Value(stdoutContent.c_str()));
-		result.SetValue("stderr", Value(stderrContent.c_str()));
-		result.SetValue("returnCode", Value(returnCode));
-	} else {
-		Error("Unable to generate results.");
-	}
+	result.SetValue("output", Value(stdoutContent.c_str()));
+	result.SetValue("errors", Value(stderrContent.c_str()));
+	result.SetValue("result", Value(returnCode));
 	return IntrinsicResult(result);
 }
 
 static bool disallowAssignment(ValueDict& dict, Value key, Value value) {
-return true;
+	return true;
 }
 
 static IntrinsicResult intrinsic_File(Context *context, IntrinsicResult partialResult) {
@@ -1091,6 +1114,6 @@ void AddShellIntrinsics() {
 	i_writeLines->code = &intrinsic_writeLines;
 	
 	f = Intrinsic::Create("exec");
-	f->AddParam("path");
+	f->AddParam("cmd");
 	f->code = &intrinsic_exec;
 }
