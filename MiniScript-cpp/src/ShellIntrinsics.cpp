@@ -29,11 +29,10 @@
 #include <stdexcept>
 //#include <string>
 #include <array>
+#include <vector>
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <sys/wait.h>
 #include <string.h>
 #include <time.h>
 #if _WIN32 || _WIN64
@@ -42,6 +41,8 @@
 	#include <Shlwapi.h>
 	#include <Fileapi.h>
 	#include <direct.h>
+	#include <locale>
+	#include <codecvt>
 	#define getcwd _getcwd
 	#define setenv _setenv
 	#define PATHSEP '\\'
@@ -59,6 +60,8 @@
 		#include <sys/sendfile.h>
 	#endif
 	#define PATHSEP '/'
+	#include <unistd.h>
+	#include <sys/wait.h>
 #endif
 
 extern "C" {
@@ -710,7 +713,135 @@ static IntrinsicResult intrinsic_writeLines(Context *context, IntrinsicResult pa
 	return IntrinsicResult((int)written);
 }
 
+#if WINDOWS
+// timeout : The time to wait in milliseconds before killing the child process.
+bool CreateChildProcess(const std::string& cmd, std::string& out, std::string& err, DWORD& returnCode, DWORD timeout) {
+	SECURITY_ATTRIBUTES saAttr;
+	saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
+	saAttr.bInheritHandle = TRUE;
+	saAttr.lpSecurityDescriptor = NULL;
 
+	HANDLE hChildStd_OUT_Rd = NULL;
+	HANDLE hChildStd_OUT_Wr = NULL;
+	HANDLE hChildStd_ERR_Rd = NULL;
+	HANDLE hChildStd_ERR_Wr = NULL;
+
+	// Create a pipe for the child process's STDOUT.
+	if (!CreatePipe(&hChildStd_OUT_Rd, &hChildStd_OUT_Wr, &saAttr, 0))
+		return false;
+
+	// Ensure the read handle to the pipe for STDOUT is not inherited.
+	SetHandleInformation(hChildStd_OUT_Rd, HANDLE_FLAG_INHERIT, 0);
+
+	// Create a pipe for the child process's STDERR.
+	if (!CreatePipe(&hChildStd_ERR_Rd, &hChildStd_ERR_Wr, &saAttr, 0))
+		return false;
+
+	// Ensure the read handle to the pipe for STDERR is not inherited.
+	SetHandleInformation(hChildStd_ERR_Rd, HANDLE_FLAG_INHERIT, 0);
+
+	STARTUPINFO siStartInfo;
+	ZeroMemory(&siStartInfo, sizeof(STARTUPINFO));
+	siStartInfo.cb = sizeof(STARTUPINFO);
+	siStartInfo.hStdError = hChildStd_ERR_Wr;
+	siStartInfo.hStdOutput = hChildStd_OUT_Wr;
+	siStartInfo.dwFlags |= STARTF_USESTDHANDLES;
+
+	PROCESS_INFORMATION piProcInfo;
+	ZeroMemory(&piProcInfo, sizeof(PROCESS_INFORMATION));
+
+	// Start the child process.
+	if (!CreateProcessA(NULL,
+		// (LPWSTR)cmd.c_str(), // command line
+		(LPSTR)cmd.c_str(), // command line
+		NULL,               // process security attributes
+		NULL,               // primary thread security attributes
+		TRUE,               // handles are inherited
+		0,                  // creation flags
+		NULL,               // use parent's environment
+		NULL,               // use parent's current directory
+		&siStartInfo,       // STARTUPINFO pointer
+		&piProcInfo))       // receives PROCESS_INFORMATION
+	{
+		return false;
+	}
+
+	// Close handles to the stdin and stdout pipes no longer needed by the child process.
+	// If they are not explicitly closed, there is no way to recognize that the child process has completed.
+	CloseHandle(hChildStd_OUT_Wr);
+	CloseHandle(hChildStd_ERR_Wr);
+
+	// Read output from the child process's pipe for STDOUT
+	// and print to the parent process's STDOUT.
+	DWORD dwRead;
+	CHAR chBuf[4096];
+	bool bSuccess = FALSE;
+
+	for (;;) {
+		bSuccess = ReadFile(hChildStd_OUT_Rd, chBuf, 4096, &dwRead, NULL);
+		if (!bSuccess || dwRead == 0) break;
+
+		std::string outputStr(chBuf, chBuf + dwRead / sizeof(wchar_t));
+		out += outputStr;
+	}
+
+	// Read from STDERR
+	for (;;) {
+		bSuccess = ReadFile(hChildStd_ERR_Rd, chBuf, 4096, &dwRead, NULL);
+		if (!bSuccess || dwRead == 0) break;
+
+		std::string errorStr(chBuf, chBuf + dwRead / sizeof(wchar_t));
+		err += errorStr;
+	}
+
+	// Wait until child process exits or timeout
+	DWORD waitResult = WaitForSingleObject(piProcInfo.hProcess, timeout);
+	if (waitResult == WAIT_TIMEOUT) {
+		// If the process is still running after the timeout, terminate it
+		TerminateProcess(piProcInfo.hProcess, 1); // Use 1 or another number to indicate forced termination
+		
+		err += "Timed out";
+		returnCode = 124 << 8;	// (124 is status code used by `timeout` command)
+	}
+
+	// Regardless of the outcome, try to get the exit code
+	if (!GetExitCodeProcess(piProcInfo.hProcess, &returnCode)) {
+		returnCode = (DWORD)-1; // Use -1 or another value to indicate that getting the exit code failed
+	}
+
+	// Close handles to the child process and its primary thread.
+	CloseHandle(piProcInfo.hProcess);
+	CloseHandle(piProcInfo.hThread);
+
+	// Close the remaining pipe handles.
+	CloseHandle(hChildStd_OUT_Rd);
+	CloseHandle(hChildStd_ERR_Rd);
+
+	return true;
+}
+
+static IntrinsicResult intrinsic_exec(Context* context, IntrinsicResult partialResult) {
+	//std::string cmd = "cmd /k dir c:\\";
+	std::string cmd = context->GetVar("cmd").ToString().c_str();
+	std::string out;
+	std::string err;
+	DWORD returnCode;
+
+	double timeoutSecs = context->GetVar("timeout").DoubleValue();
+	double timeoutMs = (timeoutSecs == 0) ? INFINITE : (timeoutSecs * 1000);
+
+	if (!CreateChildProcess(cmd, out, err, returnCode, timeoutMs)) {
+		Error("Failed to create child process.");
+	}
+
+	// Build our result map.
+	ValueDict result;
+	result.SetValue("output", Value(out.c_str()));
+	result.SetValue("errors", Value(err.c_str()));
+	result.SetValue("status", Value(returnCode));
+	return IntrinsicResult(result);
+}
+#else
 // Helper function to read from file descriptor into string
 String readFromFd(int fd, bool trimTrailingNewline=true) {
     String output;
@@ -840,6 +971,7 @@ static IntrinsicResult intrinsic_exec(Context *context, IntrinsicResult partialR
 	result.SetValue("status", Value(WEXITSTATUS(returnCode)));
 	return IntrinsicResult(result);
 }
+#endif
 
 static bool disallowAssignment(ValueDict& dict, Value key, Value value) {
 	return true;

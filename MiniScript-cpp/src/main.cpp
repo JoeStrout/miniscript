@@ -8,6 +8,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <string>
 #include "MiniScript/SimpleString.h"
 #include "MiniScript/UnicodeUtil.h"
 #include "MiniScript/UnitTest.h"
