@@ -21,13 +21,13 @@
 #include "MiniScript/SplitJoin.h"
 #include "whereami/whereami.h"
 #include "DateTimeUtils.h"
+#include "ShellExec.h"
 
 #include <cstdlib>
 #include <sstream>
 #include <iostream>
 #include <memory>
 #include <stdexcept>
-//#include <string>
 #include <array>
 #include <vector>
 
@@ -715,7 +715,7 @@ static IntrinsicResult intrinsic_writeLines(Context *context, IntrinsicResult pa
 
 #if WINDOWS
 // timeout : The time to wait in milliseconds before killing the child process.
-bool CreateChildProcess(const std::string& cmd, std::string& out, std::string& err, DWORD& returnCode, DWORD timeout) {
+bool CreateChildProcess(const String& cmd, String& out, String& err, DWORD& returnCode, DWORD timeout) {
 	SECURITY_ATTRIBUTES saAttr;
 	saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
 	saAttr.bInheritHandle = TRUE;
@@ -752,7 +752,6 @@ bool CreateChildProcess(const std::string& cmd, std::string& out, std::string& e
 
 	// Start the child process.
 	if (!CreateProcessA(NULL,
-		// (LPWSTR)cmd.c_str(), // command line
 		(LPSTR)cmd.c_str(), // command line
 		NULL,               // process security attributes
 		NULL,               // primary thread security attributes
@@ -781,7 +780,7 @@ bool CreateChildProcess(const std::string& cmd, std::string& out, std::string& e
 		bSuccess = ReadFile(hChildStd_OUT_Rd, chBuf, 4096, &dwRead, NULL);
 		if (!bSuccess || dwRead == 0) break;
 
-		std::string outputStr(chBuf, chBuf + dwRead / sizeof(wchar_t));
+		String outputStr(chBuf, dwRead);
 		out += outputStr;
 	}
 
@@ -790,7 +789,7 @@ bool CreateChildProcess(const std::string& cmd, std::string& out, std::string& e
 		bSuccess = ReadFile(hChildStd_ERR_Rd, chBuf, 4096, &dwRead, NULL);
 		if (!bSuccess || dwRead == 0) break;
 
-		std::string errorStr(chBuf, chBuf + dwRead / sizeof(wchar_t));
+		String errorStr(chBuf, dwRead);
 		err += errorStr;
 	}
 
@@ -821,10 +820,9 @@ bool CreateChildProcess(const std::string& cmd, std::string& out, std::string& e
 }
 
 static IntrinsicResult intrinsic_exec(Context* context, IntrinsicResult partialResult) {
-	//std::string cmd = "cmd /k dir c:\\";
-	std::string cmd = context->GetVar("cmd").ToString().c_str();
-	std::string out;
-	std::string err;
+	String cmd = "cmd /k " + context->GetVar("cmd").ToString();
+	String out;
+	String err;
 	DWORD returnCode;
 
 	double timeoutSecs = context->GetVar("timeout").DoubleValue();
@@ -836,47 +834,13 @@ static IntrinsicResult intrinsic_exec(Context* context, IntrinsicResult partialR
 
 	// Build our result map.
 	ValueDict result;
-	result.SetValue("output", Value(out.c_str()));
-	result.SetValue("errors", Value(err.c_str()));
+	result.SetValue("output", Value(out));
+	result.SetValue("errors", Value(err));
 	result.SetValue("status", Value(returnCode));
 	return IntrinsicResult(result);
 }
 #else
-// Helper function to read from file descriptor into string
-String readFromFd(int fd, bool trimTrailingNewline=true) {
-    String output;
-    const int bufferSize = 1024;
-    char buffer[bufferSize];
-    ssize_t bytesRead;
 
-	bool trimmed = false;
-    while ((bytesRead = read(fd, buffer, bufferSize - 1)) > 0) {
-        buffer[bytesRead] = '\0';
-		if (trimTrailingNewline and bytesRead < bufferSize-1 and bytesRead > 0 and buffer[bytesRead-1] == '\n') {
-			// Efficiently trim \n or \r\n from the end of the buffer
-			buffer[bytesRead-1] = '\0';
-			if (bytesRead > 1 and buffer[bytesRead-2] == '\r') {
-				buffer[bytesRead-2] = '\0';
-			}
-			trimmed = true;
-		}
-        output += buffer;
-    }
-
-	if (trimTrailingNewline && !trimmed) {
-		// Not-so-efficiently trim our final string, in the case where our data happened
-		// to exactly align with the buffer size, so we couldn't know we were at the
-		// end of it to trim it above.  (This is a rare edge case.)
-		int cut = 0;
-		if (output.LengthB() > 1 and output[-1] == '\n') {
-			cut = 1;
-			if (output.LengthB() > 2 and output[-2] == '\r') cut = 2;
-		}
-		if (cut) output = output.SubstringB(0, output.LengthB() - cut);
-	}
-	
-    return output;
-}
 
 static IntrinsicResult intrinsic_exec(Context *context, IntrinsicResult partialResult) {
 	double now = context->vm->RunTime();
@@ -885,91 +849,29 @@ static IntrinsicResult intrinsic_exec(Context *context, IntrinsicResult partialR
 		// given command, and return a partial result we can use to check on its progress.
 		String cmd = context->GetVar("cmd").ToString();
 		double timeout = context->GetVar("timeout").DoubleValue();
-
-		// Create a pipe each for stdout and stderr.
-		// File descriptor 0 of each is the read end; element 1 is the write end.
-		int stdoutPipe[2];
-		int stderrPipe[2];
-		pipe(stdoutPipe);
-		pipe(stderrPipe);
-		
-		pid_t pid = fork(); // Fork the process
-		
-		if (pid == -1) {
-			Error("Failed to fork the child process.");
-		} else if (pid == 0) {
-			// Child process.
-			
-			// Redirect stdout and stderr to our pipes, and then close the read ends.
-			dup2(stdoutPipe[1], STDOUT_FILENO);
-			dup2(stderrPipe[1], STDERR_FILENO);
-			close(stdoutPipe[0]);
-			close(stderrPipe[0]);
-			
-			// Call the host environment's command processor.  Or if the command
-			// is empty, then return a nonzero value iff the command processor exists.
-			const char* cmdPtr = cmd.empty() ? NULL : cmd.c_str();
-			int cmdResult = std::system(cmdPtr);
-			cmdResult = WEXITSTATUS(cmdResult);
-			
-			// All done!  Exit the child process and return the result.
-			exit(cmdResult);
-		}
-		// Parent process.
-		
-		// Close the write end of the pipes.
-		close(stdoutPipe[1]);
-		close(stderrPipe[1]);
-		
-		// As our partial result, return a list with the pid, the two read pipes, and the final time.
 		ValueList data;
-		data.Add(Value(pid));
-		data.Add(Value(stdoutPipe[0]));
-		data.Add(Value(stderrPipe[0]));
-		data.Add(Value(now + timeout));
-		return IntrinsicResult(data, false);
+		if (BeginExec(cmd, timeout, now, &data)) {
+			return IntrinsicResult(data, false);
+		}
+		return IntrinsicResult::Null;
 	}
 	
 	// This is a subsequent entry to intrinsic_exec, where we've already forked
-	// the subprocess, and now we're waiting for it to finish.
-	// Start by getting the pid, the two read pipes, and the final time out of the partial result.
+	// the subprocess, and now we're waiting for it to finish.	al time out of the partial result.
 	ValueList data = partialResult.Result().GetList();
-	int pid = data[0].IntValue();
-	int stdoutPipe = data[1].IntValue();
-	int stderrPipe = data[2].IntValue();
-	double finalTime = data[3].DoubleValue();
-	
-	// Then, see if the child process has finished.
-	int returnCode;
-	String stdoutContent, stderrContent;
-	int waitResult = waitpid(pid, &returnCode, WUNTRACED | WNOHANG);
-	//std::cout << "waitpid returned " << waitResult << ", returnCode is " << returnCode << std::endl;
-	if (waitResult <= 0) {
-		// Child process not finished yet.
-		if (now < finalTime) {
-			// Not timed out, either — keep waiting.
-			return IntrinsicResult(data, false);
-		}
-
-		// We've waited too long.  Time out.
-		stderrContent = "Timed out";
-		returnCode = 124 << 8;	// (124 is status code used by `timeout` command)
+	String stdOut, stdErr;
+	int status = -1;
+	if (FinishExec(data, now, &stdOut, &stdErr, &status)) {
+		// All done!
+		ValueDict result;
+		result.SetValue("output", Value(stdOut));
+		result.SetValue("errors", Value(stdErr));
+		result.SetValue("status", Value(status));
+		return IntrinsicResult(result);
 	} else {
-		// Child process completed successfully.  Huzzah!
-		// Read output from pipes.
-		stdoutContent = readFromFd(stdoutPipe);
-		stderrContent = readFromFd(stderrPipe);
+		// Not done yet.
+		return IntrinsicResult(data, false);
 	}
-	// Close our pipes.
-	close(stdoutPipe);
-	close(stderrPipe);
-
-	// Build our result map.
-	ValueDict result;
-	result.SetValue("output", Value(stdoutContent.c_str()));
-	result.SetValue("errors", Value(stderrContent.c_str()));
-	result.SetValue("status", Value(WEXITSTATUS(returnCode)));
-	return IntrinsicResult(result);
 }
 #endif
 

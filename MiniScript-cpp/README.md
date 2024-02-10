@@ -4,13 +4,13 @@ This folder contains the source code of the C++ implementation of the [MiniScrip
 
 ## Building
 
-MiniScript is built with CMake. You can generate your desired flavour of build files as usual from either the CMake GUI or using `cmake` on the commandline. If you are unfamiliar with CMake and want to build right now, use the GUI, or follow these command-line steps:
+MiniScript is built with CMake. You can generate your desired flavour of build files as usual from either the CMake GUI or using `cmake` on the commandline. If you are unfamiliar with CMake and want to build right now, use the GUI, or follow the command-line steps below.
 
 1. Create a directory in this (MiniScript-cpp) folder called `build`.  (Don't worry, it will be ignored by git.)
 
 2. `cd build` to change to that build directory.
 
-3. `cmake ../..` to generate a makefile and related files in the build directory.
+3. `cmake ../..` (or on Windows, `cmake ..\..`) to generate a makefile and related files in the build directory.
 
 4. `cmake --build .` to actually do the build.
 
