@@ -53,6 +53,7 @@ set(MINISCRIPT_HEADERS
 set(MINICMD_HEADERS
 	MiniScript-cpp/src/DateTimeUtils.h
 	MiniScript-cpp/src/OstreamSupport.h
+	MiniScript-cpp/src/ShellExec.h
 	MiniScript-cpp/src/ShellIntrinsics.h
 	MiniScript-cpp/src/editline/editline.h
 	MiniScript-cpp/src/editline/unix.h
@@ -93,6 +94,7 @@ add_executable(minicmd
 	MiniScript-cpp/src/DateTimeUtils.cpp
 	MiniScript-cpp/src/OstreamSupport.cpp
 	MiniScript-cpp/src/ShellIntrinsics.cpp
+	MiniScript-cpp/src/ShellExec.cpp
 	MiniScript-cpp/src/whereami/whereami.c
 	${EDITLINE_SRC}
 	${MINICMD_HEADERS}

@@ -18,7 +18,7 @@
 	#include <codecvt>
 #else
 	#include <unistd.h>	// for read()
-
+	#include <sys/wait.h>   // for waitpid()
 #endif
 
 
