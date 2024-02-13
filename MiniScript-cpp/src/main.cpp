@@ -60,7 +60,11 @@ static void PrintHelp(String cmdPath) {
 	Print(String("usage: ") + cmdPath + " [option] ... [-c cmd | file | -]");
 	Print("Options and arguments:");
 	Print("-c cmd : program passed in as String (terminates option list)");
+	Print("--dumpTAC : print intermediate code");
 	Print("-h     : print this help message and exit (also -? or --help)");
+	Print("-i     : enter interactive mode after executing 'file'");
+	Print("--itest suite_file : run integration tests");
+	Print("-q     : suppress header info");
 	Print("file   : program read from script file");
 	Print("-      : program read from stdin (default; interactive mode if a tty)");
 }
@@ -71,10 +75,7 @@ void ConfigInterpreter(Interpreter &interp) {
 	interp.implicitOutput = &Print;
 }
 
-static int DoREPL() {
-	Interpreter interp;
-	ConfigInterpreter(interp);
-	
+static int DoREPL(Interpreter &interp) {
 	while (true) {
 		const char *prompt;
 		if (interp.NeedMoreInput()) {
@@ -110,9 +111,7 @@ static int DoREPL() {
 	}
 }
 
-static int DoCommand(String cmd) {
-	Interpreter interp;
-	ConfigInterpreter(interp);
+static int DoCommand(Interpreter &interp, String cmd) {
 	interp.Reset(cmd);
 	interp.Compile();
 	
@@ -139,7 +138,7 @@ static int DoCommand(String cmd) {
 	return -1;
 }
 
-static int DoScriptFile(String path) {
+static int DoScriptFile(Interpreter &interp, String path) {
 	// Read the file
 	List<String> source;
 	std::ifstream infile(path.c_str());
@@ -157,7 +156,7 @@ static int DoScriptFile(String path) {
 	if (source.Count() > 0 and source[0].StartsWith("#!")) source[0] = "// " + source[0];
 	
 	// Concatenate and execute the code.
-	return DoCommand(Join("\n", source));
+	return DoCommand(interp, Join("\n", source));
 }
 
 static List<String> testOutput;
@@ -279,19 +278,25 @@ int main(int argc, const char * argv[]) {
 	AddScriptPathVar("");
 	AddShellIntrinsics();
 	
+	Interpreter interp;
+	ConfigInterpreter(interp);
+	
+	bool launchReplAfterScript = false;
 	for (int i=1; i<argc; i++) {
 		String arg = argv[i];
 		if (arg == "-h" or arg == "-?" or arg == "--help") {
 			PrintHeaderInfo();
 			PrintHelp(argv[0]);
 			return 0;
+		} else if (arg == "-i") {
+			launchReplAfterScript = true;
 		} else if (arg == "-q") {
 			printHeaderInfo = false;
 		} else if (arg == "-c") {
 			i++;
 			if (i >= argc) return ReturnErr("Command expected after -c option");
 			String cmd = argv[i];
-			return DoCommand(cmd);
+			return DoCommand(interp, cmd);
 		} else if (arg == "--dumpTAC") {
 			dumpTAC = true;
 		} else if (arg == "--itest") {
@@ -303,20 +308,23 @@ int main(int argc, const char * argv[]) {
 		} else if (arg == "-") {
 			PrintHeaderInfo();
 			PrepareShellArgs(argc, argv, i);
-			return DoREPL();
+			return DoREPL(interp);
 		} else if (not arg.StartsWith("-")) {
 			PrepareShellArgs(argc, argv, i);
 			AddScriptPathVar(arg.c_str());
-			return DoScriptFile(arg);
+			int rc = DoScriptFile(interp, arg);
+			if (!launchReplAfterScript) return rc;
 		} else {
 			PrintHeaderInfo();
 			return ReturnErr(String("Unknown option: ") + arg);
 		}
 	}
 	
-	// If we get to here, then we exhausted all our options without actually doing
-	// anything.  So, by default, drop into the REPL.
+	// If we get to here, then we exhausted all our options.
+	// (We might have executed a script by this point if `-i` was provided.)
+	// Drop into the REPL.
+	if (launchReplAfterScript) std::cout << std::endl;  // separate visualy script's output from REPL
 	PrintHeaderInfo();
 	PrepareShellArgs(argc, argv, 1);
-	return DoREPL();
+	return DoREPL(interp);
 }
