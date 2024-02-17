@@ -41,13 +41,16 @@ namespace MiniScript {
 		void* hostData;
 		
 		/// vm: the virtual machine this interpreter is running.  Most applications will
-		/// not need to use this, but it's provided for advanced users.
+		/// not need to access this, but it's provided for advanced users.
 		Machine *vm;
 		
 		/// Constructors
 		Interpreter();
 		Interpreter(String source);
 		Interpreter(List<String> source);
+		
+		/// Destructor
+		~Interpreter();
 		
 		/// <summary>
 		/// done: returns true when we don't have a virtual machine, or we do have

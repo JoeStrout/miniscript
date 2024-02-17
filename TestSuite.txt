@@ -1022,6 +1022,12 @@ x = 3
 ----------------------------------------------------------------------
 Compiler Error: got Unknown($) where EOL is required [line 2]
 ======================================================================
+==== Line breaks in string literals are disallowed.
+s = "Hello
+world!"
+----------------------------------------------------------------------
+Lexer Error: missing closing quote (") [line 1]
+======================================================================
 ==== Run-time error reporting test.
 x = 1
 x = noSuchThingy

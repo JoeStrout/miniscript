@@ -27,6 +27,13 @@ namespace MiniScript {
 		Reset(source);
 	}
 
+	Interpreter::~Interpreter() {
+		// We own the parser and the VM...
+		delete(parser); parser = nullptr;
+		delete(vm); vm = nullptr;
+		// But we do not own hostData; it's up to the host to deal with that.
+	}
+
 	void Interpreter::Reset(List<String> source) {
 		Reset(Join("\n", source));
 	}

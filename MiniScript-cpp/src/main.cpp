@@ -168,12 +168,14 @@ static void DoOneIntegrationTest(List<String> sourceLines, long sourceLineNum,
 				 List<String> expectedOutput, long outputLineNum) {
 //	std::cout << "Running test starting at line " << sourceLineNum << std::endl;
 	
-	Interpreter miniscript(sourceLines);
-	miniscript.standardOutput = &PrintToTestOutput;
-	miniscript.errorOutput = &PrintToTestOutput;
-	miniscript.implicitOutput = &PrintToTestOutput;
 	testOutput.Clear();
-	miniscript.RunUntilDone(60, false);
+	{
+		Interpreter miniscript(sourceLines);
+		miniscript.standardOutput = &PrintToTestOutput;
+		miniscript.errorOutput = &PrintToTestOutput;
+		miniscript.implicitOutput = &PrintToTestOutput;
+		miniscript.RunUntilDone(60, false);
+	}
 	
 	long minLen = expectedOutput.Count() < testOutput.Count() ? expectedOutput.Count() : testOutput.Count();
 	for (long i = 0; i < minLen; i++) {
@@ -194,6 +196,7 @@ static void DoOneIntegrationTest(List<String> sourceLines, long sourceLineNum,
 			Print("  EXTRA: " + testOutput[i]);
 		}
 	}
+	testOutput.Clear();
 }
 
 void RunIntegrationTests(String path) {
