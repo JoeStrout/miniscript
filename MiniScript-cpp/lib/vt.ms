@@ -95,8 +95,8 @@ color.yellow = 226
 cursor = {}
 cursor.up = function(n=1); return esc + "[" + n + "A"; end function
 cursor.down = function(n=1); return esc + "[" + n + "B"; end function
-cursor.left = function(n=1); return esc + "[" + n + "C"; end function
-cursor.right = function(n=1); return esc + "[" + n + "D"; end function
+cursor.left = function(n=1); return esc + "[" + n + "D"; end function
+cursor.right = function(n=1); return esc + "[" + n + "C"; end function
 cursor.nextLine = esc + "E"
 cursor.home = esc + "[f"		// (moves cursor to upper left)
 cursor.save = esc + "7"
