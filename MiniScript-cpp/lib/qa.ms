@@ -32,10 +32,10 @@ end function
 // assertEqual: abort if the first two parameters are not equal.
 // Additional descriptive note is optional.
 assertEqual = function(actual, expected, note)
-	if actual == expected then return
+	if @actual == @expected then return
 	msg = "Assert failed"
 	if note != null then msg = msg + " (" + note + ")"
-	msg = msg + ": expected `" + expected + "`, but got `" + actual + "`"
+	msg = msg + ": expected `" + @expected + "`, but got `" + @actual + "`"
 	abort msg
 end function
 
@@ -50,7 +50,9 @@ typeOf = function(value)
 	if value isa map then
 		mapType = value
 		if value.hasIndex("__isa") then mapType = value.__isa
-		if namedMaps.hasIndex(mapType) then return namedMaps[mapType]
+		for kv in namedMaps
+			if refEquals(kv.key, mapType) then return kv.value
+		end for
 		return "map"
 	end if
 	return "unknown"
@@ -59,11 +61,11 @@ end function
 // assertType: abort if the first parameter is not of the specified type.
 // Additional descriptive note is optional.
 assertType = function(value, type, note)
-	if value isa type then return
+	if @value isa type then return
 	msg = "Assert failed"
 	if note != null then msg = msg + " (" + note + ")"
 	msg = msg + ": expected type " + namedMaps[type] + 
-	  ", but got a " + typeOf(value) + " (" + value + ")"
+	  ", but got a " + typeOf(@value) + " (" + @value + ")"
 	abort msg
 end function
 

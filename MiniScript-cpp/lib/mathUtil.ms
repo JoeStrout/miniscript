@@ -135,21 +135,43 @@ clamp = function(x, minval=0, maxval=1)
 	return x
 end function
 
+// max: returns the greater of two values.
+// (Note: if you have more than two, consider importing listUtil
+// and using list.max instead.)
+max = function(a, b)
+	if b > a then return b else return a
+end function
+
+// min: returns the lesser of two values.
+// (As above, also consider list.min from listUtil.)
+min = function(a, b)
+	if b < a then return b else return a
+end function
+
 // numToStr: converts a number to a string, with a specified precision
 // (number of digits past the decimal place).  Trailing zeros will be
 // added as needed to get the decimal point at the right place.
 numToStr = function(n, precision=null)
 	if precision == null then return str(n)
-	s = str(round(n, precision))
-	if precision > 0 then
-		dotPos = s.indexOf(".")
-		if dotPos == null then
-			s = s + "." + "0" * precision
-		else if dotPos > s.len - precision - 1 then
-			s = s + "0" * (dotPos - s.len + precision + 1)
-		end if
+	if not n isa number or not precision isa number then
+		print "numToStr error: arguments must be numbers."
+		return
 	end if
-	return s
+	if precision <= 0 or n == 1/0 or n == -1/0 or n != n then return str(round(n, precision))
+	negative = n < 0; n = abs(n)
+	digits = [floor(n)]
+	for i in range(1, precision)
+		d = floor(n * 10^i) % 10
+		digits.push d
+	end for
+	if (n * 10^precision) % 1 >= 0.5 then
+		for i in range(digits.len - 1)
+			digits[i] += 1
+			if digits[i] < 10 or i == 0 then break
+			digits[i] = 0
+		end for
+	end if
+	return "-" * negative + digits.pull + "." + digits.join("")
 end function
 
 runUnitTests = function
@@ -175,12 +197,18 @@ runUnitTests = function
 	assertEqual mover.y, 30, "moveTowardsXY"
 	assertEqual moveTowardsXY(mover, target, 10), false
 	
-	assertEqual numToStr(pi, 2), "3.14"
-	assertEqual numToStr(1.23, 3), "1.230"
-	assertEqual numToStr(1.23), "1.23"
-	assertEqual numToStr(12345.67, -2), "12300"
-	assertEqual numToStr(2, 3), "2.000"
-
+	assertEqual numToStr(pi, 2), "3.14", "numToStr"
+	assertEqual numToStr(pi, 4), "3.1416", "numToStr"
+	assertEqual numToStr(pi, 12), "3.141592653590", "numToStr"
+	assertEqual numToStr(1.23, 3), "1.230", "numToStr"
+	assertEqual numToStr(1.23), "1.23", "numToStr"
+	assertEqual numToStr(12345.67, -2), "12300", "numToStr"
+	assertEqual numToStr(2, 3), "2.000", "numToStr"
+	assertEqual numToStr(2/3, 12), "0.666666666667", "numToStr"
+	assertEqual numToStr(41.9999, 2), "42.00", "numToStr"
+	assertEqual numToStr(42 - 1E-12, 5), "42.00000", "numToStr"
+	assertEqual numToStr(-pi, 4), "-3.1416", "numToStr"
+	
 	if errorCount == 0 then
 		print "All tests passed.  Woot!"
 	else

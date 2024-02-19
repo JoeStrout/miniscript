@@ -82,6 +82,11 @@ end function
 // Instance methods: call these on a Matrix instance.
 //----------------------------------------------------------------------
 
+// m.size: return [rows, columns] size of the matrix
+Matrix.size = function
+	return [self.rows, self.columns]
+end function
+
 // m.row: return the given row of matrix m as a single-row matrix.
 Matrix.row = function(zeroBasedRowNum)
 	return Matrix.fromList(self.elem[zeroBasedRowNum])
@@ -197,6 +202,11 @@ Matrix.times = function(m2)
 	if m2 isa Matrix then m2 = m2.elem
 	if m2 isa list then
 		// matrix multiplication
+		if m2.len != self.columns then
+			print "Matrix.times error: incompatible sizes " + 
+			  self.size + " and " + [m2.len, len(m2[0])]
+			exit
+		end if
 		result = Matrix.ofSize(self.rows, m2[0].len)
 		for r in result.rowRange
 			resultRow = result.elem[r]
@@ -246,26 +256,32 @@ Matrix.equals = function(m2)
 	return self.elem == m2elems
 end function
 
+// Matrix.round: rounds all numbers in the matrix.
+Matrix.round = function(decimalPlaces=0)
+	for row in self.elem
+		for i in row.indexes
+			row[i] = round(row[i], decimalPlaces)
+		end for
+	end for
+end function
+
 // Matrix.print: prints matrix data, with some formatting options.
 //	fieldWidth: minimum number of characters for each element
 //	precision: if non-null, round each element to this many digits
 //	columnSep: extra string printed between elements within a row
 //	rowSep: extra string printed between rows; defaults to text.delimiter
 Matrix.print = function(fieldWidth=10, precision=null, columnSep="", rowSep=null)
-	oldDelim = text.delimiter; text.delimiter = ""
-	if rowSep == null then rowSep = oldDelim
+	if rowSep == null then rowSep = text.delimiter
 	for row in self.elem
-		firstInRow = true
+		line = []
 		for elem in row
 			s = mathUtil.numToStr(elem, precision)
+			if s.len >= fieldWidth and s.indexOf(".") != null then s = s[:fieldWidth-1]
 			if s.len < fieldWidth then s = " "*(fieldWidth-s.len) + s
-			if not firstInRow then print columnSep
-			print s
-			firstInRow = false
+			line.push s
 		end for
-		print rowSep
+		print line.join(columnSep), rowSep
 	end for
-	text.delimiter = oldDelim
 end function
 
 

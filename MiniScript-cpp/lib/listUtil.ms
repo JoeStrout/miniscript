@@ -9,6 +9,21 @@ list.contains = function(item)
 	return self.indexOf(item) != null
 end function
 
+// lastIndexOf: returns the *last* index of the given element, optionally
+// before a given index.  Returns null if not found.
+// Examples:
+//		[7,4,7,9].lastIndexOf(7)		// returns 2
+//		[7,4,7,9].lastIndexOf(7, 2)		// returns 0
+list.lastIndexOf = function(element, beforeIdx=null)
+	if beforeIdx == null then i = self.len - 1 else i = beforeIdx - 1
+	while i >= 0
+		if self[i] == element then return i
+		i -= 1
+	end while
+	return null
+end function
+
+
 // split: similar to string.split, this splits a list into sub-lists
 // by where the given delimiter element is found.
 list.split = function(delimiter, maxCount=null)
@@ -161,11 +176,30 @@ list.apply = function(func)
 	end for
 end function
 
+// applied: like list.apply, but returns the result as a new list,
+// without changing the list it is called on.
+// Example:
+//		x = [1.1, 1.9, 3.45]
+//		y = x.applied(@round)  // y is now [1, 2, 3]; x is unchanged
+list.applied = function(func)
+  result = self[:]
+  result.apply @func
+  return result
+end function
+
 // apply1: same as apply, but takes 1 extra argument.
 list.apply1 = function(func, arg1)
 	for i in self.indexes
 		self[i] = func(self[i], arg1)
 	end for
+end function
+
+// applied1: like list.apply1, but returns the result as a new list,
+// without changing the list it is called on.
+list.applied1 = function(func, arg1)
+  result = self[:]
+  result.apply1 @func, arg1
+  return result
 end function
 
 // mean: return the average (sum divided by number of values)
@@ -273,6 +307,17 @@ list.filter = function(func)
 	end if
 end function
 
+// filter1: like list.filter, but takes 1 extra argument for the
+// filter function.  Note that func must be an actual function,
+// and not just the name of a map key in this case.
+list.filter1 = function(func, arg1)
+	i = self.len - 1
+	while i >= 0
+		if not func(self[i], arg1) then self.remove i
+		i = i - 1
+	end while
+end function
+
 // filtered: return a new list containing only the elements of self where
 //	the given function is true.  As with filter, you may also specify the
 //	name of a map key to look up in each element of the self.
@@ -288,6 +333,54 @@ list.filtered = function(func)
 			if func(elem) then result.push elem
 		end for
 	end if
+	return result
+end function
+
+// filtered1: like list.filter, but takes an additional argument
+// for the filter function.
+list.filtered1 = function(func, arg1)
+	result = []
+	for elem in self
+		if func(elem, arg1) then result.push elem
+	end for
+	return result
+end function
+
+// compress: replace each run of a given value with a single instance
+// of that value (in place).
+// Example:
+//		x = [5,7,7,9,7,7,7]; x.compress(7)  // x is now [5,7,9,7]
+list.compress = function(valueToCompress)
+	i = self.len - 1
+	compressing = false
+	while i >= 0
+		if self[i] == valueToCompress then
+			if compressing then self.remove i else compressing = true
+		else
+			compressing = false
+		end if
+		i -= 1
+	end while
+end function
+
+// compressed: return a new list that has run of a given value 
+// replaced with a single instance of that value.
+// Example:
+//		x = [5,7,7,9,7,7,7]; x.compress(7)  // x is now [5,7,9,7]
+list.compressed = function(valueToCompress)
+	result = []
+	compressing = false
+	for value in self
+		if value == valueToCompress then
+			if not compressing then
+				result.push value
+				compressing = true
+			end if
+		else
+			compressing = false
+			result.push value
+		end if
+	end for
 	return result
 end function
 
@@ -374,6 +467,15 @@ runUnitTests = function
 		end if
 	end function
 
+	assertEqual [7,4,7,9].lastIndexOf(7), 2, "lastIndexOf"
+	assertEqual [7,4,7,9].lastIndexOf(7,2), 0, "lastIndexOf"
+	assertEqual [7,4,7,9].lastIndexOf(7,0), null, "lastIndexOf"
+
+	a = [5,7,7,9,7,7,7]
+	assertEqual a.compressed(7), [5,7,9,7], "compressed"
+	assertEqual a, [5,7,7,9,7,7,7], "compressed changed self"
+	a.compress(7); assertEqual a, [5,7,9,7], "compress"
+
 	a = [-1, 42, -1, 53, 87, 345, -1, 100]
 	assertEqual a.split(-1), [ [], [42], [53, 87, 345], [100] ]
 	assertEqual a.split(-1, 3), [ [], [42], [53, 87, 345, -1, 100] ]
@@ -410,6 +512,13 @@ runUnitTests = function
 	a.apply1 @round, 2
 	assertEqual a, [1.10, 1.90, 3.45], "apply1"
 
+	a = [1.1, 1.899, 3.452]
+	b = a.applied(@round)
+	assertEqual b, [1, 2, 3], "applied"
+	b = a.applied1(@round, 2)
+	assertEqual b, [1.10, 1.90, 3.45], "applied1"
+	assertEqual a, [1.1, 1.899, 3.452], "applied/applied1"
+
 	a = range(1, 10)
 	isEven = function(x)
 		return x % 2 == 0
@@ -420,6 +529,15 @@ runUnitTests = function
 	b = a.filtered(@isEven)
 	assertEqual a, range(1, 10), "filtered"
 	assertEqual b, [2, 4, 6, 8, 10], "filtered"
+
+	moreThan = function(a, b); return a > b; end function
+	a = range(1,10)
+	a.filter1 @moreThan, 7
+	assertEqual a, [8, 9, 10], "filter1"
+	a = range(1,10)
+	b = a.filtered1(@moreThan, 7)
+	assertEqual a, range(1, 10), "filtered1"
+	assertEqual b, [8, 9, 10], "filtered1"
 
 	a = [{"x":42, "keep":true}, {"x":123, "keep":false}, {"x":0, "keep":true}]
 	a.filter "keep"

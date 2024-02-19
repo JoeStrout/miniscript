@@ -7,7 +7,7 @@
 map.get = function(key, defaultValue=null)
 	m = self
 	while m
-		if m.hasIndex(key) then return m[key]
+		if m.hasIndex(@key) then return m[@key]
 		if not m.hasIndex("__isa") then break
 		m = m.__isa
 	end while
@@ -119,12 +119,15 @@ runUnitTests = function
 		end if
 	end function
 
-	d = {"one":"ichi", "two":"ni", "three":"san", "four":"shi", "five":"go"}
+	d = {"one":"ichi", "two":"ni", "three":"san", "four":"shi", "five":"go", @print: "six"}
 
 	testing = "get"
 	assertEqual d.get("one", 1), "ichi"
 	assertEqual d.get("ten", 10), 10
 	assertEqual d.get("twenty"), null
+	assertEqual d.get(@print), "six"
+	
+	d.remove @print
 	
 	testing = "hasValue"
 	assertEqual d.hasValue("ni"), true
