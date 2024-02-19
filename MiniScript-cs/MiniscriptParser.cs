@@ -127,7 +127,7 @@ namespace Miniscript {
 			/// Patches up all the branches for a single open if block.  That includes
 			/// the last "else" block, as well as one or more "end if" jumps.
 			/// </summary>
-			public void PatchIfBlock() {
+			public void PatchIfBlock(bool singleLineIf) {
 				Value target = TAC.Num(code.Count);
 
 				int idx = backpatches.Count - 1;
@@ -144,7 +144,17 @@ namespace Miniscript {
 						// Not the expected keyword, but "break"; this is always OK.
 					} else {
 						// Not the expected patch, and not "break"; we have a mismatched block start/end.
-						throw new CompilerException("'end if' without matching 'if'");
+						string msg;
+						if (singleLineIf) {
+							if (bp.waitingFor == "end for" || bp.waitingFor == "end while") {
+								msg = "loop is invalid within single-line 'if'";
+							} else {
+								msg = "invalid control structure within single-line 'if'";
+							}
+						} else {
+							msg = "'end if' without matching 'if'";
+						}
+						throw new CompilerException(msg);
 					}
 					idx--;
 				}
@@ -378,7 +388,7 @@ namespace Miniscript {
 				case "return":
 					{
 						Value returnValue = null;
-						if (tokens.Peek().type != Token.Type.EOL && tokens.Peek().text != "else") {
+						if (tokens.Peek().type != Token.Type.EOL && tokens.Peek().text != "else" && tokens.Peek().text != "else if") {
 							returnValue = ParseExpr(tokens);
 						}
 						output.Add(new TAC.Line(TAC.LTemp(0), TAC.Line.Op.ReturnA, returnValue));
@@ -408,10 +418,14 @@ namespace Miniscript {
 								tokens.Dequeue();	// skip "else"
 								StartElseClause();
 								ParseStatement(tokens, true);		// parse a single statement for the "else" body
+							} else if (tokens.Peek().type == Token.Type.Keyword && tokens.Peek().text == "else if") {
+								tokens.Peek().text = "if";		// the trick: convert the "else if" token to a regular "if"...
+								StartElseClause();				// but start an else clause...
+								ParseStatement(tokens, true);	// then parse a single statement starting with "if"
 							} else {
 								RequireEitherToken(tokens, Token.Type.Keyword, "else", Token.Type.EOL);
 							}
-							output.PatchIfBlock();	// terminate the single-line if
+							output.PatchIfBlock(true);	// terminate the single-line if
 						} else {
 							tokens.Dequeue();	// skip EOL
 						}
@@ -433,7 +447,7 @@ namespace Miniscript {
 					// OK, this is tricky.  We might have an open "else" block or we might not.
 					// And, we might have multiple open "end if" jumps (one for the if part,
 					// and another for each else-if part).  Patch all that as a special case.
-					output.PatchIfBlock();
+					output.PatchIfBlock(false);
 					break;
 				case "while":
 					{
@@ -507,6 +521,10 @@ namespace Miniscript {
 				case "break":
 					{
 						// Emit a jump to the end, to get patched up later.
+						if (output.jumpPoints.Count == 0) {
+							throw new CompilerException(errorContext, tokens.lineNum,
+								"'break' without open loop block");
+						}
 						output.Add(new TAC.Line(null, TAC.Line.Op.GotoA));
 						output.AddBackpatch("break");
 					}
@@ -559,7 +577,7 @@ namespace Miniscript {
 			Value lhs, rhs;
 			Token peek = tokens.Peek();
 			if (peek.type == Token.Type.EOL ||
-					(peek.type == Token.Type.Keyword && peek.text == "else")) {
+					(peek.type == Token.Type.Keyword && (peek.text == "else" || peek.text == "else if"))) {
 				// No explicit assignment; store an implicit result
 				rhs = FullyEvaluate(expr);
 				output.Add(new TAC.Line(null, TAC.Line.Op.AssignImplicit, rhs));
@@ -608,7 +626,7 @@ namespace Miniscript {
 					output.Add(new TAC.Line(null, TAC.Line.Op.PushParam, arg));
 					argCount++;
 					if (tokens.Peek().type == Token.Type.EOL) break;
-					if (tokens.Peek().type == Token.Type.Keyword && tokens.Peek().text == "else") break;
+					if (tokens.Peek().type == Token.Type.Keyword && (tokens.Peek().text == "else" || tokens.Peek().text == "else if")) break;
 					if (tokens.Peek().type == Token.Type.Comma) {
 						tokens.Dequeue();
 						AllowLineBreak(tokens);
@@ -951,41 +969,20 @@ namespace Miniscript {
 		}
 
 		Value ParseNew(Lexer tokens, bool asLval=false, bool statementStart=false) {
-			ExpressionParsingMethod nextLevel = ParseAddressOf;
+			ExpressionParsingMethod nextLevel = ParsePower;
 			if (tokens.Peek().type != Token.Type.Keyword || tokens.Peek().text != "new") return nextLevel(tokens, asLval, statementStart);
 			tokens.Dequeue();		// skip 'new'
 
 			AllowLineBreak(tokens); // allow a line break after a unary operator
 
-			// Grab a reference to our __isa value
 			Value isa = nextLevel(tokens);
-			// Now, create a new map, and set __isa on it to that.
-			// NOTE: we must be sure this map gets created at runtime, not here at parse time.
-			// Since it is a mutable object, we need to return a different one each time
-			// this code executes (in a loop, function, etc.).  So, we use Op.CopyA below!
-			ValMap map = new ValMap();
-			map.SetElem(ValString.magicIsA, isa);
 			Value result = new ValTemp(output.nextTempNum++);
-			output.Add(new TAC.Line(result, TAC.Line.Op.CopyA, map));
+			output.Add(new TAC.Line(result, TAC.Line.Op.NewA, isa));
 			return result;
 		}
 
-		Value ParseAddressOf(Lexer tokens, bool asLval=false, bool statementStart=false) {
-			ExpressionParsingMethod nextLevel = ParsePower;
-			if (tokens.Peek().type != Token.Type.AddressOf) return nextLevel(tokens, asLval, statementStart);
-			tokens.Dequeue();
-			AllowLineBreak(tokens); // allow a line break after a unary operator
-			Value val = nextLevel(tokens, true, statementStart);
-			if (val is ValVar) {
-				((ValVar)val).noInvoke = true;
-			} else if (val is ValSeqElem) {
-				((ValSeqElem)val).noInvoke = true;
-			}
-			return val;
-		}
-
 		Value ParsePower(Lexer tokens, bool asLval=false, bool statementStart=false) {
-			ExpressionParsingMethod nextLevel = ParseCallExpr;
+			ExpressionParsingMethod nextLevel = ParseAddressOf;
 			Value val = nextLevel(tokens, asLval, statementStart);
 			Token tok = tokens.Peek();
 			while (tok.type == Token.Type.OpPower) {
@@ -1004,6 +1001,20 @@ namespace Miniscript {
 			return val;
 		}
 
+
+		Value ParseAddressOf(Lexer tokens, bool asLval=false, bool statementStart=false) {
+			ExpressionParsingMethod nextLevel = ParseCallExpr;
+			if (tokens.Peek().type != Token.Type.AddressOf) return nextLevel(tokens, asLval, statementStart);
+			tokens.Dequeue();
+			AllowLineBreak(tokens); // allow a line break after a unary operator
+			Value val = nextLevel(tokens, true, statementStart);
+			if (val is ValVar) {
+				((ValVar)val).noInvoke = true;
+			} else if (val is ValSeqElem) {
+				((ValSeqElem)val).noInvoke = true;
+			}
+			return val;
+		}
 
 		Value FullyEvaluate(Value val, ValVar.LocalOnlyMode localOnlyMode = ValVar.LocalOnlyMode.Off) {
 			if (val is ValVar) {
@@ -1094,7 +1105,8 @@ namespace Miniscript {
 					}
 	
 					RequireToken(tokens, Token.Type.RSquare);
-				} else if ((val is ValVar && !((ValVar)val).noInvoke) || val is ValSeqElem) {
+				} else if ((val is ValVar && !((ValVar)val).noInvoke)
+					    || (val is ValSeqElem && !((ValSeqElem)val).noInvoke)) {
 					// Got a variable... it might refer to a function!
 					if (!asLval || (tokens.Peek().type == Token.Type.LParen && !tokens.Peek().afterSpace)) {
 						// If followed by parens, definitely a function call, possibly with arguments!

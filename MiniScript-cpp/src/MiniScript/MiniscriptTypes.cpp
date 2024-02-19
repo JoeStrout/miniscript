@@ -19,7 +19,7 @@
 
 namespace MiniScript {
 
-	const String VERSION = "1.6.1";
+	const String VERSION = "1.6.2";
 
 	long Value::maxStringSize = 0xFFFFFF;		// about 16MB
 	long Value::maxListSize   = 0xFFFFFF;		// about 16M elements
@@ -225,12 +225,19 @@ namespace MiniScript {
 		}
 	}
 	
-	long Value::IntValue() {
-		if (type == ValueType::Number) return data.number;
-		return 0;
+	int32_t Value::IntValue() const noexcept {
+		return type == ValueType::Number ? data.number : 0;
+	}
+
+	uint32_t Value::UIntValue() const noexcept {
+		return type == ValueType::Number ? data.number : 0;
+	}
+
+	float Value::FloatValue() const noexcept {
+		return type == ValueType::Number ? data.number : 0;
 	}
 	
-	bool Value::BoolValue() {
+	bool Value::BoolValue() const noexcept {
 		switch (type) {
 			case ValueType::Number:
 				// Any nonzero value is considered true, when treated as a bool.
@@ -260,6 +267,12 @@ namespace MiniScript {
 				return result;
 			}
 
+			case ValueType::Function:
+			{
+				// Functions are always true.
+				return true;
+			}
+			
 			case ValueType::Handle:
 			{
 				// Any handle at all is true.
@@ -501,6 +514,7 @@ namespace MiniScript {
 	/// in the context of the given virtual machine.
 	/// </summary>
 	bool Value::IsA(Value type, Machine *vm) {
+		if (type.IsNull()) return IsNull();
 		switch (this->type) {
 			case ValueType::Number:
 				return RefEqual(type, vm->numberType);

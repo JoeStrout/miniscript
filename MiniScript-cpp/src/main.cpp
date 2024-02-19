@@ -8,8 +8,10 @@
 
 #include <iostream>
 #include <fstream>
+#include <string>
 #include "MiniScript/SimpleString.h"
 #include "MiniScript/UnicodeUtil.h"
+#include "MiniScript/UnitTest.h"
 #include "MiniScript/SimpleVector.h"
 #include "MiniScript/List.h"
 #include "MiniScript/Dictionary.h"
@@ -28,7 +30,7 @@ static bool dumpTAC = false;
 
 static void Print(String s, bool lineBreak=true) {
 	std::cout << s.c_str();
-	if (lineBreak) std::cout << std::endl;
+	if (lineBreak) std::cout << std::endl; else std::cout << std::flush;
 }
 
 static void PrintErr(String s, bool lineBreak=true) {
@@ -58,7 +60,11 @@ static void PrintHelp(String cmdPath) {
 	Print(String("usage: ") + cmdPath + " [option] ... [-c cmd | file | -]");
 	Print("Options and arguments:");
 	Print("-c cmd : program passed in as String (terminates option list)");
+	Print("--dumpTAC : print intermediate code");
 	Print("-h     : print this help message and exit (also -? or --help)");
+	Print("-i     : enter interactive mode after executing 'file'");
+	Print("--itest suite_file : run integration tests");
+	Print("-q     : suppress header info");
 	Print("file   : program read from script file");
 	Print("-      : program read from stdin (default; interactive mode if a tty)");
 }
@@ -69,10 +75,7 @@ void ConfigInterpreter(Interpreter &interp) {
 	interp.implicitOutput = &Print;
 }
 
-static int DoREPL() {
-	Interpreter interp;
-	ConfigInterpreter(interp);
-	
+static int DoREPL(Interpreter &interp) {
 	while (true) {
 		const char *prompt;
 		if (interp.NeedMoreInput()) {
@@ -108,9 +111,7 @@ static int DoREPL() {
 	}
 }
 
-static int DoCommand(String cmd) {
-	Interpreter interp;
-	ConfigInterpreter(interp);
+static int DoCommand(Interpreter &interp, String cmd) {
 	interp.Reset(cmd);
 	interp.Compile();
 	
@@ -137,7 +138,7 @@ static int DoCommand(String cmd) {
 	return -1;
 }
 
-static int DoScriptFile(String path) {
+static int DoScriptFile(Interpreter &interp, String path) {
 	// Read the file
 	List<String> source;
 	std::ifstream infile(path.c_str());
@@ -145,9 +146,9 @@ static int DoScriptFile(String path) {
 		std::cerr << "Error opening file: " << path.c_str() << std::endl;
 		return -1;
 	}
-	char buf[1024];
-	while (infile.getline(buf, sizeof(buf))) {
-		source.Add(buf);
+	std::string line;
+	while (std::getline(infile, line)) {
+		source.Add(line.c_str());
 	}
 	//Print(String("Read ") + String::Format(source.Count()) + (source.Count() == 1 ? " line" : " lines") + " from: " + path);
 
@@ -155,7 +156,7 @@ static int DoScriptFile(String path) {
 	if (source.Count() > 0 and source[0].StartsWith("#!")) source[0] = "// " + source[0];
 	
 	// Concatenate and execute the code.
-	return DoCommand(Join("\n", source));
+	return DoCommand(interp, Join("\n", source));
 }
 
 static List<String> testOutput;
@@ -167,12 +168,14 @@ static void DoOneIntegrationTest(List<String> sourceLines, long sourceLineNum,
 				 List<String> expectedOutput, long outputLineNum) {
 //	std::cout << "Running test starting at line " << sourceLineNum << std::endl;
 	
-	Interpreter miniscript(sourceLines);
-	miniscript.standardOutput = &PrintToTestOutput;
-	miniscript.errorOutput = &PrintToTestOutput;
-	miniscript.implicitOutput = &PrintToTestOutput;
 	testOutput.Clear();
-	miniscript.RunUntilDone(60, false);
+	{
+		Interpreter miniscript(sourceLines);
+		miniscript.standardOutput = &PrintToTestOutput;
+		miniscript.errorOutput = &PrintToTestOutput;
+		miniscript.implicitOutput = &PrintToTestOutput;
+		miniscript.RunUntilDone(60, false);
+	}
 	
 	long minLen = expectedOutput.Count() < testOutput.Count() ? expectedOutput.Count() : testOutput.Count();
 	for (long i = 0; i < minLen; i++) {
@@ -193,6 +196,7 @@ static void DoOneIntegrationTest(List<String> sourceLines, long sourceLineNum,
 			Print("  EXTRA: " + testOutput[i]);
 		}
 	}
+	testOutput.Clear();
 }
 
 void RunIntegrationTests(String path) {
@@ -202,7 +206,7 @@ void RunIntegrationTests(String path) {
 		Print(String("\nFailed to open ") + path + "\n");
 		return;
 	}
-	
+
 	List<String> sourceLines;
 	List<String> expectedOutput;
 	long testLineNum = 0;
@@ -256,12 +260,14 @@ int main(int argc, const char * argv[]) {
 	std::cout << "total RefCountedStorage instances at start (from static keywords, etc.): " << RefCountedStorage::instanceCount << std::endl;
 #endif
 
+	UnitTest::RunAllTests();
+
 #if(DEBUG)
 	std::cout << "StringStorage instances left: " << StringStorage::instanceCount << std::endl;
 	std::cout << "total RefCountedStorage instances left (includes 2 Unicode case maps): " << RefCountedStorage::instanceCount << std::endl;
 #endif
 	
-	MiniScript::hostVersion = 1.21;
+	MiniScript::hostVersion = 1.3;
 #if _WIN32 || _WIN64
 	MiniScript::hostName = "Command-Line (Windows)";
 #elif defined(__APPLE__) || defined(__FreeBSD__)
@@ -275,19 +281,25 @@ int main(int argc, const char * argv[]) {
 	AddScriptPathVar("");
 	AddShellIntrinsics();
 	
+	Interpreter interp;
+	ConfigInterpreter(interp);
+	
+	bool launchReplAfterScript = false;
 	for (int i=1; i<argc; i++) {
 		String arg = argv[i];
 		if (arg == "-h" or arg == "-?" or arg == "--help") {
 			PrintHeaderInfo();
 			PrintHelp(argv[0]);
 			return 0;
+		} else if (arg == "-i") {
+			launchReplAfterScript = true;
 		} else if (arg == "-q") {
 			printHeaderInfo = false;
 		} else if (arg == "-c") {
 			i++;
 			if (i >= argc) return ReturnErr("Command expected after -c option");
 			String cmd = argv[i];
-			return DoCommand(cmd);
+			return DoCommand(interp, cmd);
 		} else if (arg == "--dumpTAC") {
 			dumpTAC = true;
 		} else if (arg == "--itest") {
@@ -299,20 +311,23 @@ int main(int argc, const char * argv[]) {
 		} else if (arg == "-") {
 			PrintHeaderInfo();
 			PrepareShellArgs(argc, argv, i);
-			return DoREPL();
+			return DoREPL(interp);
 		} else if (not arg.StartsWith("-")) {
 			PrepareShellArgs(argc, argv, i);
 			AddScriptPathVar(arg.c_str());
-			return DoScriptFile(arg);
+			int rc = DoScriptFile(interp, arg);
+			if (!launchReplAfterScript) return rc;
 		} else {
 			PrintHeaderInfo();
 			return ReturnErr(String("Unknown option: ") + arg);
 		}
 	}
 	
-	// If we get to here, then we exhausted all our options without actually doing
-	// anything.  So, by default, drop into the REPL.
+	// If we get to here, then we exhausted all our options.
+	// (We might have executed a script by this point if `-i` was provided.)
+	// Drop into the REPL.
+	if (launchReplAfterScript) std::cout << std::endl;  // separate visualy script's output from REPL
 	PrintHeaderInfo();
 	PrepareShellArgs(argc, argv, 1);
-	return DoREPL();
+	return DoREPL(interp);
 }

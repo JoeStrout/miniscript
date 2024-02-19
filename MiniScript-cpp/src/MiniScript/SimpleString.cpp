@@ -13,6 +13,17 @@ namespace MiniScript {
 #if(DEBUG)
 	long RefCountedStorage::instanceCount = 0;
 	long StringStorage::instanceCount = 0;
+	StringStorage* StringStorage::head = nullptr;
+
+	long _stringInstanceCount() { return StringStorage::instanceCount; }
+
+	void StringStorage::DumpStrings() {
+		StringStorage *ss = head;
+		while (ss) {
+			printf("%s\n", ss->data);
+			ss = ss->_next;
+		}
+	}
 #endif
 
 	

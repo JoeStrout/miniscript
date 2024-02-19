@@ -42,6 +42,7 @@ namespace MiniScript {
 			AOrB,
 			BindAssignA,
 			CopyA,
+			NewA,
 			NotA,
 			GotoA,
 			GotoAifB,

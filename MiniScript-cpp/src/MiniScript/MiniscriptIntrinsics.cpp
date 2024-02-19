@@ -11,7 +11,7 @@
 #include "MiniscriptTAC.h"
 #include "UnicodeUtil.h"
 #include "SplitJoin.h"
-#include <math.h>
+#include <cmath>
 #include <ctime>
 #include <algorithm>
 
@@ -27,15 +27,15 @@ namespace MiniScript {
 	static Value _numberType;
 	static Value _stringType;
 	static Value _EOL("\n");
-	
+
 	List<Intrinsic*> Intrinsic::all;
 	Dictionary<String, Intrinsic*, hashString> Intrinsic::nameMap;
 	IntrinsicResult IntrinsicResult::Null;	// represents a completed, null result
 	IntrinsicResult IntrinsicResult::EmptyString(Value("")); // represents an empty string result
 
 	bool Intrinsics::initialized = false;
-	
-	
+	static ValueDict _intrinsicsMap;
+
 	static bool randInitialized = false;
 
 	static inline void InitRand() {
@@ -72,23 +72,33 @@ namespace MiniScript {
 		if (x == 1.0) return IntrinsicResult(atan(y));
 		return IntrinsicResult(atan2(y, x));
 	}
+
+	static std::pair<bool, uint64_t> doubleToUnsignedSplit(double val) {
+		return { std::signbit(val), std::abs(val) };
+	}
 	
 	static IntrinsicResult intrinsic_bitAnd(Context *context, IntrinsicResult partialResult) {
-		Value i = context->GetVar("i");
-		Value j = context->GetVar("j");
-		return IntrinsicResult(i.IntValue() & j.IntValue());
+		auto i = doubleToUnsignedSplit(context->GetVar("i").DoubleValue());
+		auto j = doubleToUnsignedSplit(context->GetVar("j").DoubleValue());
+		auto sign = i.first & j.first;
+		double val = i.second & j.second;
+		return IntrinsicResult(sign ? -val : val);
 	}
 	
 	static IntrinsicResult intrinsic_bitOr(Context *context, IntrinsicResult partialResult) {
-		Value i = context->GetVar("i");
-		Value j = context->GetVar("j");
-		return IntrinsicResult(i.IntValue() | j.IntValue());
+		auto i = doubleToUnsignedSplit(context->GetVar("i").DoubleValue());
+		auto j = doubleToUnsignedSplit(context->GetVar("j").DoubleValue());
+		auto sign = i.first | j.first;
+		double val = i.second | j.second;
+		return IntrinsicResult(sign ? -val : val);
 	}
 	
 	static IntrinsicResult intrinsic_bitXor(Context *context, IntrinsicResult partialResult) {
-		Value i = context->GetVar("i");
-		Value j = context->GetVar("j");
-		return IntrinsicResult(i.IntValue() ^ j.IntValue());
+		auto i = doubleToUnsignedSplit(context->GetVar("i").DoubleValue());
+		auto j = doubleToUnsignedSplit(context->GetVar("j").DoubleValue());
+		auto sign = i.first ^ j.first;
+		double val = i.second ^ j.second;
+		return IntrinsicResult(sign ? -val : val);
 	}
 
 	static IntrinsicResult intrinsic_char(Context *context, IntrinsicResult partialResult) {
@@ -238,7 +248,19 @@ namespace MiniScript {
 			RuntimeException("insert called on invalid type").raise();
 			return IntrinsicResult::Null;
 		}
-	};
+	}
+
+	static IntrinsicResult intrinsic_intrinsics(Context *context, IntrinsicResult partialResult) {
+		if (_intrinsicsMap.Count() > 0) return IntrinsicResult(_intrinsicsMap);
+		
+		for (int i=0; i<Intrinsic::all.Count(); i++) {
+			Intrinsic* intrinsic = Intrinsic::all[i];
+			if (intrinsic == NULL || intrinsic->name.empty()) continue;
+			_intrinsicsMap.SetValue(intrinsic->name, intrinsic->GetFunc());
+		}
+		
+		return IntrinsicResult(_intrinsicsMap);
+	}
 
 	static IntrinsicResult intrinsic_join(Context *context, IntrinsicResult partialResult) {
 		Value val = context->GetVar("self");
@@ -976,6 +998,9 @@ namespace MiniScript {
 		f->AddParam("index");
 		f->AddParam("value");
 		f->code = &intrinsic_insert;
+		
+		f = Intrinsic::Create("intrinsics");
+		f->code = &intrinsic_intrinsics;
 		
 		f = Intrinsic::Create("join");
 		f->AddParam("self");

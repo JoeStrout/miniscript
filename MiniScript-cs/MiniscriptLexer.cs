@@ -236,6 +236,9 @@ namespace Miniscript {
 							gotEndQuote = true;
 							break;
 						}
+					} else if (c == '\n' || c == '\r') {
+						// Break at end of line (string literals should not contain a line break).
+						break;
 					}
 				}
 				if (!gotEndQuote) throw new LexerException("missing closing quote (\")");

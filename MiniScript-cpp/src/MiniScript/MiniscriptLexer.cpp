@@ -219,6 +219,9 @@ namespace MiniScript {
 						gotEndQuote = true;
 						break;
 					}
+				} else if (c == '\n' or c == '\r') {
+					// Break at end of line (string literals should not contain line breaks)
+					break;
 				}
 			}
 			if (!gotEndQuote) LexerException("missing closing quote (\")").raise();
@@ -241,6 +244,10 @@ namespace MiniScript {
 			ls->pending.Add(Dequeue());
 		}
 		return ls->pending[0];
+	}
+
+	void Lexer::Poke(Token tokenToInsert) {
+		ls->pending.Insert(tokenToInsert, 0);
 	}
 
 	void Lexer::SkipWhitespaceAndComment() {

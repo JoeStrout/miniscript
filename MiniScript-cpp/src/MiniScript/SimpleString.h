@@ -20,12 +20,16 @@ namespace MiniScript {
 	using std::toupper;
 
 	class String;
-	
+	class StringStorage;
+
 	class StringStorage : public RefCountedStorage {
 	private:
 		StringStorage() : data(nullptr), dataSize(0), charCount(-1) {
 #if(DEBUG)
 			instanceCount++;
+			_prev = nullptr; _next = head;
+			if (head) head->_prev = this;
+			head = this;
 #endif
 		}
 		StringStorage(size_t bufSize) : dataSize(bufSize), charCount(-1) {
@@ -33,12 +37,18 @@ namespace MiniScript {
 			memset(data, 0, bufSize);
 #if(DEBUG)
 			instanceCount++;
+			_prev = nullptr; _next = head;
+			if (head) head->_prev = this;
+			head = this;
 #endif
 		}
 		virtual ~StringStorage() {
 			if (data) delete[] data;
 #if(DEBUG)
 			instanceCount--;
+			if (_prev) _prev->_next = _next;
+			if (_next) _next->_prev = _prev;
+			if (head == this) head = _next;
 #endif
 		}
 		
@@ -55,7 +65,11 @@ namespace MiniScript {
 		void analyzeChars();
 #if(DEBUG)
 	public:
+		StringStorage* _next;
+		StringStorage* _prev;
 		static long instanceCount;
+		static StringStorage* head;
+		static void DumpStrings();
 #endif
 	};
 

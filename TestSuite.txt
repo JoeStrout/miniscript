@@ -153,6 +153,9 @@ if 1 then print "yay" else print"nay"
 if false then print "yo" else print "no"
 if true then x=1 else x=2
 print x
+if 1 then print "A" else if 1 then print "B" else print "C"
+if 0 then print "A" else if 1 then print "B" else print "C"
+if 0 then print "A" else if 0 then print "B" else print "C"
 for i in range(1,10)
 	if i == 3 then continue
 	if i == 6 then break
@@ -168,6 +171,9 @@ Yep
 yay
 no
 1
+A
+B
+C
 1
 2
 4
@@ -383,6 +389,7 @@ if e >= 0.1 then print "wait OK" else print "wait broken"
 print len("hello")
 print len([1,2,3,4])
 print len({1:"one", 2:"two"})
+print @intrinsics.sin
 ----------------------------------------------------------------------
 42
 [10, 20]
@@ -394,6 +401,28 @@ wait OK
 5
 4
 2
+FUNCTION(radians=0)
+======================================================================
+==== Errors when misusing the `new` operator
+x = new 42
+----------------------------------------------------------------------
+Runtime Error: argument to 'new' must be a map [line 1]
+==== 
+x = new string
+----------------------------------------------------------------------
+Runtime Error: invalid use of 'new'; to create a string, use quotes, e.g. "foo" [line 1]
+==== 
+x = new list
+----------------------------------------------------------------------
+Runtime Error: invalid use of 'new'; to create a list, use square brackets, e.g. [1,2] [line 1]
+==== 
+x = new number
+----------------------------------------------------------------------
+Runtime Error: invalid use of 'new'; to create a number, use a numeric literal, e.g. 42 [line 1]
+==== 
+x = new funcRef
+----------------------------------------------------------------------
+Runtime Error: invalid use of 'new'; to create a function, use the 'function' keyword [line 1]
 ======================================================================
 ==== hasIndex and indexOf on strings, lists, and maps.
 s = "abcde"
@@ -518,6 +547,7 @@ print "not [42]: " + (not [42])
 print "not {3:9}: " + (not {3:9})
 print "not 42: " + (not 42)
 print "not ""a"": " + (not "a")
+if @rnd then print "ok" else print "wrong"
 ----------------------------------------------------------------------
 B
 C
@@ -533,6 +563,7 @@ not [42]: 0
 not {3:9}: 0
 not 42: 0
 not "a": 0
+ok
 ======================================================================
 ==== hashing and dictionary key uniqueness
 ==== (Note that hash(a) should == hash(b) wherever a == b)
@@ -991,6 +1022,12 @@ x = 3
 ----------------------------------------------------------------------
 Compiler Error: got Unknown($) where EOL is required [line 2]
 ======================================================================
+==== Line breaks in string literals are disallowed.
+s = "Hello
+world!"
+----------------------------------------------------------------------
+Lexer Error: missing closing quote (") [line 1]
+======================================================================
 ==== Run-time error reporting test.
 x = 1
 x = noSuchThingy
@@ -1040,6 +1077,21 @@ for i in range(0,10)
 end while
 ----------------------------------------------------------------------
 Compiler Error: 'end for' without matching 'for' [line 5]
+======================================================================
+==== Check that "break" outside of a loop generates the proper error.
+break
+----------------------------------------------------------------------
+Compiler Error: 'break' without open loop block [line 1]
+======================================================================
+==== Check error when you try to stick a loop inside a single-line "if".
+if true then for i in "abc"
+----------------------------------------------------------------------
+Compiler Error: loop is invalid within single-line 'if' [line 1]
+======================================================================
+==== Same as above, but with a while loop instead of a for loop.
+if true then while true
+----------------------------------------------------------------------
+Compiler Error: loop is invalid within single-line 'if' [line 1]
 ======================================================================
 ==== Testing that objects are distinct, even when new'd in a function.
 ==== (This was a bug in an early version of MiniScript.)
@@ -1292,10 +1344,24 @@ print log(50, 5)
 print bitAnd(14, 7)	// binary 1110 & 0111 = 0110
 print bitOr(14, 7)	// binary 1110 | 0111 = 1111
 print bitXor(14, 7)	// binary 1110 ^ 0111 = 1001
+print bitAnd(1099511627774, 962072674207) // too many bits. use your calc.
+print bitAnd(-224883, 222678)
+print bitAnd(-224883, -222678)
+print bitOr(17592186044414, 87960930222009)
+print bitOr(-12345, 54321)
+print bitXor(192763993632181, 168643457158587)
+print bitXor(-23453455467, -76598387347)
 ----------------------------------------------------------------------
 6
 15
 9
+962072674206
+222290
+-222290
+87960930222079
+-62521
+59579786731534
+88591169272
 ======================================================================
 ==== Check various edge cases with function calls and implicit results.
 func = function
@@ -1353,6 +1419,9 @@ var2: globalVar2
 new var2: local
 ======================================================================
 ==== Test isa.
+print 42 isa null
+print funcRef isa null
+print null isa null
 print 42 isa number
 print 42 isa string
 print "foo" isa string
@@ -1363,6 +1432,9 @@ e = new d
 print e isa d
 print d isa d
 ----------------------------------------------------------------------
+0
+0
+1
 1
 0
 1
@@ -1437,12 +1509,15 @@ d = {
 	"b":2,
 }
 print d.a + " and " + d.b
+print true and
+  true
 ----------------------------------------------------------------------
 [1, 2, 3, 4]
 Hello world!
 1
 [1, 2]
 1 and 2
+1
 ======================================================================
 ==== Test map entry lookups, both inherited and direct.
 A = {"one":1, "two":2}
@@ -1455,6 +1530,28 @@ print B.two
 202
 1
 202
+======================================================================
+==== Test handling of NaN and Infinity in various ways.
+==== (Note that conversion of these to string is currently undefined.)
+NaN = 0/0
+Inf = 1/0
+print "foo"*NaN == null
+print "Inf"*NaN == null
+print "foo"*Inf == null
+print "Inf"*Inf == null
+print [42]*NaN == null
+print [42]*NaN == null
+print [42]*Inf == null
+print [42]*Inf == null
+----------------------------------------------------------------------
+1
+1
+1
+1
+1
+1
+1
+1
 ======================================================================
 ==== Test binding of function context (i.e. outer scope)
 globA = "Global A"
@@ -1736,6 +1833,12 @@ print titlecase("AND NOW for something completely different")
 ----------------------------------------------------------------------
 And Now For Something Completely Different
 ======================================================================
+==== Check for bug #90, where @ was ignored in one special case
+m = {"r":@rnd}
+print (@m.r)
+----------------------------------------------------------------------
+FUNCTION(seed)
+======================================================================
 ==== Order of operations: assignment
 p = function(first, second)
 	print first
@@ -1920,6 +2023,13 @@ OBJECT
 START
 STOP
 [3, 2, 1]
+======================================================================
+==== Order of operations: @ versus ^
+a = 2
+b = 3
+print @a ^ @b
+----------------------------------------------------------------------
+8
 ======================================================================
 ==== Order of operations: call operation and statement
 p = function(first, second)

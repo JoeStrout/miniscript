@@ -84,6 +84,9 @@ namespace MiniScript {
 			case Op::CopyA:
 				text = lhs.ToString() + " := copy of " + rhsA.ToString();
 				break;
+			case Op::NewA:
+				text = lhs.ToString() + " := new " + rhsA.ToString();
+				break;
 			case Op::NotA:
 				text = lhs.ToString() + " := not " + rhsA.ToString();
 				break;
@@ -164,6 +167,25 @@ namespace MiniScript {
 			return Value::Truth(opA.IsA(opB, context->vm));
 		}
 
+		if (op == Op::NewA) {
+			// Create a new map, and set __isa on it to operand A (after
+			// verifying that this is a valid map to subclass).
+			if (opA.type != ValueType::Map) {
+				RuntimeException("argument to 'new' must be a map").raise();
+			} else if (opA.RefEquals(context->vm->stringType)) {
+				RuntimeException("invalid use of 'new'; to create a string, use quotes, e.g. \"foo\"").raise();
+			} else if (opA.RefEquals(context->vm->listType)) {
+				RuntimeException("invalid use of 'new'; to create a list, use square brackets, e.g. [1,2]").raise();
+			} else if (opA.RefEquals(context->vm->numberType)) {
+				RuntimeException("invalid use of 'new'; to create a number, use a numeric literal, e.g. 42").raise();
+			} else if (opA.RefEquals(context->vm->functionType)) {
+				RuntimeException("invalid use of 'new'; to create a function, use the 'function' keyword").raise();
+			}
+			ValueDict newMap;
+			newMap.SetValue(Value::magicIsA, opA);
+			return newMap;
+		}
+		
 		if (op == Op::ElemBofA && opB.type == ValueType::String) {
 			// You can now look for a String in almost anything...
 			// and we have a convenient (and relatively fast) method for it:
@@ -291,6 +313,8 @@ namespace MiniScript {
 						CheckType(opB, ValueType::Number, "String division");
 						factor = 1.0 / opB.data.number;
 					}
+					int factorClass = std::fpclassify(factor);
+					if (factorClass == FP_NAN || factorClass == FP_INFINITE) return Value::null;
 					if (factor <= 0) return Value::emptyString;
 					int repeats = (int)factor;
 					size_t lenB = sA.LengthB();
@@ -317,6 +341,8 @@ namespace MiniScript {
 					// string indexing
 					return opA.GetElem(opB);
 				}
+				default:
+					break;
 			}
 			if (opB.IsNull() or opB.type == ValueType::String) {
 				switch (op) {
@@ -386,6 +412,8 @@ namespace MiniScript {
 					CheckType(opB, ValueType::Number, "list division");
 					factor = 1.0 / opB.data.number;
 				}
+				int factorClass = std::fpclassify(factor);
+				if (factorClass == FP_NAN || factorClass == FP_INFINITE) return Value::null;
 				if (factor <= 0) return ValueList();
 				long listCount = list.Count();
 				long finalCount = (long)(listCount * factor);

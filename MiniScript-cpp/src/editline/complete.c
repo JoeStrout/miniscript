@@ -122,7 +122,7 @@ static int FindMatches(char *dir, char *file, char ***avp)
             qsort(av, ac, sizeof(char *), compare);
     }
 
-    return (int)ac;
+    return ac;
 }
 
 /* Split a pathname into allocated directory and trailing filename parts. */
@@ -343,7 +343,7 @@ static char *complete(char *token, int *match)
 {
     size_t len = 0;
     char *word, **words = NULL;
-    long start, end;
+    int start, end;
 
     word = rl_find_token(&len);
     if (!word)
@@ -357,7 +357,7 @@ static char *complete(char *token, int *match)
 	goto fallback;
 
     rl_attempted_completion_over = 0;
-    words = rl_attempted_completion_function(word, (int)start, (int)end);
+    words = rl_attempted_completion_function(word, start, end);
 
     if (!rl_attempted_completion_over && !words)
 	words = rl_completion_matches(word, NULL);
