@@ -12,9 +12,9 @@ MiniScript is built with [CMake](https://cmake.org/). You can generate your desi
 
 3. `cmake ../..` (or on Windows, `cmake ..\..`) to generate a makefile and related files in the build directory.
 
-4. `cmake --build .` to actually do the build.
+4. `cmake --build . --config Release` to actually do the build.
 
-If successful, you should find an executable called `miniscript` which you can install (see **Installation**, below).  You'll also find a shared library (libminiscript-cpp.a) for you to link to in your own projects if you like.  You can even `include()` the CMakeLists.txt of this project inside your own for clean dependency management.
+If successful, you should find an executable called `miniscript` (or `miniscript.exe` on Windows) which you can install (see **Installation**, below).  You'll also find a shared library (libminiscript-cpp.a, miniscript-cpp.lib, or similar) for you to link to in your own projects if you like.  You can even `include()` the CMakeLists.txt of this project inside your own for clean dependency management.
 
 If you are only interested in the C# edition of MiniScript, there is a project file provided in the respective directory.
 

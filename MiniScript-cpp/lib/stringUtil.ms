@@ -56,6 +56,21 @@ string.contains = function(s)
 	return self.indexOf(s) != null
 end function
 
+// lastIndexOf: returns the *last* index of the given substring, optionally
+// before a given index.  Returns null if not found.
+// Examples:
+//		"Hello".lastIndexOf("l")		// returns 3
+//		"Hello".lastIndexOf("l", 3)		// returns 2
+string.lastIndexOf = function(substr, beforeIdx=null)
+	sslen = substr.len
+	if beforeIdx == null then i = self.len - sslen else i = beforeIdx - 1
+	while i >= 0
+		if self[i:i+sslen] == substr then return i
+		i -= 1
+	end while
+	return null
+end function
+
 // pad: return this string, padded (and optionally cut) to a desired length.
 string.pad = function(length, padChar=" ", cutIfTooLong=true)
 	if self.len > length then
@@ -109,6 +124,22 @@ string.trimLeft = function(charsToRemove=null)
 		p0 = p0 + 1
 	end while
 	return self[p0:]
+end function
+
+// string.compress: replaces any runs of a given character with a 
+// single instance of that character.
+// Example:
+//		"Hi!!! Bob!!".compress("!")  // returns "Hi! Bob!"
+string.compress = function(charToCompress=" ")
+	s = self
+	prevLen = -1
+	charTimes2 = charToCompress + charToCompress
+	while true
+		s = s.replace(charTimes2, charToCompress)
+		if s.len == prevLen then break
+		prevLen = s.len
+	end while
+	return s
 end function
 
 // ellideEnd: shortens a string (if needed) by cutting and adding
@@ -382,6 +413,14 @@ runUnitTests = function
 	assertEqual "hello world".contains("lo"), true
 	assertEqual "hi".contains("hello"), false
 	
+	testing = "lastIndexOf"
+	assertEqual "Hello world".lastIndexOf("l"), 9
+	assertEqual "Hello world".lastIndexOf("l", 9), 3
+	assertEqual "Hello world".lastIndexOf("l", 3), 2
+	assertEqual "Hello world".lastIndexOf("l", 2), null
+	assertEqual "big billy".lastIndexOf("bi"), 4
+	assertEqual "big billy".lastIndexOf("bi", 4), 0
+		
 	testing = "pad"
 	assertEqual "foo".pad(5), "foo  "
 	assertEqual "foo".pad(2), "fo"
@@ -400,6 +439,14 @@ runUnitTests = function
 	testing = "trim"; 		assertEqual s.trim, s
 	testing = "trimLeft";	assertEqual s.trimLeft, s
 	testing = "trimRight";	assertEqual s.trimRight, s
+	
+	testing = "compress"
+	s = "Hi....  Bob.  SHHH"
+	assertEqual s.compress, "Hi.... Bob. SHHH"
+	assertEqual s.compress("."), "Hi.  Bob.  SHHH"
+	assertEqual s.compress("H"), "Hi....  Bob.  SH"
+	assertEqual "ooOOoo".compress("o"), "oOOo"
+	assertEqual "ooOoo".compress("O"), "ooOoo"
 	
 	testing = "reverse"
 	assertEqual "Hello world!".reverse, "!dlrow olleH"
