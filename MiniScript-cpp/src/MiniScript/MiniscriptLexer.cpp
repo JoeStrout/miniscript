@@ -68,7 +68,7 @@ namespace MiniScript {
 		|| (c >= 'a' && c <= 'z')
 		|| (c >= 'A' && c <= 'Z')
 		|| (c >= '0' && c <= '9')
-		|| (unsigned char)c > 0x9F;
+		|| (unsigned char)c > 0x7F;
 	}
 	
 	bool Lexer::IsWhitespace(char c) {
