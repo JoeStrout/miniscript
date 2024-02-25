@@ -42,7 +42,7 @@ namespace MiniScript {
 	template <class K, class V>
 	class DictionaryStorage : public RefCountedStorage {
 	private:
-		DictionaryStorage() : RefCountedStorage(), mSize(0), assignOverride(NULL), evalOverride(NULL) { for (int i=0; i<TABLE_SIZE; i++) mTable[i] = nullptr; }
+		DictionaryStorage() : RefCountedStorage(), mSize(0), assignOverride(nullptr), evalOverride(nullptr) { for (int i=0; i<TABLE_SIZE; i++) mTable[i] = nullptr; }
 		~DictionaryStorage() { RemoveAll(); }
 
 		void RemoveAll() {
@@ -135,7 +135,7 @@ namespace MiniScript {
 		typedef bool (*AssignOverrideCallback)(Dictionary<K,V,HASH> &dict, K key, V value);
 		void SetAssignOverride(AssignOverrideCallback callback) { ensureStorage(); ds->assignOverride = (void*)callback; }
 		bool ApplyAssignOverride(K key, V value) {
-			if (ds == NULL or ds->assignOverride == NULL) return false;
+			if (ds == nullptr or ds->assignOverride == nullptr) return false;
 			AssignOverrideCallback cb = (AssignOverrideCallback)(ds->assignOverride);
 			return cb(*this, key, value);
 		}
@@ -144,7 +144,7 @@ namespace MiniScript {
 		typedef bool (*EvalOverrideCallback)(Dictionary<K,V,HASH> &dict, K key, V& outValue);
 		void SetEvalOverride(EvalOverrideCallback callback) { ensureStorage(); ds->evalOverride = (void*)callback; }
 		bool ApplyEvalOverride(K key, V& outValue) {
-			if (ds == NULL or ds->evalOverride == NULL) return false;
+			if (ds == nullptr or ds->evalOverride == nullptr) return false;
 			EvalOverrideCallback cb = (EvalOverrideCallback)(ds->evalOverride);
 			return cb(*this, key, outValue);
 		}

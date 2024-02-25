@@ -153,7 +153,7 @@ namespace MiniScript {
 			return type == ValueType::Null /* || (usesRef() && data.ref == nullptr) */;
 		}
 
-		Value Val(Context *context, ValueDict *outFoundInMap=NULL) const;
+		Value Val(Context *context, ValueDict *outFoundInMap=nullptr) const;
 		
 		/// Evaluate each of our contained elements, and if any of those is a variable
 		/// or temp, then resolve them now.  CAUTION: do not mutate the original list

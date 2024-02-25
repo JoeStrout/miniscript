@@ -90,29 +90,29 @@ public:
 };
 
 // hidden (unnamed) intrinsics, only accessible via other methods (such as the File module)
-Intrinsic *i_getcwd = NULL;
-Intrinsic *i_chdir = NULL;
-Intrinsic *i_readdir = NULL;
-Intrinsic *i_basename = NULL;
-Intrinsic *i_dirname = NULL;
-Intrinsic *i_child = NULL;
-Intrinsic *i_exists = NULL;
-Intrinsic *i_info = NULL;
-Intrinsic *i_mkdir = NULL;
-Intrinsic *i_copy = NULL;
-Intrinsic *i_readLines = NULL;
-Intrinsic *i_writeLines = NULL;
-Intrinsic *i_rename = NULL;
-Intrinsic *i_remove = NULL;
-Intrinsic *i_fopen = NULL;
-Intrinsic *i_fclose = NULL;
-Intrinsic *i_isOpen = NULL;
-Intrinsic *i_fwrite = NULL;
-Intrinsic *i_fwriteLine = NULL;
-Intrinsic *i_fread = NULL;
-Intrinsic *i_freadLine = NULL;
-Intrinsic *i_fposition = NULL;
-Intrinsic *i_feof = NULL;
+Intrinsic *i_getcwd = nullptr;
+Intrinsic *i_chdir = nullptr;
+Intrinsic *i_readdir = nullptr;
+Intrinsic *i_basename = nullptr;
+Intrinsic *i_dirname = nullptr;
+Intrinsic *i_child = nullptr;
+Intrinsic *i_exists = nullptr;
+Intrinsic *i_info = nullptr;
+Intrinsic *i_mkdir = nullptr;
+Intrinsic *i_copy = nullptr;
+Intrinsic *i_readLines = nullptr;
+Intrinsic *i_writeLines = nullptr;
+Intrinsic *i_rename = nullptr;
+Intrinsic *i_remove = nullptr;
+Intrinsic *i_fopen = nullptr;
+Intrinsic *i_fclose = nullptr;
+Intrinsic *i_isOpen = nullptr;
+Intrinsic *i_fwrite = nullptr;
+Intrinsic *i_fwriteLine = nullptr;
+Intrinsic *i_fread = nullptr;
+Intrinsic *i_freadLine = nullptr;
+Intrinsic *i_fposition = nullptr;
+Intrinsic *i_feof = nullptr;
 
 // Copy a file.  Return 0 on success, or some value < 0 on error.
 static int UnixishCopyFile(const char* source, const char* destination) {
@@ -200,7 +200,7 @@ static IntrinsicResult intrinsic_input(Context *context, IntrinsicResult partial
 	#if useEditline
 		char *buf;
 		buf = readline(prompt.ToString().c_str());
-		if (buf == NULL) return IntrinsicResult(Value::emptyString);
+		if (buf == nullptr) return IntrinsicResult(Value::emptyString);
 		String s(buf);
 		free(buf);
 		return IntrinsicResult(s);
@@ -261,7 +261,7 @@ static IntrinsicResult intrinsic_readdir(Context *context, IntrinsicResult parti
 		}
 	#else
 		DIR *dir = opendir(pathStr.c_str());
-		if (dir != NULL) {
+		if (dir != nullptr) {
 			while (struct dirent *entry = readdir(dir)) {
 				String name(entry->d_name);
 				if (name == "." || name == "..") continue;
@@ -281,7 +281,7 @@ static IntrinsicResult intrinsic_basename(Context *context, IntrinsicResult part
 		char driveBuf[3];
 		char nameBuf[256];
 		char extBuf[256];
-		_splitpath_s(pathStr.c_str(), driveBuf, sizeof(driveBuf), NULL, 0, nameBuf, sizeof(nameBuf), extBuf, sizeof(extBuf));
+		_splitpath_s(pathStr.c_str(), driveBuf, sizeof(driveBuf), nullptr, 0, nameBuf, sizeof(nameBuf), extBuf, sizeof(extBuf));
 		String result = String(nameBuf) + String(extBuf);
     #else
 		String result(basename((char*)pathStr.c_str()));
@@ -295,7 +295,7 @@ static String dirname(String pathStr) {
 	_fullpath(pathBuf, pathStr.c_str(), sizeof(pathBuf));
 	char driveBuf[3];
 	char dirBuf[256];
-	_splitpath_s(pathBuf, driveBuf, sizeof(driveBuf), dirBuf, sizeof(dirBuf), NULL, 0, NULL, 0);
+	_splitpath_s(pathBuf, driveBuf, sizeof(driveBuf), dirBuf, sizeof(dirBuf), nullptr, 0, nullptr, 0);
 	String result = String(driveBuf) + String(dirBuf);
 #elif defined(__APPLE__) || defined(__FreeBSD__)
 	String result(dirname((char*)pathStr.c_str()));
@@ -448,7 +448,7 @@ static IntrinsicResult intrinsic_mkdir(Context *context, IntrinsicResult partial
 #if _WIN32 || _WIN64
 	char pathBuf[512];
 	_fullpath(pathBuf, pathStr.c_str(), sizeof(pathBuf));
-	bool result = CreateDirectory(pathBuf, NULL);	
+	bool result = CreateDirectory(pathBuf, nullptr);	
 #else
 	bool result = (mkdir(pathStr.c_str(), 0755) == 0);
 #endif
@@ -507,11 +507,11 @@ static IntrinsicResult intrinsic_fopen(Context *context, IntrinsicResult partial
 	if (modeVal.IsNull() || mode.empty() || mode == "rw+" || mode == "r+") {
 		// special case: open for reading/updating, creating it if it doesn't exist
 		handle = fopen(path.c_str(), "r+");
-		if (handle == NULL) handle = fopen(path.c_str(), "w+");
+		if (handle == nullptr) handle = fopen(path.c_str(), "w+");
 	} else {
 		handle = fopen(path.c_str(), mode.c_str());
 	}
-	if (handle == NULL) return IntrinsicResult::Null;
+	if (handle == nullptr) return IntrinsicResult::Null;
 	
 	ValueDict instance;
 	instance.SetValue(Value::magicIsA, FileHandleClass());
@@ -531,9 +531,9 @@ static IntrinsicResult intrinsic_fclose(Context *context, IntrinsicResult partia
 	if (fileWrapper.IsNull() or fileWrapper.type != ValueType::Handle) return IntrinsicResult::Null;
 	FileHandleStorage *storage = (FileHandleStorage*)fileWrapper.data.ref;
 	FILE *handle = storage->f;
-	if (handle == NULL) return IntrinsicResult(Value::zero);
+	if (handle == nullptr) return IntrinsicResult(Value::zero);
 	fclose(handle);
-	storage->f = NULL;
+	storage->f = nullptr;
 	return IntrinsicResult(Value::one);
 }
 
@@ -542,7 +542,7 @@ static IntrinsicResult intrinsic_isOpen(Context *context, IntrinsicResult partia
 	Value fileWrapper = self.Lookup(_handle);
 	if (fileWrapper.IsNull() or fileWrapper.type != ValueType::Handle) return IntrinsicResult::Null;
 	FileHandleStorage *storage = (FileHandleStorage*)fileWrapper.data.ref;
-	return IntrinsicResult(Value::Truth(storage->f != NULL));
+	return IntrinsicResult(Value::Truth(storage->f != nullptr));
 }
 
 static IntrinsicResult intrinsic_fwrite(Context *context, IntrinsicResult partialResult) {
@@ -553,7 +553,7 @@ static IntrinsicResult intrinsic_fwrite(Context *context, IntrinsicResult partia
 	if (fileWrapper.IsNull() or fileWrapper.type != ValueType::Handle) return IntrinsicResult::Null;
 	FileHandleStorage *storage = (FileHandleStorage*)fileWrapper.data.ref;
 	FILE *handle = storage->f;
-	if (handle == NULL) return IntrinsicResult(Value::zero);
+	if (handle == nullptr) return IntrinsicResult(Value::zero);
 
 	size_t written = fwrite(data.c_str(), 1, data.sizeB(), handle);
 	return IntrinsicResult((int)written);
@@ -566,7 +566,7 @@ static IntrinsicResult intrinsic_fwriteLine(Context *context, IntrinsicResult pa
 	if (fileWrapper.IsNull() or fileWrapper.type != ValueType::Handle) return IntrinsicResult::Null;
 	FileHandleStorage *storage = (FileHandleStorage*)fileWrapper.data.ref;
 	FILE *handle = storage->f;
-	if (handle == NULL) return IntrinsicResult(Value::zero);
+	if (handle == nullptr) return IntrinsicResult(Value::zero);
 	size_t written = fwrite(data.c_str(), 1, data.sizeB(), handle);
 	written += fwrite("\n", 1, 1, handle);
 	return IntrinsicResult((int)written);
@@ -594,7 +594,7 @@ static IntrinsicResult intrinsic_fread(Context *context, IntrinsicResult partial
 	if (fileWrapper.IsNull() or fileWrapper.type != ValueType::Handle) return IntrinsicResult::Null;
 	FileHandleStorage *storage = (FileHandleStorage*)fileWrapper.data.ref;
 	FILE *handle = storage->f;
-	if (handle == NULL) return IntrinsicResult(Value::zero);
+	if (handle == nullptr) return IntrinsicResult(Value::zero);
 	
 	String result = ReadFileHelper(handle, bytesToRead);
 	return IntrinsicResult(result);
@@ -607,7 +607,7 @@ static IntrinsicResult intrinsic_fposition(Context *context, IntrinsicResult par
 	if (fileWrapper.IsNull() or fileWrapper.type != ValueType::Handle) return IntrinsicResult::Null;
 	FileHandleStorage *storage = (FileHandleStorage*)fileWrapper.data.ref;
 	FILE *handle = storage->f;
-	if (handle == NULL) return IntrinsicResult::Null;
+	if (handle == nullptr) return IntrinsicResult::Null;
 
 	return IntrinsicResult(ftell(handle));
 }
@@ -619,7 +619,7 @@ static IntrinsicResult intrinsic_feof(Context *context, IntrinsicResult partialR
 	if (fileWrapper.IsNull() or fileWrapper.type != ValueType::Handle) return IntrinsicResult::Null;
 	FileHandleStorage *storage = (FileHandleStorage*)fileWrapper.data.ref;
 	FILE *handle = storage->f;
-	if (handle == NULL) return IntrinsicResult::Null;
+	if (handle == nullptr) return IntrinsicResult::Null;
 
 	// Note: feof returns true only after attempting to read PAST the end of the file.
 	// Not after the last successful read.  See: https://stackoverflow.com/questions/34888776
@@ -632,11 +632,11 @@ static IntrinsicResult intrinsic_freadLine(Context *context, IntrinsicResult par
 	if (fileWrapper.IsNull() or fileWrapper.type != ValueType::Handle) return IntrinsicResult::Null;
 	FileHandleStorage *storage = (FileHandleStorage*)fileWrapper.data.ref;
 	FILE *handle = storage->f;
-	if (handle == NULL) return IntrinsicResult::Null;
+	if (handle == nullptr) return IntrinsicResult::Null;
 
 	char buf[1024];
 	char *str = fgets(buf, sizeof(buf), handle);
-	if (str == NULL) return IntrinsicResult::Null;
+	if (str == nullptr) return IntrinsicResult::Null;
 	// Grr... we need to strip the terminating newline.
 	// Still probably faster than reading character by character though.
 	for (int i=0; i<sizeof(buf); i++) {
@@ -655,7 +655,7 @@ static IntrinsicResult intrinsic_readLines(Context *context, IntrinsicResult par
 	String path = context->GetVar("path").ToString();
 	
 	FILE *handle = fopen(path.c_str(), "r");
-	if (handle == NULL) return IntrinsicResult::Null;
+	if (handle == nullptr) return IntrinsicResult::Null;
 
 	// Read in 1K chunks, dividing into lines.
 	ValueList list;
@@ -692,7 +692,7 @@ static IntrinsicResult intrinsic_writeLines(Context *context, IntrinsicResult pa
 	Value lines = context->GetVar("lines");
 
 	FILE *handle = fopen(path.c_str(), "w");
-	if (handle == NULL) return IntrinsicResult::Null;
+	if (handle == nullptr) return IntrinsicResult::Null;
 
 	size_t written = 0;
 	if (lines.type == ValueType::List) {
@@ -719,12 +719,12 @@ bool CreateChildProcess(const String& cmd, String& out, String& err, DWORD& retu
 	SECURITY_ATTRIBUTES saAttr;
 	saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
 	saAttr.bInheritHandle = TRUE;
-	saAttr.lpSecurityDescriptor = NULL;
+	saAttr.lpSecurityDescriptor = nullptr;
 
-	HANDLE hChildStd_OUT_Rd = NULL;
-	HANDLE hChildStd_OUT_Wr = NULL;
-	HANDLE hChildStd_ERR_Rd = NULL;
-	HANDLE hChildStd_ERR_Wr = NULL;
+	HANDLE hChildStd_OUT_Rd = nullptr;
+	HANDLE hChildStd_OUT_Wr = nullptr;
+	HANDLE hChildStd_ERR_Rd = nullptr;
+	HANDLE hChildStd_ERR_Wr = nullptr;
 
 	// Create a pipe for the child process's STDOUT.
 	if (!CreatePipe(&hChildStd_OUT_Rd, &hChildStd_OUT_Wr, &saAttr, 0))
@@ -751,14 +751,14 @@ bool CreateChildProcess(const String& cmd, String& out, String& err, DWORD& retu
 	ZeroMemory(&piProcInfo, sizeof(PROCESS_INFORMATION));
 
 	// Start the child process.
-	if (!CreateProcessA(NULL,
+	if (!CreateProcessA(nullptr,
 		(LPSTR)cmd.c_str(), // command line
-		NULL,               // process security attributes
-		NULL,               // primary thread security attributes
+		nullptr,               // process security attributes
+		nullptr,               // primary thread security attributes
 		TRUE,               // handles are inherited
 		0,                  // creation flags
-		NULL,               // use parent's environment
-		NULL,               // use parent's current directory
+		nullptr,               // use parent's environment
+		nullptr,               // use parent's current directory
 		&siStartInfo,       // STARTUPINFO pointer
 		&piProcInfo))       // receives PROCESS_INFORMATION
 	{
@@ -777,7 +777,7 @@ bool CreateChildProcess(const String& cmd, String& out, String& err, DWORD& retu
 	bool bSuccess = FALSE;
 
 	for (;;) {
-		bSuccess = ReadFile(hChildStd_OUT_Rd, chBuf, 4096, &dwRead, NULL);
+		bSuccess = ReadFile(hChildStd_OUT_Rd, chBuf, 4096, &dwRead, nullptr);
 		if (!bSuccess || dwRead == 0) break;
 
 		String outputStr(chBuf, dwRead);
@@ -786,7 +786,7 @@ bool CreateChildProcess(const String& cmd, String& out, String& err, DWORD& retu
 
 	// Read from STDERR
 	for (;;) {
-		bSuccess = ReadFile(hChildStd_ERR_Rd, chBuf, 4096, &dwRead, NULL);
+		bSuccess = ReadFile(hChildStd_ERR_Rd, chBuf, 4096, &dwRead, nullptr);
 		if (!bSuccess || dwRead == 0) break;
 
 		String errorStr(chBuf, dwRead);
@@ -992,7 +992,7 @@ static IntrinsicResult intrinsic_import(Context *context, IntrinsicResult partia
 		path += libname + ".ms";
 		path = ExpandVariables(path);
 		FILE *handle = fopen(path.c_str(), "r");
-		if (handle == NULL) continue;
+		if (handle == nullptr) continue;
 		moduleSource = ReadFileHelper(handle, -1);
 		fclose(handle);
 		found = true;
@@ -1028,7 +1028,7 @@ void AddScriptPathVar(const char* scriptPartialPath) {
 			_fullpath(s, ".", sizeof(s));
 			scriptDir = s;
 		#else
-			char* s = realpath(".", NULL);
+			char* s = realpath(".", nullptr);
 			scriptDir = s;
 			free(s);
 		#endif
@@ -1038,7 +1038,7 @@ void AddScriptPathVar(const char* scriptPartialPath) {
 			_fullpath(s, scriptPartialPath, sizeof(s));
 			String scriptFullPath = s;
 		#else
-			char* s = realpath(scriptPartialPath, NULL);
+			char* s = realpath(scriptPartialPath, nullptr);
 			String scriptFullPath(s);
 			free(s);
 		#endif
@@ -1048,7 +1048,7 @@ void AddScriptPathVar(const char* scriptPartialPath) {
 }
 
 void AddPathEnvVars() {
-	int length = wai_getExecutablePath(NULL, 0, NULL);
+	int length = wai_getExecutablePath(nullptr, 0, nullptr);
 	char* path = (char*)malloc(length + 1);
 	int dirname_length;
 	wai_getExecutablePath(path, length, &dirname_length);

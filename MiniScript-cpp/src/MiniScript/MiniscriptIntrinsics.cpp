@@ -40,7 +40,7 @@ namespace MiniScript {
 
 	static inline void InitRand() {
 		if (!randInitialized) {
-			srand((unsigned int)time(NULL));
+			srand((unsigned int)time(nullptr));
 			for (int i=0; i<10; i++) rand();
 			randInitialized = true;
 		}
@@ -255,7 +255,7 @@ namespace MiniScript {
 		
 		for (int i=0; i<Intrinsic::all.Count(); i++) {
 			Intrinsic* intrinsic = Intrinsic::all[i];
-			if (intrinsic == NULL || intrinsic->name.empty()) continue;
+			if (intrinsic == nullptr || intrinsic->name.empty()) continue;
 			_intrinsicsMap.SetValue(intrinsic->name, intrinsic->GetFunc());
 		}
 		

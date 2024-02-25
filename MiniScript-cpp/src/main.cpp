@@ -89,7 +89,7 @@ static int DoREPL(Interpreter &interp) {
 			#if useEditline
 				char *buf;
 				buf = readline(prompt);
-				if (buf == NULL) return 0;
+				if (buf == nullptr) return 0;
 				interp.REPL(buf);
 				free(buf);
 			#else

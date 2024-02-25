@@ -175,7 +175,7 @@ namespace MiniScript {
         if (not vm) return Value::null;
 
 		Context* globalContext = vm->GetGlobalContext();
-        if (globalContext == NULL) return Value::null;
+        if (globalContext == nullptr) return Value::null;
         try
         {
             return globalContext->GetVar(varName);

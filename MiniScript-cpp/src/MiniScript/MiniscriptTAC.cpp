@@ -189,7 +189,7 @@ namespace MiniScript {
 		if (op == Op::ElemBofA && opB.type == ValueType::String) {
 			// You can now look for a String in almost anything...
 			// and we have a convenient (and relatively fast) method for it:
-			return Value::Resolve(opA, opB.ToString(), context, NULL);
+			return Value::Resolve(opA, opB.ToString(), context, nullptr);
 		}
 		
 		// check for special cases of comparison to null (works with any type)
@@ -323,7 +323,7 @@ namespace MiniScript {
 					size_t totalBytes = lenB * repeats + extraStr.LengthB();
 					if (totalBytes > Value::maxStringSize) LimitExceededException("string too large").raise();
 					char *buf = new char[totalBytes+1];
-					if (buf == NULL) return Value::null;
+					if (buf == nullptr) return Value::null;
 					char *ptr = buf;
 					for (int i = 0; i < repeats; i++) {
 						strncpy(ptr, sA.c_str(), lenB);
@@ -573,7 +573,7 @@ namespace MiniScript {
 		
 		// OK, we don't have a local or module variable with that name.
 		// Check the global scope (if that's not us already).
-		if (parent != NULL) {
+		if (parent != nullptr) {
 			Context* globals = Root();
 			if (globals->variables.Get(identifier, &result)) return result;
 		}
@@ -758,7 +758,7 @@ namespace MiniScript {
 		String nullStr;
 		if (stack.Count() < 1) return nullStr;
 		Context *globalContext = stack[0];
-		if (globalContext == NULL) return nullStr;
+		if (globalContext == nullptr) return nullStr;
 		for (ValueDictIterator kv = globalContext->variables.GetIterator(); !kv.Done(); kv.Next()) {
 			if (!kv.Value().RefEquals(val)) continue;
 			String varName = kv.Key().ToString();
@@ -772,7 +772,7 @@ namespace MiniScript {
 			return GetTickCount() * 0.001;
 		#else
 			struct timeval timecheck;
-			gettimeofday(&timecheck, NULL);
+			gettimeofday(&timecheck, nullptr);
 			return (long)timecheck.tv_sec * 1.0 + (long)timecheck.tv_usec / 1000000.0;
 		#endif
 	}

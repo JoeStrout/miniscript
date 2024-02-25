@@ -256,7 +256,7 @@ namespace MiniScript {
 		Assert(s > empty);
 		Assert(empty < s);
 		// Test null and empty String are equal
-		Assert(empty == NULL);
+		Assert(empty == nullptr);
 		Assert(empty == "");
 		
 		

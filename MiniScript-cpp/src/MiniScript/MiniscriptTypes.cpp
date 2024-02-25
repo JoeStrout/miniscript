@@ -146,7 +146,7 @@ namespace MiniScript {
 			case ValueType::Map:
 			{
 				if (recursionLimit == 0) return "{...}";
-				if (recursionLimit > 0 && recursionLimit < 3 && vm != NULL) {
+				if (recursionLimit > 0 && recursionLimit < 3 && vm != nullptr) {
 					String shortName = vm->FindShortName(*this);
 					if (!shortName.empty()) return shortName;
 				}
@@ -276,7 +276,7 @@ namespace MiniScript {
 			case ValueType::Handle:
 			{
 				// Any handle at all is true.
-				return (data.ref != NULL);
+				return (data.ref != nullptr);
 			}
 				
 			default:
@@ -888,13 +888,13 @@ void TestValue::TestBasics()
 	Assert(c.type == ValueType::Number and c.data.number == 42);
 
 	a = "Foo!";
-	Assert(a.type == ValueType::String and a.ToString(NULL) == "Foo!");
+	Assert(a.type == ValueType::String and a.ToString(nullptr) == "Foo!");
 	b = a;
-	Assert(b.type == ValueType::String and b.ToString(NULL) == "Foo!");
+	Assert(b.type == ValueType::String and b.ToString(nullptr) == "Foo!");
 
  	Assert(c.type == ValueType::Number and c.data.number == 42);
 	b = 0.0;
-	Assert(a.type == ValueType::String and a.ToString(NULL) == "Foo!");
+	Assert(a.type == ValueType::String and a.ToString(nullptr) == "Foo!");
 
 	{
 		List<Value> lst;
@@ -904,7 +904,7 @@ void TestValue::TestBasics()
 		a = lst;
 	}
 	Assert(a.type == ValueType::List);
-	String s = a.ToString(NULL);
+	String s = a.ToString(nullptr);
 	Assert(s == "[1, \"two\", 3.14157]");
 }
 

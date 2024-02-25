@@ -36,7 +36,7 @@ String readFromFd(HANDLE fd, bool trimTrailingNewline=true) {
 	bool trimmed = false;
 	
 	for (;;) {
-		bSuccess = ReadFile(fd, buffer, bufferSize-1, &bytesRead, NULL);
+		bSuccess = ReadFile(fd, buffer, bufferSize-1, &bytesRead, nullptr);
 		if (!bSuccess || bytesRead == 0) break;
 		buffer[bytesRead] = '\0';
 		if (trimTrailingNewline and bytesRead < bufferSize-1 and bytesRead > 0 and buffer[bytesRead-1] == '\n') {
@@ -74,12 +74,12 @@ bool BeginExec(String cmd, double timeout, double currentTime, ValueList* outRes
 	SECURITY_ATTRIBUTES saAttr;
 	saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
 	saAttr.bInheritHandle = TRUE;
-	saAttr.lpSecurityDescriptor = NULL;
+	saAttr.lpSecurityDescriptor = nullptr;
 
-	HANDLE hChildStd_OUT_Rd = NULL;
-	HANDLE hChildStd_OUT_Wr = NULL;
-	HANDLE hChildStd_ERR_Rd = NULL;
-	HANDLE hChildStd_ERR_Wr = NULL;
+	HANDLE hChildStd_OUT_Rd = nullptr;
+	HANDLE hChildStd_OUT_Wr = nullptr;
+	HANDLE hChildStd_ERR_Rd = nullptr;
+	HANDLE hChildStd_ERR_Wr = nullptr;
 
 	// Create a pipe for the child process's STDOUT and STDERR.
 	// Disable the INHERIT flag to ensure each handle is not inherited
@@ -99,14 +99,14 @@ bool BeginExec(String cmd, double timeout, double currentTime, ValueList* outRes
 	ZeroMemory(&piProcInfo, sizeof(PROCESS_INFORMATION));
 
 	// Start the child process.
-	if (!CreateProcessA(NULL,
+	if (!CreateProcessA(nullptr,
 		(LPSTR)cmd.c_str(), // command line
-		NULL,               // process security attributes
-		NULL,               // primary thread security attributes
+		nullptr,               // process security attributes
+		nullptr,               // primary thread security attributes
 		TRUE,               // handles are inherited
 		0,                  // creation flags
-		NULL,               // use parent's environment
-		NULL,               // use parent's current directory
+		nullptr,               // use parent's environment
+		nullptr,               // use parent's current directory
 		&siStartInfo,       // STARTUPINFO pointer
 		&piProcInfo))       // receives PROCESS_INFORMATION
 	{
@@ -243,7 +243,7 @@ bool BeginExec(String cmd, double timeout, double currentTime, ValueList* outRes
 		
 		// Call the host environment's command processor.  Or if the command
 		// is empty, then return a nonzero value iff the command processor exists.
-		const char* cmdPtr = cmd.empty() ? NULL : cmd.c_str();
+		const char* cmdPtr = cmd.empty() ? nullptr : cmd.c_str();
 		int cmdResult = std::system(cmdPtr);
 		cmdResult = WEXITSTATUS(cmdResult);
 		
