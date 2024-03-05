@@ -1224,7 +1224,7 @@ namespace Miniscript {
 			Value baseVal = baseSeq.Val(context);
 			if (baseVal is ValMap) {
 				Value result = ((ValMap)baseVal).Lookup(idxVal, out valueFoundIn);
-				if (valueFoundIn == null) throw new KeyException(idxVal.CodeForm(context.vm, 1));
+				if (valueFoundIn == null) throw new KeyException(idxVal == null ? "null" : idxVal.CodeForm(context.vm, 1));
 				return result;
 			} else if (baseVal is ValList) {
 				return ((ValList)baseVal).GetElem(idxVal);
