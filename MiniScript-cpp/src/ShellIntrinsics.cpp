@@ -21,8 +21,19 @@
 #include "MiniScript/SplitJoin.h"
 #include "whereami/whereami.h"
 #include "DateTimeUtils.h"
+#include "ShellExec.h"
+
+#include <cstdlib>
+#include <sstream>
+#include <iostream>
+#include <memory>
+#include <stdexcept>
+#include <array>
+#include <vector>
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #if _WIN32 || _WIN64
 	#define WINDOWS 1
@@ -30,6 +41,8 @@
 	#include <Shlwapi.h>
 	#include <Fileapi.h>
 	#include <direct.h>
+	#include <locale>
+	#include <codecvt>
 	#define getcwd _getcwd
 	#define setenv _setenv
 	#define PATHSEP '\\'
@@ -47,6 +60,8 @@
 		#include <sys/sendfile.h>
 	#endif
 	#define PATHSEP '/'
+	#include <unistd.h>
+	#include <sys/wait.h>
 #endif
 
 extern "C" {
@@ -75,29 +90,29 @@ public:
 };
 
 // hidden (unnamed) intrinsics, only accessible via other methods (such as the File module)
-Intrinsic *i_getcwd = NULL;
-Intrinsic *i_chdir = NULL;
-Intrinsic *i_readdir = NULL;
-Intrinsic *i_basename = NULL;
-Intrinsic *i_dirname = NULL;
-Intrinsic *i_child = NULL;
-Intrinsic *i_exists = NULL;
-Intrinsic *i_info = NULL;
-Intrinsic *i_mkdir = NULL;
-Intrinsic *i_copy = NULL;
-Intrinsic *i_readLines = NULL;
-Intrinsic *i_writeLines = NULL;
-Intrinsic *i_rename = NULL;
-Intrinsic *i_remove = NULL;
-Intrinsic *i_fopen = NULL;
-Intrinsic *i_fclose = NULL;
-Intrinsic *i_isOpen = NULL;
-Intrinsic *i_fwrite = NULL;
-Intrinsic *i_fwriteLine = NULL;
-Intrinsic *i_fread = NULL;
-Intrinsic *i_freadLine = NULL;
-Intrinsic *i_fposition = NULL;
-Intrinsic *i_feof = NULL;
+Intrinsic *i_getcwd = nullptr;
+Intrinsic *i_chdir = nullptr;
+Intrinsic *i_readdir = nullptr;
+Intrinsic *i_basename = nullptr;
+Intrinsic *i_dirname = nullptr;
+Intrinsic *i_child = nullptr;
+Intrinsic *i_exists = nullptr;
+Intrinsic *i_info = nullptr;
+Intrinsic *i_mkdir = nullptr;
+Intrinsic *i_copy = nullptr;
+Intrinsic *i_readLines = nullptr;
+Intrinsic *i_writeLines = nullptr;
+Intrinsic *i_rename = nullptr;
+Intrinsic *i_remove = nullptr;
+Intrinsic *i_fopen = nullptr;
+Intrinsic *i_fclose = nullptr;
+Intrinsic *i_isOpen = nullptr;
+Intrinsic *i_fwrite = nullptr;
+Intrinsic *i_fwriteLine = nullptr;
+Intrinsic *i_fread = nullptr;
+Intrinsic *i_freadLine = nullptr;
+Intrinsic *i_fposition = nullptr;
+Intrinsic *i_feof = nullptr;
 
 // Copy a file.  Return 0 on success, or some value < 0 on error.
 static int UnixishCopyFile(const char* source, const char* destination) {
@@ -185,7 +200,7 @@ static IntrinsicResult intrinsic_input(Context *context, IntrinsicResult partial
 	#if useEditline
 		char *buf;
 		buf = readline(prompt.ToString().c_str());
-		if (buf == NULL) return IntrinsicResult(Value::emptyString);
+		if (buf == nullptr) return IntrinsicResult(Value::emptyString);
 		String s(buf);
 		free(buf);
 		return IntrinsicResult(s);
@@ -246,7 +261,7 @@ static IntrinsicResult intrinsic_readdir(Context *context, IntrinsicResult parti
 		}
 	#else
 		DIR *dir = opendir(pathStr.c_str());
-		if (dir != NULL) {
+		if (dir != nullptr) {
 			while (struct dirent *entry = readdir(dir)) {
 				String name(entry->d_name);
 				if (name == "." || name == "..") continue;
@@ -266,7 +281,7 @@ static IntrinsicResult intrinsic_basename(Context *context, IntrinsicResult part
 		char driveBuf[3];
 		char nameBuf[256];
 		char extBuf[256];
-		_splitpath_s(pathStr.c_str(), driveBuf, sizeof(driveBuf), NULL, 0, nameBuf, sizeof(nameBuf), extBuf, sizeof(extBuf));
+		_splitpath_s(pathStr.c_str(), driveBuf, sizeof(driveBuf), nullptr, 0, nameBuf, sizeof(nameBuf), extBuf, sizeof(extBuf));
 		String result = String(nameBuf) + String(extBuf);
     #else
 		String result(basename((char*)pathStr.c_str()));
@@ -280,7 +295,7 @@ static String dirname(String pathStr) {
 	_fullpath(pathBuf, pathStr.c_str(), sizeof(pathBuf));
 	char driveBuf[3];
 	char dirBuf[256];
-	_splitpath_s(pathBuf, driveBuf, sizeof(driveBuf), dirBuf, sizeof(dirBuf), NULL, 0, NULL, 0);
+	_splitpath_s(pathBuf, driveBuf, sizeof(driveBuf), dirBuf, sizeof(dirBuf), nullptr, 0, nullptr, 0);
 	String result = String(driveBuf) + String(dirBuf);
 #elif defined(__APPLE__) || defined(__FreeBSD__)
 	String result(dirname((char*)pathStr.c_str()));
@@ -433,7 +448,7 @@ static IntrinsicResult intrinsic_mkdir(Context *context, IntrinsicResult partial
 #if _WIN32 || _WIN64
 	char pathBuf[512];
 	_fullpath(pathBuf, pathStr.c_str(), sizeof(pathBuf));
-	bool result = CreateDirectory(pathBuf, NULL);	
+	bool result = CreateDirectory(pathBuf, nullptr);	
 #else
 	bool result = (mkdir(pathStr.c_str(), 0755) == 0);
 #endif
@@ -492,11 +507,11 @@ static IntrinsicResult intrinsic_fopen(Context *context, IntrinsicResult partial
 	if (modeVal.IsNull() || mode.empty() || mode == "rw+" || mode == "r+") {
 		// special case: open for reading/updating, creating it if it doesn't exist
 		handle = fopen(path.c_str(), "r+");
-		if (handle == NULL) handle = fopen(path.c_str(), "w+");
+		if (handle == nullptr) handle = fopen(path.c_str(), "w+");
 	} else {
 		handle = fopen(path.c_str(), mode.c_str());
 	}
-	if (handle == NULL) return IntrinsicResult::Null;
+	if (handle == nullptr) return IntrinsicResult::Null;
 	
 	ValueDict instance;
 	instance.SetValue(Value::magicIsA, FileHandleClass());
@@ -516,9 +531,9 @@ static IntrinsicResult intrinsic_fclose(Context *context, IntrinsicResult partia
 	if (fileWrapper.IsNull() or fileWrapper.type != ValueType::Handle) return IntrinsicResult::Null;
 	FileHandleStorage *storage = (FileHandleStorage*)fileWrapper.data.ref;
 	FILE *handle = storage->f;
-	if (handle == NULL) return IntrinsicResult(Value::zero);
+	if (handle == nullptr) return IntrinsicResult(Value::zero);
 	fclose(handle);
-	storage->f = NULL;
+	storage->f = nullptr;
 	return IntrinsicResult(Value::one);
 }
 
@@ -527,7 +542,7 @@ static IntrinsicResult intrinsic_isOpen(Context *context, IntrinsicResult partia
 	Value fileWrapper = self.Lookup(_handle);
 	if (fileWrapper.IsNull() or fileWrapper.type != ValueType::Handle) return IntrinsicResult::Null;
 	FileHandleStorage *storage = (FileHandleStorage*)fileWrapper.data.ref;
-	return IntrinsicResult(Value::Truth(storage->f != NULL));
+	return IntrinsicResult(Value::Truth(storage->f != nullptr));
 }
 
 static IntrinsicResult intrinsic_fwrite(Context *context, IntrinsicResult partialResult) {
@@ -538,7 +553,7 @@ static IntrinsicResult intrinsic_fwrite(Context *context, IntrinsicResult partia
 	if (fileWrapper.IsNull() or fileWrapper.type != ValueType::Handle) return IntrinsicResult::Null;
 	FileHandleStorage *storage = (FileHandleStorage*)fileWrapper.data.ref;
 	FILE *handle = storage->f;
-	if (handle == NULL) return IntrinsicResult(Value::zero);
+	if (handle == nullptr) return IntrinsicResult(Value::zero);
 
 	size_t written = fwrite(data.c_str(), 1, data.sizeB(), handle);
 	return IntrinsicResult((int)written);
@@ -551,7 +566,7 @@ static IntrinsicResult intrinsic_fwriteLine(Context *context, IntrinsicResult pa
 	if (fileWrapper.IsNull() or fileWrapper.type != ValueType::Handle) return IntrinsicResult::Null;
 	FileHandleStorage *storage = (FileHandleStorage*)fileWrapper.data.ref;
 	FILE *handle = storage->f;
-	if (handle == NULL) return IntrinsicResult(Value::zero);
+	if (handle == nullptr) return IntrinsicResult(Value::zero);
 	size_t written = fwrite(data.c_str(), 1, data.sizeB(), handle);
 	written += fwrite("\n", 1, 1, handle);
 	return IntrinsicResult((int)written);
@@ -579,7 +594,7 @@ static IntrinsicResult intrinsic_fread(Context *context, IntrinsicResult partial
 	if (fileWrapper.IsNull() or fileWrapper.type != ValueType::Handle) return IntrinsicResult::Null;
 	FileHandleStorage *storage = (FileHandleStorage*)fileWrapper.data.ref;
 	FILE *handle = storage->f;
-	if (handle == NULL) return IntrinsicResult(Value::zero);
+	if (handle == nullptr) return IntrinsicResult(Value::zero);
 	
 	String result = ReadFileHelper(handle, bytesToRead);
 	return IntrinsicResult(result);
@@ -592,7 +607,7 @@ static IntrinsicResult intrinsic_fposition(Context *context, IntrinsicResult par
 	if (fileWrapper.IsNull() or fileWrapper.type != ValueType::Handle) return IntrinsicResult::Null;
 	FileHandleStorage *storage = (FileHandleStorage*)fileWrapper.data.ref;
 	FILE *handle = storage->f;
-	if (handle == NULL) return IntrinsicResult::Null;
+	if (handle == nullptr) return IntrinsicResult::Null;
 
 	return IntrinsicResult(ftell(handle));
 }
@@ -604,7 +619,7 @@ static IntrinsicResult intrinsic_feof(Context *context, IntrinsicResult partialR
 	if (fileWrapper.IsNull() or fileWrapper.type != ValueType::Handle) return IntrinsicResult::Null;
 	FileHandleStorage *storage = (FileHandleStorage*)fileWrapper.data.ref;
 	FILE *handle = storage->f;
-	if (handle == NULL) return IntrinsicResult::Null;
+	if (handle == nullptr) return IntrinsicResult::Null;
 
 	// Note: feof returns true only after attempting to read PAST the end of the file.
 	// Not after the last successful read.  See: https://stackoverflow.com/questions/34888776
@@ -617,11 +632,11 @@ static IntrinsicResult intrinsic_freadLine(Context *context, IntrinsicResult par
 	if (fileWrapper.IsNull() or fileWrapper.type != ValueType::Handle) return IntrinsicResult::Null;
 	FileHandleStorage *storage = (FileHandleStorage*)fileWrapper.data.ref;
 	FILE *handle = storage->f;
-	if (handle == NULL) return IntrinsicResult::Null;
+	if (handle == nullptr) return IntrinsicResult::Null;
 
 	char buf[1024];
 	char *str = fgets(buf, sizeof(buf), handle);
-	if (str == NULL) return IntrinsicResult::Null;
+	if (str == nullptr) return IntrinsicResult::Null;
 	// Grr... we need to strip the terminating newline.
 	// Still probably faster than reading character by character though.
 	for (int i=0; i<sizeof(buf); i++) {
@@ -640,7 +655,7 @@ static IntrinsicResult intrinsic_readLines(Context *context, IntrinsicResult par
 	String path = context->GetVar("path").ToString();
 	
 	FILE *handle = fopen(path.c_str(), "r");
-	if (handle == NULL) return IntrinsicResult::Null;
+	if (handle == nullptr) return IntrinsicResult::Null;
 
 	// Read in 1K chunks, dividing into lines.
 	ValueList list;
@@ -677,7 +692,7 @@ static IntrinsicResult intrinsic_writeLines(Context *context, IntrinsicResult pa
 	Value lines = context->GetVar("lines");
 
 	FILE *handle = fopen(path.c_str(), "w");
-	if (handle == NULL) return IntrinsicResult::Null;
+	if (handle == nullptr) return IntrinsicResult::Null;
 
 	size_t written = 0;
 	if (lines.type == ValueType::List) {
@@ -697,6 +712,168 @@ static IntrinsicResult intrinsic_writeLines(Context *context, IntrinsicResult pa
 	fclose(handle);
 	return IntrinsicResult((int)written);
 }
+
+#if WINDOWS
+// timeout : The time to wait in milliseconds before killing the child process.
+bool CreateChildProcess(const String& cmd, String& out, String& err, DWORD& returnCode, DWORD timeout) {
+	SECURITY_ATTRIBUTES saAttr;
+	saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
+	saAttr.bInheritHandle = TRUE;
+	saAttr.lpSecurityDescriptor = nullptr;
+
+	HANDLE hChildStd_OUT_Rd = nullptr;
+	HANDLE hChildStd_OUT_Wr = nullptr;
+	HANDLE hChildStd_ERR_Rd = nullptr;
+	HANDLE hChildStd_ERR_Wr = nullptr;
+
+	// Create a pipe for the child process's STDOUT.
+	if (!CreatePipe(&hChildStd_OUT_Rd, &hChildStd_OUT_Wr, &saAttr, 0))
+		return false;
+
+	// Ensure the read handle to the pipe for STDOUT is not inherited.
+	SetHandleInformation(hChildStd_OUT_Rd, HANDLE_FLAG_INHERIT, 0);
+
+	// Create a pipe for the child process's STDERR.
+	if (!CreatePipe(&hChildStd_ERR_Rd, &hChildStd_ERR_Wr, &saAttr, 0))
+		return false;
+
+	// Ensure the read handle to the pipe for STDERR is not inherited.
+	SetHandleInformation(hChildStd_ERR_Rd, HANDLE_FLAG_INHERIT, 0);
+
+	STARTUPINFO siStartInfo;
+	ZeroMemory(&siStartInfo, sizeof(STARTUPINFO));
+	siStartInfo.cb = sizeof(STARTUPINFO);
+	siStartInfo.hStdError = hChildStd_ERR_Wr;
+	siStartInfo.hStdOutput = hChildStd_OUT_Wr;
+	siStartInfo.dwFlags |= STARTF_USESTDHANDLES;
+
+	PROCESS_INFORMATION piProcInfo;
+	ZeroMemory(&piProcInfo, sizeof(PROCESS_INFORMATION));
+
+	// Start the child process.
+	if (!CreateProcessA(nullptr,
+		(LPSTR)cmd.c_str(), // command line
+		nullptr,               // process security attributes
+		nullptr,               // primary thread security attributes
+		TRUE,               // handles are inherited
+		0,                  // creation flags
+		nullptr,               // use parent's environment
+		nullptr,               // use parent's current directory
+		&siStartInfo,       // STARTUPINFO pointer
+		&piProcInfo))       // receives PROCESS_INFORMATION
+	{
+		return false;
+	}
+
+	// Close handles to the stdin and stdout pipes no longer needed by the child process.
+	// If they are not explicitly closed, there is no way to recognize that the child process has completed.
+	CloseHandle(hChildStd_OUT_Wr);
+	CloseHandle(hChildStd_ERR_Wr);
+
+	// Read output from the child process's pipe for STDOUT
+	// and print to the parent process's STDOUT.
+	DWORD dwRead;
+	CHAR chBuf[4096];
+	bool bSuccess = FALSE;
+
+	for (;;) {
+		bSuccess = ReadFile(hChildStd_OUT_Rd, chBuf, 4096, &dwRead, nullptr);
+		if (!bSuccess || dwRead == 0) break;
+
+		String outputStr(chBuf, dwRead);
+		out += outputStr;
+	}
+
+	// Read from STDERR
+	for (;;) {
+		bSuccess = ReadFile(hChildStd_ERR_Rd, chBuf, 4096, &dwRead, nullptr);
+		if (!bSuccess || dwRead == 0) break;
+
+		String errorStr(chBuf, dwRead);
+		err += errorStr;
+	}
+
+	// Wait until child process exits or timeout
+	DWORD waitResult = WaitForSingleObject(piProcInfo.hProcess, timeout);
+	if (waitResult == WAIT_TIMEOUT) {
+		// If the process is still running after the timeout, terminate it
+		TerminateProcess(piProcInfo.hProcess, 1); // Use 1 or another number to indicate forced termination
+		
+		err += "Timed out";
+		returnCode = 124 << 8;	// (124 is status code used by `timeout` command)
+	}
+
+	// Regardless of the outcome, try to get the exit code
+	if (!GetExitCodeProcess(piProcInfo.hProcess, &returnCode)) {
+		returnCode = (DWORD)-1; // Use -1 or another value to indicate that getting the exit code failed
+	}
+
+	// Close handles to the child process and its primary thread.
+	CloseHandle(piProcInfo.hProcess);
+	CloseHandle(piProcInfo.hThread);
+
+	// Close the remaining pipe handles.
+	CloseHandle(hChildStd_OUT_Rd);
+	CloseHandle(hChildStd_ERR_Rd);
+
+	return true;
+}
+
+static IntrinsicResult intrinsic_exec(Context* context, IntrinsicResult partialResult) {
+	String cmd = "cmd /k " + context->GetVar("cmd").ToString();
+	String out;
+	String err;
+	DWORD returnCode;
+
+	double timeoutSecs = context->GetVar("timeout").DoubleValue();
+	double timeoutMs = (timeoutSecs == 0) ? INFINITE : (timeoutSecs * 1000);
+
+	if (!CreateChildProcess(cmd, out, err, returnCode, timeoutMs)) {
+		Error("Failed to create child process.");
+	}
+
+	// Build our result map.
+	ValueDict result;
+	result.SetValue("output", Value(out));
+	result.SetValue("errors", Value(err));
+	result.SetValue("status", Value(returnCode));
+	return IntrinsicResult(result);
+}
+#else
+
+
+static IntrinsicResult intrinsic_exec(Context *context, IntrinsicResult partialResult) {
+	double now = context->vm->RunTime();
+	if (partialResult.Done()) {
+		// This is the initial entry into `exec`.  Fork a subprocess to execute the
+		// given command, and return a partial result we can use to check on its progress.
+		String cmd = context->GetVar("cmd").ToString();
+		double timeout = context->GetVar("timeout").DoubleValue();
+		ValueList data;
+		if (BeginExec(cmd, timeout, now, &data)) {
+			return IntrinsicResult(data, false);
+		}
+		return IntrinsicResult::Null;
+	}
+	
+	// This is a subsequent entry to intrinsic_exec, where we've already forked
+	// the subprocess, and now we're waiting for it to finish.	al time out of the partial result.
+	ValueList data = partialResult.Result().GetList();
+	String stdOut, stdErr;
+	int status = -1;
+	if (FinishExec(data, now, &stdOut, &stdErr, &status)) {
+		// All done!
+		ValueDict result;
+		result.SetValue("output", Value(stdOut));
+		result.SetValue("errors", Value(stdErr));
+		result.SetValue("status", Value(status));
+		return IntrinsicResult(result);
+	} else {
+		// Not done yet.
+		return IntrinsicResult(data, false);
+	}
+}
+#endif
 
 static bool disallowAssignment(ValueDict& dict, Value key, Value value) {
 	return true;
@@ -771,7 +948,7 @@ static ValueDict getEnvMap() {
 			envMap.SetValue(varName, valueStr);
 		}
 		if (envMap.Lookup(_MS_IMPORT_PATH, Value::null).IsNull()) {
-			envMap.SetValue(_MS_IMPORT_PATH, "$MS_SCRIPT_DIR/lib:$MS_EXE_DIR/lib");
+			envMap.SetValue(_MS_IMPORT_PATH, "$MS_SCRIPT_DIR:$MS_SCRIPT_DIR/lib:$MS_EXE_DIR/lib");
 		}
 		envMap.SetAssignOverride(assignEnvVar);
 	}
@@ -815,7 +992,7 @@ static IntrinsicResult intrinsic_import(Context *context, IntrinsicResult partia
 		path += libname + ".ms";
 		path = ExpandVariables(path);
 		FILE *handle = fopen(path.c_str(), "r");
-		if (handle == NULL) continue;
+		if (handle == nullptr) continue;
 		moduleSource = ReadFileHelper(handle, -1);
 		fclose(handle);
 		found = true;
@@ -851,7 +1028,7 @@ void AddScriptPathVar(const char* scriptPartialPath) {
 			_fullpath(s, ".", sizeof(s));
 			scriptDir = s;
 		#else
-			char* s = realpath(".", NULL);
+			char* s = realpath(".", nullptr);
 			scriptDir = s;
 			free(s);
 		#endif
@@ -861,7 +1038,7 @@ void AddScriptPathVar(const char* scriptPartialPath) {
 			_fullpath(s, scriptPartialPath, sizeof(s));
 			String scriptFullPath = s;
 		#else
-			char* s = realpath(scriptPartialPath, NULL);
+			char* s = realpath(scriptPartialPath, nullptr);
 			String scriptFullPath(s);
 			free(s);
 		#endif
@@ -871,7 +1048,7 @@ void AddScriptPathVar(const char* scriptPartialPath) {
 }
 
 void AddPathEnvVars() {
-	int length = wai_getExecutablePath(NULL, 0, NULL);
+	int length = wai_getExecutablePath(nullptr, 0, nullptr);
 	char* path = (char*)malloc(length + 1);
 	int dirname_length;
 	wai_getExecutablePath(path, length, &dirname_length);
@@ -1007,4 +1184,8 @@ void AddShellIntrinsics() {
 	i_writeLines->AddParam("lines");
 	i_writeLines->code = &intrinsic_writeLines;
 	
+	f = Intrinsic::Create("exec");
+	f->AddParam("cmd");
+	f->AddParam("timeout", 30);
+	f->code = &intrinsic_exec;
 }

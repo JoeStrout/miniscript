@@ -10,7 +10,7 @@
 #define SHELLINTRINSICS_H
 
 #include "MiniScript/MiniscriptTypes.h"
-#if _WIN32 || _WIN64
+#if _WIN32
 	#define useEditline 0
 #else
 	#include "editline.h"

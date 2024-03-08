@@ -19,7 +19,7 @@
 
 namespace MiniScript {
 
-	const String VERSION = "1.6.1";
+	const String VERSION = "1.6.2";
 
 	long Value::maxStringSize = 0xFFFFFF;		// about 16MB
 	long Value::maxListSize   = 0xFFFFFF;		// about 16M elements
@@ -146,7 +146,7 @@ namespace MiniScript {
 			case ValueType::Map:
 			{
 				if (recursionLimit == 0) return "{...}";
-				if (recursionLimit > 0 && recursionLimit < 3 && vm != NULL) {
+				if (recursionLimit > 0 && recursionLimit < 3 && vm != nullptr) {
 					String shortName = vm->FindShortName(*this);
 					if (!shortName.empty()) return shortName;
 				}
@@ -225,12 +225,19 @@ namespace MiniScript {
 		}
 	}
 	
-	long Value::IntValue() {
-		if (type == ValueType::Number) return data.number;
-		return 0;
+	int32_t Value::IntValue() const noexcept {
+		return type == ValueType::Number ? data.number : 0;
+	}
+
+	uint32_t Value::UIntValue() const noexcept {
+		return type == ValueType::Number ? data.number : 0;
+	}
+
+	float Value::FloatValue() const noexcept {
+		return type == ValueType::Number ? data.number : 0;
 	}
 	
-	bool Value::BoolValue() {
+	bool Value::BoolValue() const noexcept {
 		switch (type) {
 			case ValueType::Number:
 				// Any nonzero value is considered true, when treated as a bool.
@@ -260,10 +267,16 @@ namespace MiniScript {
 				return result;
 			}
 
+			case ValueType::Function:
+			{
+				// Functions are always true.
+				return true;
+			}
+			
 			case ValueType::Handle:
 			{
 				// Any handle at all is true.
-				return (data.ref != NULL);
+				return (data.ref != nullptr);
 			}
 				
 			default:
@@ -501,6 +514,7 @@ namespace MiniScript {
 	/// in the context of the given virtual machine.
 	/// </summary>
 	bool Value::IsA(Value type, Machine *vm) {
+		if (type.IsNull()) return IsNull();
 		switch (this->type) {
 			case ValueType::Number:
 				return RefEqual(type, vm->numberType);
@@ -874,13 +888,13 @@ void TestValue::TestBasics()
 	Assert(c.type == ValueType::Number and c.data.number == 42);
 
 	a = "Foo!";
-	Assert(a.type == ValueType::String and a.ToString(NULL) == "Foo!");
+	Assert(a.type == ValueType::String and a.ToString(nullptr) == "Foo!");
 	b = a;
-	Assert(b.type == ValueType::String and b.ToString(NULL) == "Foo!");
+	Assert(b.type == ValueType::String and b.ToString(nullptr) == "Foo!");
 
  	Assert(c.type == ValueType::Number and c.data.number == 42);
 	b = 0.0;
-	Assert(a.type == ValueType::String and a.ToString(NULL) == "Foo!");
+	Assert(a.type == ValueType::String and a.ToString(nullptr) == "Foo!");
 
 	{
 		List<Value> lst;
@@ -890,7 +904,7 @@ void TestValue::TestBasics()
 		a = lst;
 	}
 	Assert(a.type == ValueType::List);
-	String s = a.ToString(NULL);
+	String s = a.ToString(nullptr);
 	Assert(s == "[1, \"two\", 3.14157]");
 }
 

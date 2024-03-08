@@ -66,7 +66,7 @@ namespace Miniscript {
 
 		public static List<Intrinsic> all = new List<Intrinsic>() { null };
 		static Dictionary<string, Intrinsic> nameMap = new Dictionary<string, Intrinsic>();
-		
+				
 		/// <summary>
 		/// Factory method to create a new Intrinsic, filling out its name as given,
 		/// and other internal properties as needed.  You'll still need to add any
@@ -245,7 +245,8 @@ namespace Miniscript {
 	public static class Intrinsics {
 
 		static bool initialized;
-	
+		static ValMap intrinsicsMap = null;		// (for "intrinsics" function)
+
 		private struct KeyedValue {
 			public Value sortKey;
 			public Value value;
@@ -336,6 +337,10 @@ namespace Miniscript {
 				return new Intrinsic.Result(Math.Atan2(y, x));
 			};
 
+			Func<double, Tuple<bool, ulong>> doubleToUnsignedSplit = (val) => {
+				return new Tuple<bool, ulong>(Math.Sign(val) == -1, (ulong)Math.Abs(val));
+			};
+
 			// bitAnd
 			//	Treats its arguments as integers, and computes the bitwise
 			//	`and`: each bit in the result is set only if the corresponding
@@ -349,11 +354,13 @@ namespace Miniscript {
 			f.AddParam("i", 0);
 			f.AddParam("j", 0);
 			f.code = (context, partialResult) => {
-				int i = context.GetLocalInt("i");
-				int j = context.GetLocalInt("j");
-				return new Intrinsic.Result(i & j);
-			};
-			
+				var i = doubleToUnsignedSplit(context.GetLocalDouble("i"));
+				var j = doubleToUnsignedSplit(context.GetLocalDouble("j"));
+				var sign = i.Item1 & j.Item1;
+				double val = i.Item2 & j.Item2;
+				return new Intrinsic.Result(sign ? -val : val);
+            };
+
 			// bitOr
 			//	Treats its arguments as integers, and computes the bitwise
 			//	`or`: each bit in the result is set if the corresponding
@@ -367,9 +374,11 @@ namespace Miniscript {
 			f.AddParam("i", 0);
 			f.AddParam("j", 0);
 			f.code = (context, partialResult) => {
-				int i = context.GetLocalInt("i");
-				int j = context.GetLocalInt("j");
-				return new Intrinsic.Result(i | j);
+				var i = doubleToUnsignedSplit(context.GetLocalDouble("i"));
+				var j = doubleToUnsignedSplit(context.GetLocalDouble("j"));
+				var sign = i.Item1 | j.Item1;
+				double val = i.Item2 | j.Item2;
+                return new Intrinsic.Result(sign ? -val : val);
 			};
 			
 			// bitXor
@@ -385,10 +394,12 @@ namespace Miniscript {
 			f.AddParam("i", 0);
 			f.AddParam("j", 0);
 			f.code = (context, partialResult) => {
-				int i = context.GetLocalInt("i");
-				int j = context.GetLocalInt("j");
-				return new Intrinsic.Result(i ^ j);
-			};
+                var i = doubleToUnsignedSplit(context.GetLocalDouble("i"));
+                var j = doubleToUnsignedSplit(context.GetLocalDouble("j"));
+                var sign = i.Item1 ^ j.Item1;
+                double val = i.Item2 ^ j.Item2;
+                return new Intrinsic.Result(sign ? -val : val);
+            };
 			
 			// char
 			//	Gets a character from its Unicode code point.
@@ -657,6 +668,25 @@ namespace Miniscript {
 				} else {
 					throw new RuntimeException("insert called on invalid type");
 				}
+			};
+
+			// intrinsics
+			//	Returns a read-only map of all named intrinsics.
+			f = Intrinsic.Create("intrinsics");
+			f.code = (context, partialResult) => {
+				if (intrinsicsMap != null) return new Intrinsic.Result(intrinsicsMap);
+				intrinsicsMap = new ValMap();
+				intrinsicsMap.assignOverride = (k,v) => {
+					throw new RuntimeException("Assignment to protected map");
+					return true;
+				};
+		
+				foreach (var intrinsic in Intrinsic.all) {
+					if (intrinsic == null || string.IsNullOrEmpty(intrinsic.name)) continue;
+					intrinsicsMap[intrinsic.name] = intrinsic.GetFunc();
+				}
+		
+				return new Intrinsic.Result(intrinsicsMap);
 			};
 
 			// self.join

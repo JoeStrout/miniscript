@@ -3,6 +3,8 @@ project(Miniscript VERSION 1.6.2 LANGUAGES C CXX)
 
 option(MINISCRIPT_BUILD_TESTING "Build unit test executable" OFF)
 option(MINISCRIPT_BUILD_CSHARP "Build CSharp binaries" OFF)
+set(MINISCRIPT_CMD_NAME "miniscript" CACHE STRING
+	"Specifies the command-line MiniScript executable filename")
 
 if(MINISCRIPT_BUILD_CSHARP)
 	enable_language(CSharp)
@@ -51,11 +53,9 @@ set(MINISCRIPT_HEADERS
 set(MINICMD_HEADERS
 	MiniScript-cpp/src/DateTimeUtils.h
 	MiniScript-cpp/src/OstreamSupport.h
+	MiniScript-cpp/src/ShellExec.h
 	MiniScript-cpp/src/ShellIntrinsics.h
-	MiniScript-cpp/src/editline/config.h
 	MiniScript-cpp/src/editline/editline.h
-	MiniScript-cpp/src/editline/editline_internal.h
-	MiniScript-cpp/src/editline/os9.h
 	MiniScript-cpp/src/editline/unix.h
 	MiniScript-cpp/src/whereami/whereami.h
 )
@@ -79,13 +79,12 @@ add_library(miniscript-cpp
 	${MINISCRIPT_HEADERS}
 )
 
-target_include_directories(miniscript-cpp PUBLIC src/MiniScript)
+target_include_directories(miniscript-cpp PUBLIC MiniScript-cpp/src/MiniScript)
 
 if(NOT WIN32)
 	set(EDITLINE_SRC
 		MiniScript-cpp/src/editline/complete.c
 		MiniScript-cpp/src/editline/editline.c
-		MiniScript-cpp/src/editline/sysos9.c
 		MiniScript-cpp/src/editline/sysunix.c
 	)
 endif()
@@ -95,12 +94,18 @@ add_executable(minicmd
 	MiniScript-cpp/src/DateTimeUtils.cpp
 	MiniScript-cpp/src/OstreamSupport.cpp
 	MiniScript-cpp/src/ShellIntrinsics.cpp
+	MiniScript-cpp/src/ShellExec.cpp
 	MiniScript-cpp/src/whereami/whereami.c
 	${EDITLINE_SRC}
 	${MINICMD_HEADERS}
 )
-target_include_directories(minicmd PRIVATE src/editline)
+target_include_directories(minicmd PRIVATE MiniScript-cpp/src/editline)
 target_link_libraries(minicmd PRIVATE miniscript-cpp)
+
+set_target_properties(miniscript-cpp minicmd PROPERTIES
+	CXX_STANDARD 14
+	CXX_STANDARD_REQUIRED ON)
+set_target_properties(minicmd PROPERTIES OUTPUT_NAME ${MINISCRIPT_CMD_NAME})
 
 if(MINISCRIPT_BUILD_TESTING)
 	enable_testing()
@@ -117,9 +122,13 @@ if(MINISCRIPT_BUILD_TESTING)
 		set_target_properties(tests-cs PROPERTIES
 			VS_GLOBAL_ROOTNAMESPACE "Miniscript"
 			VS_DOTNET_REFERENCES "${DOTNET_REFS}"
+			CXX_STANDARD 14
+			CXX_STANDARD_REQUIRED ON
 		)
 		add_test(NAME Miniscript.cs.UnitTests COMMAND tests-cs --test)
 		add_test(NAME Miniscript.cs.Integration COMMAND tests-cs --test --integration ${CMAKE_SOURCE_DIR}/TestSuite.txt)
 		set_tests_properties(Miniscript.cs.UnitTests Miniscript.cs.Integration PROPERTIES FAIL_REGULAR_EXPRESSION "FAIL|Error")
 	endif()
 endif()
+
+install(TARGETS miniscript-cpp minicmd)

@@ -67,6 +67,14 @@ namespace Miniscript {
 		}
 		
 		/// <summary>
+		/// Get the numeric value of this Value as an unsigned integer.
+		/// </summary>
+		/// <returns>this value, as unsigned int</returns>
+		public virtual uint UIntValue() {
+			return (uint)DoubleValue();
+		}
+
+		/// <summary>
 		/// Get the numeric value of this Value as a single-precision float.
 		/// </summary>
 		/// <returns>this value, as a float</returns>
@@ -201,7 +209,7 @@ namespace Miniscript {
 					if (mapA.map.Count != mapB.map.Count) return false;
 					foreach (KeyValuePair<Value, Value> kv in mapA.map) {
 						Value valFromB;
-						if (!mapB.map.TryGetValue(kv.Key, out valFromB)) return false;
+						if (!mapB.TryGetValue(kv.Key, out valFromB)) return false;
 						Value valFromA = mapA.map[kv.Key];
 						var newPair = new ValuePair() {  a = valFromA, b = valFromB };
 						if (!visited.Contains(newPair)) toDo.Push(newPair);
@@ -304,7 +312,7 @@ namespace Miniscript {
 		}
 		
 		public override bool IsA(Value type, TAC.Machine vm) {
-			return false;
+			return type == null;
 		}
 
 		public override int Hash() {
@@ -364,15 +372,20 @@ namespace Miniscript {
 			// Convert to a string in the standard MiniScript way.
 			if (value % 1.0 == 0.0) {
 				// integer values as integers
-				return value.ToString("0", CultureInfo.InvariantCulture);
+				string result = value.ToString("0", CultureInfo.InvariantCulture);
+				if (result == "-0") result = "0";
+				return result;
 			} else if (value > 1E10 || value < -1E10 || (value < 1E-6 && value > -1E-6)) {
 				// very large/small numbers in exponential form
 				string s = value.ToString("E6", CultureInfo.InvariantCulture);
 				s = s.Replace("E-00", "E-0");
 				return s;
 			} else {
-				// all others in decimal form, with 1-6 digits past the decimal point
-				return value.ToString("0.0#####", CultureInfo.InvariantCulture);
+				// all others in decimal form, with 1-6 digits past the decimal point;
+				// and take care not to display "-0" for "negative" 0.0
+				string result = value.ToString("0.0#####", CultureInfo.InvariantCulture);
+				if (result == "-0") result = "0";
+				return result;
 			}
 		}
 
@@ -390,6 +403,7 @@ namespace Miniscript {
 		}
 
 		public override bool IsA(Value type, TAC.Machine vm) {
+			if (type == null) return false;
 			return type == vm.numberType;
 		}
 
@@ -466,6 +480,7 @@ namespace Miniscript {
 		}
 
 		public override bool IsA(Value type, TAC.Machine vm) {
+			if (type == null) return false;
 			return type == vm.stringType;
 		}
 
@@ -612,6 +627,7 @@ namespace Miniscript {
 		}
 
 		public override bool IsA(Value type, TAC.Machine vm) {
+			if (type == null) return false;
 			return type == vm.listType;
 		}
 
@@ -673,6 +689,17 @@ namespace Miniscript {
 		// the assignment, or false to allow it to happen as normal.
 		public delegate bool AssignOverrideFunc(Value key, Value value);
 		public AssignOverrideFunc assignOverride;
+
+		// Can store arbitrary data. Useful for retaining a C# object
+		// passed into scripting.
+		public object userData;
+
+		// Evaluation override function: Allows map to be fully backed
+		// by a C# object (or otherwise intercept map indexing).
+		// Return true to return the out value to the caller, or false
+		// to proceed with normal map look-up.
+		public delegate bool EvalOverrideFunc(Value key, out Value value);
+		public EvalOverrideFunc evalOverride;
 
 		public ValMap() {
 			this.map = new Dictionary<Value, Value>(RValueEqualityComparer.instance);
@@ -759,11 +786,24 @@ namespace Miniscript {
 			}
 			// old method, and still better on big maps: use dictionary look-up.
 			var idVal = TempValString.Get(identifier);
-			bool result = map.TryGetValue(idVal, out value);
+			bool result = TryGetValue(idVal, out value);
 			TempValString.Release(idVal);
 			return result;
 		}
-		
+
+		/// <summary>
+		/// Look up the given identifier in the backing map (unless overridden
+		/// by the evalOverride function).
+		/// </summary>
+		/// <param name="key">identifier to look up</param>
+		/// <param name="value">Corresponding value, if found</param>
+		/// <returns>true if found, false if not</returns>
+		public bool TryGetValue(Value key, out Value value)
+		{
+			if (evalOverride != null && evalOverride(key, out value)) return true;
+			return map.TryGetValue(key, out value);
+		}
+
 		/// <summary>
 		/// Look up a value in this dictionary, walking the __isa chain to find
 		/// it in a parent object if necessary.  
@@ -776,9 +816,9 @@ namespace Miniscript {
 			ValMap obj = this;
 			int chainDepth = 0;
 			while (obj != null) {
-				if (obj.map.TryGetValue(key, out result)) return result;
+				if (obj.TryGetValue(key, out result)) return result;
 				Value parent;
-				if (!obj.map.TryGetValue(ValString.magicIsA, out parent)) break;
+				if (!obj.TryGetValue(ValString.magicIsA, out parent)) break;
 				if (chainDepth++ > maxIsaDepth) {
 					throw new LimitExceededException("__isa depth exceeded (perhaps a reference loop?)");
 				}
@@ -786,7 +826,7 @@ namespace Miniscript {
 			}
 			return null;
 		}
-		
+
 		/// <summary>
 		/// Look up a value in this dictionary, walking the __isa chain to find
 		/// it in a parent object if necessary; return both the value found and
@@ -800,12 +840,12 @@ namespace Miniscript {
 			ValMap obj = this;
 			int chainDepth = 0;
 			while (obj != null) {
-				if (obj.map.TryGetValue(key, out result)) {
+				if (obj.TryGetValue(key, out result)) {
 					valueFoundIn = obj;
 					return result;
 				}
 				Value parent;
-				if (!obj.map.TryGetValue(ValString.magicIsA, out parent)) break;
+				if (!obj.TryGetValue(ValString.magicIsA, out parent)) break;
 				if (chainDepth++ > maxIsaDepth) {
 					throw new LimitExceededException("__isa depth exceeded (perhaps a reference loop?)");
 				}
@@ -871,11 +911,12 @@ namespace Miniscript {
 		}
 
 		public override bool IsA(Value type, TAC.Machine vm) {
+			if (type == null) return false;
 			// If the given type is the magic 'map' type, then we're definitely
 			// one of those.  Otherwise, we have to walk the __isa chain.
 			if (type == vm.mapType) return true;
 			Value p = null;
-			map.TryGetValue(ValString.magicIsA, out p);
+			TryGetValue(ValString.magicIsA, out p);
 			int chainDepth = 0;
 			while (p != null) {
 				if (p == type) return true;
@@ -883,7 +924,7 @@ namespace Miniscript {
 				if (chainDepth++ > maxIsaDepth) {
 					throw new LimitExceededException("__isa depth exceeded (perhaps a reference loop?)");
 				}
-				((ValMap)p).map.TryGetValue(ValString.magicIsA, out p);
+				((ValMap)p).TryGetValue(ValString.magicIsA, out p);
 			}
 			return false;
 		}
@@ -1009,6 +1050,7 @@ namespace Miniscript {
 		}
 
 		public override bool IsA(Value type, TAC.Machine vm) {
+			if (type == null) return false;
 			return type == vm.functionType;
 		}
 
@@ -1128,7 +1170,7 @@ namespace Miniscript {
 					// If the map contains this identifier, return its value.
 					Value result = null;
 					var idVal = TempValString.Get(identifier);
-					bool found = ((ValMap)sequence).map.TryGetValue(idVal, out result);
+					bool found = ((ValMap)sequence).TryGetValue(idVal, out result);
 					TempValString.Release(idVal);
 					if (found) {
 						valueFoundIn = (ValMap)sequence;
@@ -1137,7 +1179,7 @@ namespace Miniscript {
 					
 					// Otherwise, if we have an __isa, try that next.
 					if (loopsLeft < 0) throw new LimitExceededException("__isa depth exceeded (perhaps a reference loop?)"); 
-					if (!((ValMap)sequence).map.TryGetValue(ValString.magicIsA, out sequence)) {
+					if (!((ValMap)sequence).TryGetValue(ValString.magicIsA, out sequence)) {
 						// ...and if we don't have an __isa, try the generic map type if allowed
 						if (!includeMapType) throw new KeyException(identifier);
 						sequence = context.vm.mapType ?? Intrinsics.MapType();
@@ -1182,7 +1224,7 @@ namespace Miniscript {
 			Value baseVal = baseSeq.Val(context);
 			if (baseVal is ValMap) {
 				Value result = ((ValMap)baseVal).Lookup(idxVal, out valueFoundIn);
-				if (valueFoundIn == null) throw new KeyException(idxVal.CodeForm(context.vm, 1));
+				if (valueFoundIn == null) throw new KeyException(idxVal == null ? "null" : idxVal.CodeForm(context.vm, 1));
 				return result;
 			} else if (baseVal is ValList) {
 				return ((ValList)baseVal).GetElem(idxVal);

@@ -9,8 +9,14 @@
 #ifndef REFCOUNTEDSTORAGE_H
 #define REFCOUNTEDSTORAGE_H
 
+#include <stdio.h>
+
 namespace MiniScript {
-	
+
+#if DEBUG
+extern long _stringInstanceCount();
+#endif
+
 	class RefCountedStorage {
 	public:
 		void retain() { refCount++; }
@@ -20,11 +26,13 @@ namespace MiniScript {
 		RefCountedStorage() : refCount(1) {
 #if(DEBUG)
 			instanceCount++;
+			printf("+++ %ld instances (%ld strings)\n", instanceCount, _stringInstanceCount());
 #endif
 		}
 		virtual ~RefCountedStorage() {
 #if(DEBUG)
 			instanceCount--;
+			printf("--- %ld instances (%ld strings)\n", instanceCount, _stringInstanceCount());
 #endif
 		}
 		

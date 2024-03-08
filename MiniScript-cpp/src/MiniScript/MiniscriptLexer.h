@@ -112,6 +112,7 @@ namespace MiniScript {
 		// lexing
 		Token Dequeue();
 		Token Peek();
+		void Poke(Token tokenToInsert);
 		void SkipWhitespaceAndComment();
 		
 		// static methods

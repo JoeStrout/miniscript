@@ -1,6 +1,9 @@
 # Prerequisites
 *.d
 
+# Build folder
+build
+
 # Compiled Object files
 *.slo
 *.lo
@@ -37,3 +40,15 @@ DerivedData
 .vs
 obj/
 bin/
+
+# Build Artifacts
+.vscode
+CMakeFiles
+cmake_install.cmake
+CMakeCache.txt
+Makefile
+miniscript
+Debug
+miniscript-cpp.dir
+*.vcxproj*
+*.sln

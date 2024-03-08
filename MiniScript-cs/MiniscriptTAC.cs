@@ -40,6 +40,7 @@ namespace Miniscript {
 				AOrB,
 				BindAssignA,
 				CopyA,
+				NewA,
 				NotA,
 				GotoA,
 				GotoAifB,
@@ -138,6 +139,9 @@ namespace Miniscript {
 				case Op.CopyA:
 					text = string.Format("{0} := copy of {1}", lhs, rhsA);
 					break;
+				case Op.NewA:
+					text = string.Format("{0} := new {1}", lhs, rhsA);
+					break;
 				case Op.NotA:
 					text = string.Format("{0} := not {1}", lhs, rhsA);
 					break;
@@ -224,6 +228,25 @@ namespace Miniscript {
 				if (op == Op.AisaB) {
 					if (opA == null) return ValNumber.Truth(opB == null);
 					return ValNumber.Truth(opA.IsA(opB, context.vm));
+				}
+
+				if (op == Op.NewA) {
+					// Create a new map, and set __isa on it to operand A (after 
+					// verifying that this is a valid map to subclass).
+					if (!(opA is ValMap)) {
+						throw new RuntimeException("argument to 'new' must be a map");
+					} else if (opA == context.vm.stringType) {
+						throw new RuntimeException("invalid use of 'new'; to create a string, use quotes, e.g. \"foo\"");
+					} else if (opA == context.vm.listType) {
+						throw new RuntimeException("invalid use of 'new'; to create a list, use square brackets, e.g. [1,2]");
+					} else if (opA == context.vm.numberType) {
+						throw new RuntimeException("invalid use of 'new'; to create a number, use a numeric literal, e.g. 42");
+					} else if (opA == context.vm.functionType) {
+						throw new RuntimeException("invalid use of 'new'; to create a function, use the 'function' keyword");
+					}
+					ValMap newMap = new ValMap();
+					newMap.SetElem(ValString.magicIsA, opA);
+					return newMap;
 				}
 
 				if (op == Op.ElemBofA && opB is ValString) {
@@ -347,8 +370,9 @@ namespace Miniscript {
 							Check.Type(opB, typeof(ValNumber), "string division");
 							factor = 1.0 / ((ValNumber)opB).value;								
 						}
+						if (double.IsNaN(factor) || double.IsInfinity(factor)) return null;
+						if (factor <= 0) return ValString.empty;
 						int repeats = (int)factor;
-						if (repeats < 0) return ValString.empty;
 						if (repeats * sA.Length > ValString.maxSize) throw new LimitExceededException("string too large");
 						var result = new System.Text.StringBuilder();
 						for (int i = 0; i < repeats; i++) result.Append(sA);
@@ -425,6 +449,7 @@ namespace Miniscript {
 							Check.Type(opB, typeof(ValNumber), "list division");
 							factor = 1.0 / ((ValNumber)opB).value;								
 						}
+						if (double.IsNaN(factor) || double.IsInfinity(factor)) return null;
 						if (factor <= 0) return new ValList();
 						int finalCount = (int)(list.Count * factor);
 						if (finalCount > ValList.maxSize) throw new LimitExceededException("list too large");

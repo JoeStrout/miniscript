@@ -130,8 +130,8 @@ class MainClass {
 		if (args.Length > 0 && args[0] == "--test") {
 			Miniscript.HostInfo.name = "Test harness";
 
-			if (args.Length > 2 && args[1] == "--integration") {
-				var file = string.IsNullOrEmpty(args[2]) ? "../../../TestSuite.txt" : args[2];
+			if (args.Length > 1 && args[1] == "--integration") {
+				var file = args.Length < 3 || string.IsNullOrEmpty(args[2]) ? "../../../TestSuite.txt" : args[2];
 				Print("Running test suite.\n");
 				RunTestSuite(file);
 				return;

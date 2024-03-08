@@ -79,7 +79,7 @@ namespace MiniScript {
 	/// Patches up all the branches for a single open if block.  That includes
 	/// the last "else" block, as well as one or more "end if" jumps.
 	/// </summary>
-	void ParseState::PatchIfBlock() {
+	void ParseState::PatchIfBlock(bool singleLineIf) {
 		Value target = code.Count();
 		
 		long idx = backpatches.Count() - 1;
@@ -96,7 +96,17 @@ namespace MiniScript {
 				// Not the expected keyword, but "break"; this is always OK.
 			} else {
 				// Not the expected patch, and not "break"; we have a mismatched block start/end.
-				CompilerException("'end if' without matching 'if'").raise();
+				String msg;
+				if (singleLineIf) {
+					if (bp.waitingFor == "end for" or bp.waitingFor == "end while") {
+						msg = "loop is invalid within single-line 'if'";
+					} else {
+						msg = "invalid control structure within single-line 'if'";
+					}
+				} else {
+					msg = "'end if' without matching 'if'";
+				}
+				CompilerException(msg).raise();
 			}
 			idx--;
 		}
@@ -159,6 +169,7 @@ namespace MiniScript {
 			bool isPartial = EndsWithLineContinuation(sourceCode);
 			if (isPartial) {
 				partialInput += Lexer::TrimComment(sourceCode);
+				partialInput += " ";
 				return;
 			}
 		}
@@ -229,7 +240,7 @@ namespace MiniScript {
 			String keyword = tokens.Dequeue().text;
 			if (keyword == "return") {
 				Value returnValue;
-				if (tokens.Peek().type != Token::Type::EOL && tokens.Peek().text != "else") {
+				if (tokens.Peek().type != Token::Type::EOL && tokens.Peek().text != "else" && tokens.Peek().text != "else if") {
 					returnValue = ParseExpr(tokens);
 				}
 				output->Add(TACLine(Value::Temp(0), TACLine::Op::ReturnA, returnValue));
@@ -257,10 +268,17 @@ namespace MiniScript {
 						tokens.Dequeue();	// skip "else"
 						StartElseClause();
 						ParseStatement(tokens, true);		// parse a single statement for the "else" body
+					} else if (tokens.Peek().type == Token::Type::Keyword and tokens.Peek().text == "else if") {
+						Token altered = tokens.Dequeue();	// the trick: convert the "else if" token to a regular "if"...
+						altered.text = "if";
+						tokens.Poke(altered);
+						Assert(tokens.Peek().text == "if");
+						StartElseClause();					// but start an else clause...
+						ParseStatement(tokens, true);		// then parse a single statement for the "else" body
 					} else {
 						RequireEitherToken(tokens, Token::Type::Keyword, "else", Token::Type::EOL);
 					}
-					output->PatchIfBlock();	// terminate the single-line if
+					output->PatchIfBlock(true);	// terminate the single-line if
 				} else {
 					tokens.Dequeue();	// skip EOL
 				}
@@ -278,7 +296,7 @@ namespace MiniScript {
 				// OK, this is tricky.  We might have an open "else" block or we might not.
 				// And, we might have multiple open "end if" jumps (one for the if part,
 				// and another for each else-if part).  Patch all that as a special case.
-				output->PatchIfBlock();
+				output->PatchIfBlock(false);
 			} else if (keyword == "while") {
 				// We need to note the current line, so we can jump back up to it at the end.
 				output->AddJumpPoint(keyword);
@@ -338,6 +356,10 @@ namespace MiniScript {
 				output->Patch(keyword, "break");
 			} else if (keyword == "break") {
 				// Emit a jump to the end, to get patched up later.
+				if (output->jumpPoints.Count() == 0) {
+					CompilerException(errorContext, tokens.lineNum(),
+					  "'break' without open loop block").raise();
+				}
 				output->Add(TACLine(TACLine::Op::GotoA, Value::null));
 				output->AddBackpatch("break");
 			} else if (keyword == "continue") {
@@ -385,7 +407,7 @@ namespace MiniScript {
 		Value lhs, rhs;
 		Token peek = tokens.Peek();
 		if (peek.type == Token::Type::EOL ||
-				(peek.type == Token::Type::Keyword && peek.text == "else")) {
+				(peek.type == Token::Type::Keyword && (peek.text == "else" || peek.text == "else if"))) {
 			// No explicit assignment; store an implicit result
 			rhs = FullyEvaluate(expr);
 			output->Add(TACLine(TACLine::Op::AssignImplicit, rhs));
@@ -433,9 +455,10 @@ namespace MiniScript {
 				Value arg = ParseExpr(tokens);
 				output->Add(TACLine(TACLine::Op::PushParam, arg));
 				argCount++;
-				if (tokens.Peek().type == Token::Type::EOL) break;
-				if (tokens.Peek().type == Token::Type::Keyword and tokens.Peek().text == "else") break;
-				if (tokens.Peek().type == Token::Type::Comma) {
+				Token peek = tokens.Peek();
+				if (peek.type == Token::Type::EOL) break;
+				if (peek.type == Token::Type::Keyword and (peek.text == "else" || peek.text == "else if")) break;
+				if (peek.type == Token::Type::Comma) {
 					tokens.Dequeue();
 					AllowLineBreak(tokens);
 					continue;
@@ -767,37 +790,20 @@ namespace MiniScript {
 	}
 
 	Value Parser::ParseNew(Lexer tokens, bool asLval, bool statementStart) {
-		Value (Parser::*nextLevel)(Lexer tokens, bool asLval, bool statementStart) = &Parser::ParseAddressOf;
+		Value (Parser::*nextLevel)(Lexer tokens, bool asLval, bool statementStart) = &Parser::ParsePower;
 		if (tokens.Peek().type != Token::Type::Keyword or tokens.Peek().text != "new") return (*this.*nextLevel)(tokens, asLval, statementStart);
 		tokens.Dequeue();		// skip 'new'
 
 		AllowLineBreak(tokens); // allow a line break after a unary operator
 		
-		// Grab a reference to our __isa value
 		Value isa = (*this.*nextLevel)(tokens, false, false);
-		// Now, create a new map, and set __isa on it to that.
-		// NOTE: we must be sure this map gets created at runtime, not here at parse time.
-		// Since it is a mutable object, we need to return a different one each time
-		// this code executes (in a loop, function, etc.).  So, we use Op.CopyA below!
-		ValueDict map;
-		map.SetValue(Value::magicIsA, isa);
 		Value result = Value::Temp(output->nextTempNum++);
-		output->Add(TACLine(result, TACLine::Op::CopyA, Value(map)));
+		output->Add(TACLine(result, TACLine::Op::NewA, isa));
 		return result;
 	}
 	
-	Value Parser::ParseAddressOf(Lexer tokens, bool asLval, bool statementStart) {
-		Value (Parser::*nextLevel)(Lexer tokens, bool asLval, bool statementStart) = &Parser::ParsePower;
-		if (tokens.Peek().type != Token::Type::AddressOf) return (*this.*nextLevel)(tokens, asLval, statementStart);
-		tokens.Dequeue();
-		AllowLineBreak(tokens); // allow a line break after a unary operator
-		Value val = (*this.*nextLevel)(tokens, true, statementStart);
-		val.noInvoke = true;
-		return val;
-	}
-
 	Value Parser::ParsePower(Lexer tokens, bool asLval, bool statementStart) {
-		Value (Parser::*nextLevel)(Lexer tokens, bool asLval, bool statementStart) = &Parser::ParseCallExpr;
+		Value (Parser::*nextLevel)(Lexer tokens, bool asLval, bool statementStart) = &Parser::ParseAddressOf;
 		Value val = (*this.*nextLevel)(tokens, asLval, statementStart);
 		Token tok = tokens.Peek();
 		while (tok.type == Token::Type::OpPower) {
@@ -813,6 +819,16 @@ namespace MiniScript {
 
 			tok = tokens.Peek();
 		}
+		return val;
+	}
+
+	Value Parser::ParseAddressOf(Lexer tokens, bool asLval, bool statementStart) {
+		Value (Parser::*nextLevel)(Lexer tokens, bool asLval, bool statementStart) = &Parser::ParseCallExpr;
+		if (tokens.Peek().type != Token::Type::AddressOf) return (*this.*nextLevel)(tokens, asLval, statementStart);
+		tokens.Dequeue();
+		AllowLineBreak(tokens); // allow a line break after a unary operator
+		Value val = (*this.*nextLevel)(tokens, true, statementStart);
+		val.noInvoke = true;
 		return val;
 	}
 

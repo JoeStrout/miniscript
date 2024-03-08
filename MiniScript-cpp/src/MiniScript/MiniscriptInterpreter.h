@@ -41,13 +41,16 @@ namespace MiniScript {
 		void* hostData;
 		
 		/// vm: the virtual machine this interpreter is running.  Most applications will
-		/// not need to use this, but it's provided for advanced users.
+		/// not need to access this, but it's provided for advanced users.
 		Machine *vm;
 		
 		/// Constructors
 		Interpreter();
 		Interpreter(String source);
 		Interpreter(List<String> source);
+		
+		/// Destructor
+		~Interpreter();
 		
 		/// <summary>
 		/// done: returns true when we don't have a virtual machine, or we do have
@@ -129,7 +132,19 @@ namespace MiniScript {
 		/// <returns></returns>
 		bool NeedMoreInput();
 
-		
+		/// <summary>
+        /// Retrieves the names global variable from the running virtual machine
+        /// </summary>
+        /// <param name="varName">Global Variable Name</param>
+		Value GetGlobalValue(String varName);
+
+		/// <summary>
+        /// Stores the given value into the specified global variable
+		/// in the running virtual machine
+        /// <param name="varName">Global Variable Name</param>
+        /// <param name="value">Global Variable Value</param>
+        void SetGlobalValue(String varName, Value value);
+
 	protected:
 		void CheckImplicitResult(long previousImpResultCount);
 

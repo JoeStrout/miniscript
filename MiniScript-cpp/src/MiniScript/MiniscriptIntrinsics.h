@@ -135,7 +135,10 @@ namespace MiniScript {
 		// Internally-used function to execute an intrinsic (by ID) given a context
 		// and a partial result.
 		static IntrinsicResult Execute(long id, Context *context, IntrinsicResult partialResult);
-	
+
+		// List of all intrinsics.
+		static List<Intrinsic*> all;
+
 	private:
 		Intrinsic() {}		// don't use this; use Create factory method instead.
 
@@ -143,7 +146,6 @@ namespace MiniScript {
 		Value valFunction;		// (cached wrapper for function)
 		long numericID;			// also its index in the 'all' list
 
-		static List<Intrinsic*> all;
 		static Dictionary<String, Intrinsic*, hashString> nameMap;
 	};
 

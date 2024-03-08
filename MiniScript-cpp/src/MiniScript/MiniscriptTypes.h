@@ -13,6 +13,8 @@
 #include "List.h"
 #include "Dictionary.h"
 
+#include <cstdint>
+
 namespace MiniScript {
 	
 	extern const String VERSION;
@@ -127,11 +129,13 @@ namespace MiniScript {
 		inline ~Value() { if (usesRef()) release(); }
 
 		// conversions
-		String ToString(Machine *vm=NULL);
+		String ToString(Machine *vm=nullptr);
 		String CodeForm(Machine *vm, int recursionLimit=-1);
-		long IntValue();
-		bool BoolValue();
-		double DoubleValue() const { return type == ValueType::Number ? data.number : 0; }
+		int32_t IntValue() const noexcept;
+		uint32_t UIntValue() const noexcept;
+		float FloatValue() const noexcept;
+		bool BoolValue() const noexcept;
+		double DoubleValue() const noexcept { return type == ValueType::Number ? data.number : 0; }
 		
 		// Looking up the inner value, *without* conversion.
 		// Note that these do NOT return a temp string/list/dict; they return
@@ -149,7 +153,7 @@ namespace MiniScript {
 			return type == ValueType::Null /* || (usesRef() && data.ref == nullptr) */;
 		}
 
-		Value Val(Context *context, ValueDict *outFoundInMap=NULL) const;
+		Value Val(Context *context, ValueDict *outFoundInMap=nullptr) const;
 		
 		/// Evaluate each of our contained elements, and if any of those is a variable
 		/// or temp, then resolve them now.  CAUTION: do not mutate the original list
@@ -195,6 +199,7 @@ namespace MiniScript {
 			Value obj = *this;
 			while (obj.type == ValueType::Map) {
 				ValueDict d = obj.GetDict();
+				if (d.ApplyEvalOverride(key, result)) return result;
 				if (d.Get(key, &result)) return result;
 				if (!d.Get(Value::magicIsA, &obj)) break;
 			}

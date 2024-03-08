@@ -27,6 +27,13 @@ namespace MiniScript {
 		Reset(source);
 	}
 
+	Interpreter::~Interpreter() {
+		// We own the parser and the VM...
+		delete(parser); parser = nullptr;
+		delete(vm); vm = nullptr;
+		// But we do not own hostData; it's up to the host to deal with that.
+	}
+
 	void Interpreter::Reset(List<String> source) {
 		Reset(Join("\n", source));
 	}
@@ -156,6 +163,38 @@ namespace MiniScript {
 	/// <returns></returns>
 	bool Interpreter::NeedMoreInput() {
 		return parser and parser->NeedMoreInput();
+	}
+
+
+	/// <summary>
+    /// Get a value from the global namespace of this interpreter.
+    /// </summary>
+    /// <param name="varName">name of global variable to get</param>
+    /// <returns>Value of the named variable, or null if not found</returns>
+    Value Interpreter::GetGlobalValue(String varName) {
+        if (not vm) return Value::null;
+
+		Context* globalContext = vm->GetGlobalContext();
+        if (globalContext == nullptr) return Value::null;
+        try
+        {
+            return globalContext->GetVar(varName);
+
+		} catch (const MiniscriptException& mse) {
+            ReportError(mse);
+            return Value::null;
+        }
+	}
+
+
+    /// <summary>
+    /// Set a value in the global namespace of this interpreter.
+    /// </summary>
+    /// <param name="varName">name of global variable to set</param>
+    /// <param name="value">value to set</param>	
+	void Interpreter::SetGlobalValue(String varName, Value value)
+    {
+        if (vm) vm->GetGlobalContext()->SetVar(varName, value);
 	}
 
 	/// <summary>
