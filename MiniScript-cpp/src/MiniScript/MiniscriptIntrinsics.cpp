@@ -1226,6 +1226,7 @@ namespace MiniScript {
 			d.SetValue("indexOf",  Intrinsic::GetByName("indexOf")->GetFunc());
 			d.SetValue("len",  Intrinsic::GetByName("len")->GetFunc());
 			d.SetValue("pop",  Intrinsic::GetByName("pop")->GetFunc());
+			d.SetValue("pull",  Intrinsic::GetByName("pull")->GetFunc());
 			d.SetValue("push",  Intrinsic::GetByName("push")->GetFunc());
 			d.SetValue("shuffle",  Intrinsic::GetByName("shuffle")->GetFunc());
 			d.SetValue("sum",  Intrinsic::GetByName("sum")->GetFunc());
