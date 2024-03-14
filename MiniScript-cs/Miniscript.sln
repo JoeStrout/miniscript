@@ -1,24 +1,35 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2010
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Miniscript", "Miniscript.csproj", "{C3806B8F-9702-4B39-B6D9-9ECBC298565F}"
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34330.188
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Miniscript", "Miniscript.csproj", "{C3806B8F-9702-4B39-B6D9-9ECBC298565F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|ARM64 = Debug|ARM64
 		Debug|x86 = Debug|x86
+		Release|ARM64 = Release|ARM64
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C3806B8F-9702-4B39-B6D9-9ECBC298565F}.Debug|ARM64.ActiveCfg = Debug|Any CPU
+		{C3806B8F-9702-4B39-B6D9-9ECBC298565F}.Debug|ARM64.Build.0 = Debug|Any CPU
 		{C3806B8F-9702-4B39-B6D9-9ECBC298565F}.Debug|x86.ActiveCfg = Debug|x86
 		{C3806B8F-9702-4B39-B6D9-9ECBC298565F}.Debug|x86.Build.0 = Debug|x86
+		{C3806B8F-9702-4B39-B6D9-9ECBC298565F}.Release|ARM64.ActiveCfg = Release|Any CPU
+		{C3806B8F-9702-4B39-B6D9-9ECBC298565F}.Release|ARM64.Build.0 = Release|Any CPU
 		{C3806B8F-9702-4B39-B6D9-9ECBC298565F}.Release|x86.ActiveCfg = Release|x86
 		{C3806B8F-9702-4B39-B6D9-9ECBC298565F}.Release|x86.Build.0 = Release|x86
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(MonoDevelopProperties) = preSolution
 		Policies = $0
 		$0.DotNetNamingPolicy = $1
 		$1.DirectoryNamespaceAssociation = PrefixedHierarchical
-		$0.TextStylePolicy = $2
+		$0.TextStylePolicy = $4
 		$2.inheritsSet = null
 		$2.scope = text/x-csharp
 		$0.CSharpFormattingPolicy = $3
@@ -33,7 +44,6 @@ Global
 		$3.NewLineForCatch = False
 		$3.NewLineForFinally = False
 		$3.scope = text/x-csharp
-		$0.TextStylePolicy = $4
 		$4.FileWidth = 80
 		$4.scope = text/plain
 	EndGlobalSection

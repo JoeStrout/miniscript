@@ -22,6 +22,22 @@ print -2^3
 10
 -8
 ======================================================================
+==== Import.
+import "ImportTest\importme"
+first = importme
+import "ImportTest\2\importme"
+second = importme
+print first.nested.val
+print second.nested.val
+----------------------------------------------------------------------
+I was imported
+i was imported from the import
+15
+I was imported END
+5432
+15
+444567
+======================================================================
 ==== Logical operators (basics).
 print 1 and 1 and 1
 print 1 and 0 and 1

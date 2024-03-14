@@ -32,9 +32,11 @@ class MainClass {
 
 		Interpreter miniscript = new Interpreter(sourceLines);
 		List<string> actualOutput = new List<string>();
-		miniscript.standardOutput = (string s, bool eol) => actualOutput.Add(s);
+		miniscript.standardOutput = (string s, bool eol) => {actualOutput.Add(s); /*Console.WriteLine(s);*/ };
 		miniscript.errorOutput = miniscript.standardOutput;
 		miniscript.implicitOutput = miniscript.standardOutput;
+		
+		miniscript.PossibleLibFolders.Add(Path.GetFullPath("../../../../", AppDomain.CurrentDomain.BaseDirectory));
 		miniscript.RunUntilDone(60, false);
 
 //		Console.WriteLine("ACTUAL OUTPUT:");
@@ -131,7 +133,7 @@ class MainClass {
 			Miniscript.HostInfo.name = "Test harness";
 
 			if (args.Length > 1 && args[1] == "--integration") {
-				var file = args.Length < 3 || string.IsNullOrEmpty(args[2]) ? "../../../TestSuite.txt" : args[2];
+				var file = args.Length < 3 || string.IsNullOrEmpty(args[2]) ? "../TestSuite.txt" : args[2];
 				Print("Running test suite.\n");
 				RunTestSuite(file);
 				return;

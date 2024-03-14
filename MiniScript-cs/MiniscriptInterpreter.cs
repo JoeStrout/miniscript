@@ -79,6 +79,9 @@ namespace Miniscript {
 		TextOutputMethod _standardOutput;
 		string source;
 		Parser parser;
+
+		
+		public List<string> PossibleLibFolders = new List<string>() { };
 		
 		/// <summary>
 		/// Constructor taking some MiniScript source code, and the output delegates.
@@ -133,6 +136,7 @@ namespace Miniscript {
 			try {
 				parser.Parse(source);
 				vm = parser.CreateVM(standardOutput);
+				vm.PossibleLibFolders = this.PossibleLibFolders;
 				vm.interpreter = new WeakReference(this);
 			} catch (MiniscriptException mse) {
 				ReportError(mse);
