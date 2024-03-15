@@ -317,6 +317,7 @@ int main(int argc, const char * argv[]) {
 			AddScriptPathVar(arg.c_str());
 			int rc = DoScriptFile(interp, arg);
 			if (!launchReplAfterScript) return rc;
+			break;
 		} else {
 			PrintHeaderInfo();
 			return ReturnErr(String("Unknown option: ") + arg);
