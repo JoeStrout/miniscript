@@ -1544,7 +1544,7 @@ namespace Miniscript {
 				if (context.vm.versionMap == null) {
 					//UnityEngine.Debug.Log("in version intrinsic, and versionMap == null");
 					var d = new ValMap();
-					d["miniscript"] = new ValString("1.6.1");
+					d["miniscript"] = new ValString("1.6.2");
 			
 					// Getting the build date is annoyingly hard in C#.
 					// This will work if the assembly.cs file uses the version format: 1.0.*
