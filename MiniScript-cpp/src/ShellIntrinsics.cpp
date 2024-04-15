@@ -89,6 +89,37 @@ public:
 	FILE *f;
 };
 
+// RefCountedStorage class to wrap raw data
+class RawDataHandleStorage : public RefCountedStorage {
+public:
+	RawDataHandleStorage() : data(nullptr), dataSize(0) {}
+	RawDataHandleStorage(FILE *f) {
+		fseek(f, 0, SEEK_END);
+		dataSize = ftell(f);
+		data = malloc(dataSize);
+		if (data) {
+			fseek(f, 0, SEEK_SET);
+			fread(data, 1, dataSize, f);
+		}
+	}
+	virtual ~RawDataHandleStorage() { free(data); }
+	void resize(size_t newSize) {
+		if (data) {
+			void *newData = realloc(data, newSize);
+			if (newData) {
+				data = newData;
+				dataSize = newSize;
+			}
+		} else {
+			data = malloc(newSize);
+			if (data) dataSize = newSize;
+		}
+	}
+
+	void *data;
+	size_t dataSize;
+};
+
 // hidden (unnamed) intrinsics, only accessible via other methods (such as the File module)
 Intrinsic *i_getcwd = nullptr;
 Intrinsic *i_chdir = nullptr;
@@ -102,6 +133,8 @@ Intrinsic *i_mkdir = nullptr;
 Intrinsic *i_copy = nullptr;
 Intrinsic *i_readLines = nullptr;
 Intrinsic *i_writeLines = nullptr;
+Intrinsic *i_loadRaw = nullptr;
+Intrinsic *i_saveRaw = nullptr;
 Intrinsic *i_rename = nullptr;
 Intrinsic *i_remove = nullptr;
 Intrinsic *i_fopen = nullptr;
@@ -113,6 +146,26 @@ Intrinsic *i_fread = nullptr;
 Intrinsic *i_freadLine = nullptr;
 Intrinsic *i_fposition = nullptr;
 Intrinsic *i_feof = nullptr;
+Intrinsic *i_rawDataLen = nullptr;
+Intrinsic *i_rawDataResize = nullptr;
+Intrinsic *i_rawDataByte = nullptr;
+Intrinsic *i_rawDataSetByte = nullptr;
+Intrinsic *i_rawDataSbyte = nullptr;
+Intrinsic *i_rawDataSetSbyte = nullptr;
+Intrinsic *i_rawDataUshort = nullptr;
+Intrinsic *i_rawDataSetUshort = nullptr;
+Intrinsic *i_rawDataShort = nullptr;
+Intrinsic *i_rawDataSetShort = nullptr;
+Intrinsic *i_rawDataUint = nullptr;
+Intrinsic *i_rawDataSetUint = nullptr;
+Intrinsic *i_rawDataInt = nullptr;
+Intrinsic *i_rawDataSetInt = nullptr;
+Intrinsic *i_rawDataFloat = nullptr;
+Intrinsic *i_rawDataSetFloat = nullptr;
+Intrinsic *i_rawDataDouble = nullptr;
+Intrinsic *i_rawDataSetDouble = nullptr;
+Intrinsic *i_rawDataUtf8 = nullptr;
+Intrinsic *i_rawDataSetUtf8 = nullptr;
 
 // Copy a file.  Return 0 on success, or some value < 0 on error.
 static int UnixishCopyFile(const char* source, const char* destination) {
@@ -193,6 +246,7 @@ static String ExpandVariables(String path) {
 }
 
 static ValueDict& FileHandleClass();
+static ValueDict& RawDataType();
 
 static IntrinsicResult intrinsic_input(Context *context, IntrinsicResult partialResult) {
 	Value prompt = context->GetVar("prompt");
@@ -713,6 +767,365 @@ static IntrinsicResult intrinsic_writeLines(Context *context, IntrinsicResult pa
 	return IntrinsicResult((int)written);
 }
 
+static IntrinsicResult intrinsic_loadRaw(Context *context, IntrinsicResult partialResult) {
+	String path = context->GetVar("path").ToString();
+	FILE *f = fopen(path.c_str(), "rb");
+	if (f == nullptr) return IntrinsicResult::Null;
+	Value dataWrapper = Value::NewHandle(new RawDataHandleStorage(f));
+	ValueDict instance;
+	instance.SetValue(Value::magicIsA, RawDataType());
+	instance.SetValue(_handle, dataWrapper);
+	Value result(instance);
+	return IntrinsicResult(result);
+}
+
+static IntrinsicResult intrinsic_saveRaw(Context *context, IntrinsicResult partialResult) {
+	String path = context->GetVar("path").ToString();
+	Value rawData = context->GetVar("rawData");
+	if (!rawData.IsA(RawDataType(), context->vm)) {
+		Value errMsg("Error: RawData parameter is required");
+		return IntrinsicResult(errMsg);
+	}
+	Value dataWrapper = rawData.Lookup(_handle);
+	if (dataWrapper.IsNull() or dataWrapper.type != ValueType::Handle) {
+		Value errMsg("Error: RawData parameter is required");
+		return IntrinsicResult(errMsg);
+	}
+	RawDataHandleStorage *storage = (RawDataHandleStorage*)dataWrapper.data.ref;
+	if (storage->dataSize == 0) {
+		Value errMsg("Error: RawData parameter is required");
+		return IntrinsicResult(errMsg);
+	}
+	FILE *f = fopen(path.c_str(), "wb");
+	if (f == nullptr) return IntrinsicResult::Null;
+	size_t written = fwrite(storage->data, 1, storage->dataSize, f);
+	fclose(f);
+	if (written < storage->dataSize) {
+		String s("Error: expected to write ");
+		s += String::Format((long)storage->dataSize);
+		s += " bytes, written ";
+		s += String::Format((long)written);
+		Value errMsg(s);
+		return IntrinsicResult(errMsg);
+	}
+	return IntrinsicResult::Null;
+}
+
+static IntrinsicResult intrinsic_rawDataLen(Context *context, IntrinsicResult partialResult) {
+	Value self = context->GetVar("self");
+	Value dataWrapper = self.Lookup(_handle);
+	if (dataWrapper.IsNull() or dataWrapper.type != ValueType::Handle) return IntrinsicResult(Value((double)0));
+	RawDataHandleStorage *storage = (RawDataHandleStorage*)dataWrapper.data.ref;
+	return IntrinsicResult(storage->dataSize);
+}
+
+static IntrinsicResult intrinsic_rawDataResize(Context *context, IntrinsicResult partialResult) {
+	Value self = context->GetVar("self");
+	long nBytes = context->GetVar("bytes").IntValue();
+	if (nBytes < 0) {
+		IndexException(String("bytes parameter must be >= 0")).raise();
+	}
+	Value dataWrapper = self.Lookup(_handle);
+	if (dataWrapper.IsNull() or dataWrapper.type != ValueType::Handle) {
+		dataWrapper = Value::NewHandle(new RawDataHandleStorage());
+		self.GetDict().SetValue(_handle, dataWrapper);
+	}
+	RawDataHandleStorage *storage = (RawDataHandleStorage*)dataWrapper.data.ref;
+	storage->resize(nBytes);
+	return IntrinsicResult::Null;
+}
+
+// bufReadWord: According to endianness, takes several bytes from `buf` and returns them as a word.
+static uint64_t bufReadWord(unsigned char *buf, size_t nBytes, bool isLittleEndian) {
+	uint64_t word = 0;
+	size_t i, step, stop;
+	if (isLittleEndian) {
+		i = nBytes - 1;
+		step = -1;
+		stop = 0;
+	} else {
+		i = 0;
+		step = 1;
+		stop = nBytes - 1;
+	}
+	while (true) {
+		word |= buf[i];
+		if (i == stop) break;
+		i += step;
+		word <<= 8;
+	}
+	return word;
+}
+
+// bufWriteWord: According to endianness, stores several bytes from a word into `buf`.
+static void bufWriteWord(unsigned char *buf, size_t nBytes, bool isLittleEndian, uint64_t word) {
+	size_t i, step, stop;
+	if (isLittleEndian) {
+		i = 0;
+		step = 1;
+		stop = nBytes - 1;
+	} else {
+		i = nBytes - 1;
+		step = -1;
+		stop = 0;
+	}
+	while (true) {
+		buf[i] = word;
+		if (i == stop) break;
+		i += step;
+		word >>= 8;
+	}
+}
+
+enum RawDataNotAvailable { rdnaNull, rdnaRaise, rdnaAdjust };
+
+// rawDataGetBytes: Returns a pointer to a fragment of RawData's memory, also checks that `nBytes` are available.
+static unsigned char *rawDataGetBytes(Value& rawData, long& offset, long& nBytes, RawDataNotAvailable na = rdnaRaise) {
+	Value dataWrapper = rawData.Lookup(_handle);
+	if (dataWrapper.IsNull() or dataWrapper.type != ValueType::Handle) {
+		switch (na) {
+			case rdnaNull:
+				return nullptr;
+			case rdnaRaise: case rdnaAdjust:
+				IndexException(String("Index Error (index out of range)")).raise();
+		}
+	}
+	RawDataHandleStorage *storage = (RawDataHandleStorage*)dataWrapper.data.ref;
+	if (offset < 0) offset += storage->dataSize;
+	if (offset < 0 or offset > storage->dataSize) {
+		IndexException(String("Index Error (index out of range)")).raise();
+	}
+	if (nBytes < 0) nBytes = storage->dataSize - offset;
+	if (offset + nBytes > storage->dataSize) {
+		switch (na) {
+			case rdnaNull:
+				return nullptr;
+			case rdnaRaise:
+				IndexException(String("Index Error (index out of range)")).raise();
+			case rdnaAdjust:
+				nBytes = storage->dataSize - offset;
+		}
+	}
+	return (unsigned char *)storage->data + offset;
+}
+
+static Value rawDataGetInteger(Context *context, long nBytes, bool isSigned) {
+	Value self = context->GetVar("self");
+	long offset = context->GetVar("offset").IntValue();
+	bool isLittleEndian = self.Lookup("littleEndian").BoolValue();
+	unsigned char *data = rawDataGetBytes(self, offset, nBytes);
+	uint64_t word = bufReadWord(data, nBytes, isLittleEndian);
+	if (!isSigned) return Value(word);
+	switch (nBytes) {
+		case 1:
+		{
+			union {
+				unsigned char u;
+				signed char s;
+			} un;
+			un.u = word;
+			return Value(un.s);
+		}
+		case 2:
+		{
+			union {
+				uint16_t u;
+				int16_t s;
+			} un;
+			un.u = word;
+			return Value(un.s);
+		}
+		case 4:
+		{
+			union {
+				uint32_t u;
+				int32_t s;
+			} un;
+			un.u = word;
+			return Value(un.s);
+		}
+	}
+	return Value::null;
+}
+
+static void rawDataSetInteger(Context *context, long nBytes, bool isSigned) {
+	Value self = context->GetVar("self");
+	long offset = context->GetVar("offset").IntValue();
+	bool littleEndian = self.Lookup("littleEndian").BoolValue();
+	unsigned char *data = rawDataGetBytes(self, offset, nBytes);
+	union {
+		uint64_t u;
+		int64_t s;
+	} word;
+	if (isSigned) {
+		word.s = context->GetVar("value").IntValue();
+	} else {
+		word.u = context->GetVar("value").UIntValue();
+	}
+	bufWriteWord(data, nBytes, littleEndian, word.u);
+}
+
+static Value rawDataGetReal(Context *context, long nBytes) {
+	Value self = context->GetVar("self");
+	long offset = context->GetVar("offset").IntValue();
+	bool isLittleEndian = self.Lookup("littleEndian").BoolValue();
+	unsigned char *data = rawDataGetBytes(self, offset, nBytes);
+	uint64_t word = bufReadWord(data, nBytes, isLittleEndian);
+	switch (nBytes) {
+		case 4:
+		{
+			union {
+				uint32_t i;
+				float r;
+			} un;
+			un.i = word;
+			return Value(un.r);
+		}
+		case 8:
+		{
+			union {
+				uint64_t i;
+				double r;
+			} un;
+			un.i = word;
+			return Value(un.r);
+		}
+	}
+	return Value::null;
+}
+
+static void rawDataSetReal(Context *context, long nBytes) {
+	Value self = context->GetVar("self");
+	long offset = context->GetVar("offset").IntValue();
+	bool littleEndian = self.Lookup("littleEndian").BoolValue();
+	unsigned char *data = rawDataGetBytes(self, offset, nBytes);
+	switch (nBytes) {
+		case 4:
+		{
+			union {
+				uint32_t i;
+				float r;
+			} un;
+			un.r = context->GetVar("value").FloatValue();
+			bufWriteWord(data, nBytes, littleEndian, un.i);
+			break;
+		}
+		case 8:
+		{
+			union {
+				uint64_t i;
+				double r;
+			} un;
+			un.r = context->GetVar("value").DoubleValue();
+			bufWriteWord(data, nBytes, littleEndian, un.i);
+			break;
+		}
+	}
+}
+
+// byte / sbyte:
+
+static IntrinsicResult intrinsic_rawDataByte(Context *context, IntrinsicResult partialResult) {
+	return IntrinsicResult(rawDataGetInteger(context, 1, false));
+}
+
+static IntrinsicResult intrinsic_rawDataSetByte(Context *context, IntrinsicResult partialResult) {
+	rawDataSetInteger(context, 1, false);
+	return IntrinsicResult::Null;
+}
+
+static IntrinsicResult intrinsic_rawDataSbyte(Context *context, IntrinsicResult partialResult) {
+	return IntrinsicResult(rawDataGetInteger(context, 1, true));
+}
+
+static IntrinsicResult intrinsic_rawDataSetSbyte(Context *context, IntrinsicResult partialResult) {
+	rawDataSetInteger(context, 1, true);
+	return IntrinsicResult::Null;
+}
+
+// ushort / short
+
+static IntrinsicResult intrinsic_rawDataUshort(Context *context, IntrinsicResult partialResult) {
+	return IntrinsicResult(rawDataGetInteger(context, 2, false));
+}
+
+static IntrinsicResult intrinsic_rawDataSetUshort(Context *context, IntrinsicResult partialResult) {
+	rawDataSetInteger(context, 2, false);
+	return IntrinsicResult::Null;
+}
+
+static IntrinsicResult intrinsic_rawDataShort(Context *context, IntrinsicResult partialResult) {
+	return IntrinsicResult(rawDataGetInteger(context, 2, true));
+}
+
+static IntrinsicResult intrinsic_rawDataSetShort(Context *context, IntrinsicResult partialResult) {
+	rawDataSetInteger(context, 2, true);
+	return IntrinsicResult::Null;
+}
+
+// uint / int:
+
+static IntrinsicResult intrinsic_rawDataUint(Context *context, IntrinsicResult partialResult) {
+	return IntrinsicResult(rawDataGetInteger(context, 4, false));
+}
+
+static IntrinsicResult intrinsic_rawDataSetUint(Context *context, IntrinsicResult partialResult) {
+	rawDataSetInteger(context, 4, false);
+	return IntrinsicResult::Null;
+}
+
+static IntrinsicResult intrinsic_rawDataInt(Context *context, IntrinsicResult partialResult) {
+	return IntrinsicResult(rawDataGetInteger(context, 4, true));
+}
+
+static IntrinsicResult intrinsic_rawDataSetInt(Context *context, IntrinsicResult partialResult) {
+	rawDataSetInteger(context, 4, true);
+	return IntrinsicResult::Null;
+}
+
+// ***float and ***double:
+
+static IntrinsicResult intrinsic_rawDataFloat(Context *context, IntrinsicResult partialResult) {
+	return IntrinsicResult(rawDataGetReal(context, 4));
+}
+
+static IntrinsicResult intrinsic_rawDataSetFloat(Context *context, IntrinsicResult partialResult) {
+	rawDataSetReal(context, 4);
+	return IntrinsicResult::Null;
+}
+
+static IntrinsicResult intrinsic_rawDataDouble(Context *context, IntrinsicResult partialResult) {
+	return IntrinsicResult(rawDataGetReal(context, 8));
+}
+
+static IntrinsicResult intrinsic_rawDataSetDouble(Context *context, IntrinsicResult partialResult) {
+	rawDataSetReal(context, 8);
+	return IntrinsicResult::Null;
+}
+
+// utf8:
+
+static IntrinsicResult intrinsic_rawDataUtf8(Context *context, IntrinsicResult partialResult) {
+	Value self = context->GetVar("self");
+	long offset = context->GetVar("offset").IntValue();
+	long nBytes = context->GetVar("bytes").IntValue();
+	const char *data = (const char *)rawDataGetBytes(self, offset, nBytes, rdnaNull);
+	if (!data) return IntrinsicResult::Null;
+	String result(data, nBytes);
+	return IntrinsicResult(result);
+}
+
+static IntrinsicResult intrinsic_rawDataSetUtf8(Context *context, IntrinsicResult partialResult) {
+	Value self = context->GetVar("self");
+	long offset = context->GetVar("offset").IntValue();
+	String value = context->GetVar("value").GetString();
+	long nBytes = value.LengthB();
+	unsigned char *data = rawDataGetBytes(self, offset, nBytes, rdnaAdjust);
+	if (!data) return IntrinsicResult::Null;
+	memcpy(data, value.c_str(), nBytes);
+	return IntrinsicResult(nBytes);
+}
+
 #if WINDOWS
 // timeout : The time to wait in milliseconds before killing the child process.
 bool CreateChildProcess(const String& cmd, String& out, String& err, DWORD& returnCode, DWORD timeout) {
@@ -898,6 +1311,8 @@ static IntrinsicResult intrinsic_File(Context *context, IntrinsicResult partialR
 		fileModule.SetValue("open", i_fopen->GetFunc());
 		fileModule.SetValue("readLines", i_readLines->GetFunc());
 		fileModule.SetValue("writeLines", i_writeLines->GetFunc());
+		fileModule.SetValue("loadRaw", i_loadRaw->GetFunc());
+		fileModule.SetValue("saveRaw", i_saveRaw->GetFunc());
 		fileModule.SetAssignOverride(disallowAssignment);
 	}
 	
@@ -919,6 +1334,39 @@ static ValueDict& FileHandleClass() {
 	}
 	
 	return result;
+}
+
+static ValueDict& RawDataType() {
+	static ValueDict result;
+	if (result.Count() == 0) {
+		result.SetValue("littleEndian", Value::Truth(true));
+		result.SetValue("len", i_rawDataLen->GetFunc());
+		result.SetValue("resize", i_rawDataResize->GetFunc());
+		result.SetValue("byte", i_rawDataByte->GetFunc());
+		result.SetValue("setByte", i_rawDataSetByte->GetFunc());
+		result.SetValue("sbyte", i_rawDataSbyte->GetFunc());
+		result.SetValue("setSbyte", i_rawDataSetSbyte->GetFunc());
+		result.SetValue("ushort", i_rawDataUshort->GetFunc());
+		result.SetValue("setUshort", i_rawDataSetUshort->GetFunc());
+		result.SetValue("short", i_rawDataShort->GetFunc());
+		result.SetValue("setShort", i_rawDataSetShort->GetFunc());
+		result.SetValue("uint", i_rawDataUint->GetFunc());
+		result.SetValue("setUint", i_rawDataSetUint->GetFunc());
+		result.SetValue("int", i_rawDataInt->GetFunc());
+		result.SetValue("setInt", i_rawDataSetInt->GetFunc());
+		result.SetValue("float", i_rawDataFloat->GetFunc());
+		result.SetValue("setFloat", i_rawDataSetFloat->GetFunc());
+		result.SetValue("double", i_rawDataDouble->GetFunc());
+		result.SetValue("setDouble", i_rawDataSetDouble->GetFunc());
+		result.SetValue("utf8", i_rawDataUtf8->GetFunc());
+		result.SetValue("setUtf8", i_rawDataSetUtf8->GetFunc());
+	}
+	
+	return result;
+}
+
+static IntrinsicResult intrinsic_RawData(Context *context, IntrinsicResult partialResult) {
+	return IntrinsicResult(RawDataType());
 }
 
 static void setEnvVar(const char* key, const char* value) {
@@ -1184,8 +1632,133 @@ void AddShellIntrinsics() {
 	i_writeLines->AddParam("lines");
 	i_writeLines->code = &intrinsic_writeLines;
 	
+	i_loadRaw = Intrinsic::Create("");
+	i_loadRaw->AddParam("path");
+	i_loadRaw->code = &intrinsic_loadRaw;
+	
+	i_saveRaw = Intrinsic::Create("");
+	i_saveRaw->AddParam("path");
+	i_saveRaw->AddParam("rawData");
+	i_saveRaw->code = &intrinsic_saveRaw;
+	
 	f = Intrinsic::Create("exec");
 	f->AddParam("cmd");
 	f->AddParam("timeout", 30);
 	f->code = &intrinsic_exec;
+	
+	f = Intrinsic::Create("RawData");
+	f->code = &intrinsic_RawData;
+	
+	
+	// RawData methods
+	
+	i_rawDataLen = Intrinsic::Create("");
+	i_rawDataLen->code = &intrinsic_rawDataLen;
+	
+	i_rawDataResize = Intrinsic::Create("");
+	i_rawDataResize->AddParam("bytes", 32);
+	i_rawDataResize->code = &intrinsic_rawDataResize;
+	
+	i_rawDataByte = Intrinsic::Create("");
+	i_rawDataByte->AddParam("self");
+	i_rawDataByte->AddParam("offset", 0);
+	i_rawDataByte->code = &intrinsic_rawDataByte;
+	
+	i_rawDataSetByte = Intrinsic::Create("");
+	i_rawDataSetByte->AddParam("self");
+	i_rawDataSetByte->AddParam("offset", 0);
+	i_rawDataSetByte->AddParam("value", 0);
+	i_rawDataSetByte->code = &intrinsic_rawDataSetByte;
+	
+	i_rawDataSbyte = Intrinsic::Create("");
+	i_rawDataSbyte->AddParam("self");
+	i_rawDataSbyte->AddParam("offset", 0);
+	i_rawDataSbyte->code = &intrinsic_rawDataSbyte;
+	
+	i_rawDataSetSbyte = Intrinsic::Create("");
+	i_rawDataSetSbyte->AddParam("self");
+	i_rawDataSetSbyte->AddParam("offset", 0);
+	i_rawDataSetSbyte->AddParam("value", 0);
+	i_rawDataSetSbyte->code = &intrinsic_rawDataSetSbyte;
+	
+	i_rawDataUshort = Intrinsic::Create("");
+	i_rawDataUshort->AddParam("self");
+	i_rawDataUshort->AddParam("offset", 0);
+	i_rawDataUshort->code = &intrinsic_rawDataUshort;
+	
+	i_rawDataSetUshort = Intrinsic::Create("");
+	i_rawDataSetUshort->AddParam("self");
+	i_rawDataSetUshort->AddParam("offset", 0);
+	i_rawDataSetUshort->AddParam("value", 0);
+	i_rawDataSetUshort->code = &intrinsic_rawDataSetUshort;
+	
+	i_rawDataShort = Intrinsic::Create("");
+	i_rawDataShort->AddParam("self");
+	i_rawDataShort->AddParam("offset", 0);
+	i_rawDataShort->code = &intrinsic_rawDataShort;
+	
+	i_rawDataSetShort = Intrinsic::Create("");
+	i_rawDataSetShort->AddParam("self");
+	i_rawDataSetShort->AddParam("offset", 0);
+	i_rawDataSetShort->AddParam("value", 0);
+	i_rawDataSetShort->code = &intrinsic_rawDataSetShort;
+	
+	i_rawDataUint = Intrinsic::Create("");
+	i_rawDataUint->AddParam("self");
+	i_rawDataUint->AddParam("offset", 0);
+	i_rawDataUint->code = &intrinsic_rawDataUint;
+	
+	i_rawDataSetUint = Intrinsic::Create("");
+	i_rawDataSetUint->AddParam("self");
+	i_rawDataSetUint->AddParam("offset", 0);
+	i_rawDataSetUint->AddParam("value", 0);
+	i_rawDataSetUint->code = &intrinsic_rawDataSetUint;
+	
+	i_rawDataInt = Intrinsic::Create("");
+	i_rawDataInt->AddParam("self");
+	i_rawDataInt->AddParam("offset", 0);
+	i_rawDataInt->code = &intrinsic_rawDataInt;
+	
+	i_rawDataSetInt = Intrinsic::Create("");
+	i_rawDataSetInt->AddParam("self");
+	i_rawDataSetInt->AddParam("offset", 0);
+	i_rawDataSetInt->AddParam("value", 0);
+	i_rawDataSetInt->code = &intrinsic_rawDataSetInt;
+	
+	i_rawDataFloat = Intrinsic::Create("");
+	i_rawDataFloat->AddParam("self");
+	i_rawDataFloat->AddParam("offset", 0);
+	i_rawDataFloat->code = &intrinsic_rawDataFloat;
+	
+	i_rawDataSetFloat = Intrinsic::Create("");
+	i_rawDataSetFloat->AddParam("self");
+	i_rawDataSetFloat->AddParam("offset", 0);
+	i_rawDataSetFloat->AddParam("value", 0);
+	i_rawDataSetFloat->code = &intrinsic_rawDataSetFloat;
+	
+	i_rawDataDouble = Intrinsic::Create("");
+	i_rawDataDouble->AddParam("self");
+	i_rawDataDouble->AddParam("offset", 0);
+	i_rawDataDouble->code = &intrinsic_rawDataDouble;
+	
+	i_rawDataSetDouble = Intrinsic::Create("");
+	i_rawDataSetDouble->AddParam("self");
+	i_rawDataSetDouble->AddParam("offset", 0);
+	i_rawDataSetDouble->AddParam("value", 0);
+	i_rawDataSetDouble->code = &intrinsic_rawDataSetDouble;
+	
+	i_rawDataUtf8 = Intrinsic::Create("");
+	i_rawDataUtf8->AddParam("self");
+	i_rawDataUtf8->AddParam("offset", 0);
+	i_rawDataUtf8->AddParam("bytes", -1);
+	i_rawDataUtf8->code = &intrinsic_rawDataUtf8;
+	
+	i_rawDataSetUtf8 = Intrinsic::Create("");
+	i_rawDataSetUtf8->AddParam("self");
+	i_rawDataSetUtf8->AddParam("offset", 0);
+	i_rawDataSetUtf8->AddParam("value", "");
+	i_rawDataSetUtf8->code = &intrinsic_rawDataSetUtf8;
+	
+	// END RawData methods
+	
 }
