@@ -49,7 +49,6 @@
 #else
 	#include <fcntl.h>
 	#include <unistd.h>
-	#include <unistd.h>
 	#include <dirent.h>		// for readdir
 	#include <libgen.h>		// for basename and dirname
 	#include <sys/stat.h>	// for stat
@@ -60,7 +59,6 @@
 		#include <sys/sendfile.h>
 	#endif
 	#define PATHSEP '/'
-	#include <unistd.h>
 	#include <sys/wait.h>
 #endif
 
