@@ -37,6 +37,7 @@
 #include <time.h>
 #if _WIN32 || _WIN64
 	#define WINDOWS 1
+	#define WIN32_LEAN_AND_MEAN
 	#include <windows.h>
 	#include <Shlwapi.h>
 	#include <Fileapi.h>
@@ -46,6 +47,10 @@
 	#define getcwd _getcwd
 	#define setenv _setenv
 	#define PATHSEP '\\'
+	#include <winsock2.h>
+	#include <afunix.h>
+	#pragma comment(lib, "ws2_32.lib")
+	#define socklen_t int
 #else
 	#include <fcntl.h>
 	#include <unistd.h>
@@ -125,20 +130,48 @@ public:
 };
 
 // RefCountedStorage base class for uds.Connection and uds.Server storages (since they declare similar data).
+//
+//   +----------------------+
+//   | UdsBaseHandleStorage |
+//   +----------------------+
+//              |          +----------------------------+
+//              +--------->| UdsConnectionHandleStorage |
+//              |          +----------------------------+
+//              |          +------------------------+
+//              +--------->| UdsServerHandleStorage |
+//                         +------------------------+
+//
 class UdsBaseHandleStorage : public RefCountedStorage {
 public:
-	// cleanup: Closes the socket.  We will call it from uds.Server::close and uds.Connection::close, and also in destructors.
+	UdsBaseHandleStorage() : initedOk(false), sockfd(-1) {
+		memset(&addr, 0, sizeof(addr));
+		addr.sun_family = AF_UNIX;
+	}
+	virtual ~UdsBaseHandleStorage() { cleanup(); }
+
+	// cleanup: Closes the socket.  Called from uds.Server::close and uds.Connection::close, and in destructors.
 	void cleanup() {
 		if (sockfd < 0) return;
+#if WINDOWS
+		closesocket(sockfd);
+#else
 		close(sockfd);
+#endif
 		sockfd = -1;
 	}
-	// unblock: Makes the socket nonblocking.  Call it in constructors.
+
+	// unblock: Makes the socket nonblocking.  Called in constructors.
 	bool unblock() {
+#if WINDOWS
+		unsigned long mode = 1;
+		return ioctlsocket(sockfd, FIONBIO, &mode) == 0;
+#else
 		int flags = fcntl(sockfd, F_GETFL, 0);
 		flags |= O_NONBLOCK;
 		return fcntl(sockfd, F_SETFL, flags) == 0;
+#endif
 	}
+
 	// isValid: Returns true if the socket is still open.
 	bool isValid() {
 		return initedOk and sockfd >= 0;
@@ -150,46 +183,48 @@ public:
 };
 
 // RefCountedStorage class to wrap a unix domain socket connection data.
+// sockfd of this class is used for send/recv.
 class UdsConnectionHandleStorage : public UdsBaseHandleStorage {
 public:
-	UdsConnectionHandleStorage(const char *sockPath) : initedOk(false) {
+	UdsConnectionHandleStorage(const char *sockPath) {
 		sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
 		if (sockfd < 0) return;
 		if (!unblock()) return;
-		memset(&addr, 0, sizeof(addr));
-		addr.sun_family = AF_UNIX;
 		strncpy(addr.sun_path, sockPath, sizeof(addr.sun_path) - 1);
 		initedOk = true;
 	}
-	UdsConnectionHandleStorage(int sockfd, sockaddr_un addr) : initedOk(false), sockfd(sockfd), addr(addr) {
+	UdsConnectionHandleStorage(int sockfd, sockaddr_un addr) {
+		this->sockfd = sockfd;
+		this->addr = addr;
 		if (!unblock()) return;
 		initedOk = true;
 	}
-	virtual ~UdsConnectionHandleStorage() { cleanup(); }
 	bool attemptConnect() {
 		if (!isValid()) return false;
-		return connect(sockfd, (struct sockaddr *)&addr, sizeof(addr)) == 0;
+		int rc = connect(sockfd, (struct sockaddr *)&addr, sizeof(addr));
+#if WINDOWS
+		return rc == 0 or (rc < 0 and WSAGetLastError() == WSAEISCONN);
+#else
+		return rc == 0;
+#endif
 	}
-	ssize_t receiveBuf(char *buf, size_t nBytes) {
+	long receiveBuf(char *buf, size_t nBytes) {
 		if (!isValid()) return 0;
-		ssize_t nReceived = recv(sockfd, buf, nBytes, 0);
+		long nReceived = recv(sockfd, buf, nBytes, 0);
 		if (nReceived == 0) cleanup();
 		return nReceived;
 	}
-	ssize_t sendBuf(void *buf, size_t nBytes) {
+	long sendBuf(const char *buf, size_t nBytes) {
 		if (!isValid()) return 0;
 		return send(sockfd, buf, nBytes, 0);
 	}
-
-	bool initedOk;
-	int sockfd;
-	struct sockaddr_un addr;
 };
 
 // RefCountedStorage class to wrap a unix domain socket server data.
+// sockfd of this class is used for listen/accept.
 class UdsServerHandleStorage : public UdsBaseHandleStorage {
 public:
-	UdsServerHandleStorage(const char *sockPath, int backlog) : initedOk(false) {
+	UdsServerHandleStorage(const char *sockPath, int backlog) {
 		sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
 		if (sockfd < 0) return;
 		if (!unblock()) return;
@@ -201,7 +236,6 @@ public:
 		if (listen(sockfd, backlog) < 0) return;
 		initedOk = true;
 	}
-	virtual ~UdsServerHandleStorage() { cleanup(); }
 	UdsConnectionHandleStorage *acceptConnection() {
 		if (!isValid()) return nullptr;
 		struct sockaddr_un peer;
@@ -212,10 +246,6 @@ public:
 		if (!connStorage->isValid()) return nullptr;
 		return connStorage;
 	}
-
-	bool initedOk;
-	int sockfd;
-	struct sockaddr_un addr;
 };
 
 // hidden (unnamed) intrinsics, only accessible via other methods (such as the File module)
@@ -1534,14 +1564,14 @@ static IntrinsicResult intrinsic_udsConnectionSend(Context *context, IntrinsicRe
 	if (rawData.type == ValueType::String) {
 		String s = rawData.GetString();
 		if (s.LengthB() == 0) RuntimeException("message length cannot be 0").raise();
-		nSent = storage->sendBuf((void *)s.c_str(), s.LengthB());
+		nSent = storage->sendBuf(s.c_str(), s.LengthB());
 	} else if (rawData.type == ValueType::Map) {
 		if (!rawData.IsA(RawDataType(), context->vm)) RuntimeException("message must be RawData or string").raise();
 		Value dataWrapper = rawData.Lookup(_handle);
 		if (dataWrapper.IsNull() or dataWrapper.type != ValueType::Handle) RuntimeException("bad RawData, no handle or length 0").raise();
 		RawDataHandleStorage *dataStorage = (RawDataHandleStorage*)dataWrapper.data.ref;
 		if (dataStorage->dataSize == 0) RuntimeException("message length cannot be 0").raise();
-		nSent = storage->sendBuf((void *)dataStorage->data, dataStorage->dataSize);
+		nSent = storage->sendBuf((const char *)dataStorage->data, dataStorage->dataSize);
 	} else {
 		RuntimeException("message must be RawData or string").raise();
 	}
@@ -2115,6 +2145,13 @@ void AddShellIntrinsics() {
 	// END RawData methods
 	
 	// uds (unix domain sockets)
+	
+#if WINDOWS
+	WSADATA wsaData;
+	if (WSAStartup(MAKEWORD(2,2), &wsaData) != 0) {
+		printf("WSAStartup failed, sockets will not work\n");
+	}
+#endif
 	
 	f = Intrinsic::Create("uds");
 	f->code = &intrinsic_Uds;
