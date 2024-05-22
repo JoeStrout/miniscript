@@ -104,15 +104,16 @@ public:
 	}
 	virtual ~RawDataHandleStorage() { free(data); }
 	void resize(size_t newSize) {
-		if (data) {
+		if (newSize == 0) {
+			free(data);
+			data = nullptr;
+			dataSize = 0;
+		} else {
 			void *newData = realloc(data, newSize);
 			if (newData) {
 				data = newData;
 				dataSize = newSize;
 			}
-		} else {
-			data = malloc(newSize);
-			if (data) dataSize = newSize;
 		}
 	}
 
