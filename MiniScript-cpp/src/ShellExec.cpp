@@ -41,14 +41,12 @@ String readFromFd(HANDLE fd, bool trimTrailingNewline=true) {
 		buffer[bytesRead] = '\0';
 		if (trimTrailingNewline and bytesRead < bufferSize-1 and bytesRead > 0 and buffer[bytesRead-1] == '\n') {
 			// Efficiently trim \n or \r\n from the end of the buffer
-			buffer[bytesRead-1] = '\0';
-			if (bytesRead > 1 and buffer[bytesRead-2] == '\r') {
-				buffer[bytesRead-2] = '\0';
-			}
+			bytesRead--;
+			if (bytesRead > 0 and buffer[bytesRead-1] == '\r') bytesRead--;
 			trimmed = true;
 		}
 
-		String s(buffer, bytesRead+1);
+		String s(buffer, bytesRead);
 		output += s;
 	}
 
