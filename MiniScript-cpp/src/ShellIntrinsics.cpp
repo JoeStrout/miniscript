@@ -1112,6 +1112,9 @@ static IntrinsicResult intrinsic_rawDataUtf8(Context *context, IntrinsicResult p
 	long nBytes = context->GetVar("bytes").IntValue();
 	const char *data = (const char *)rawDataGetBytes(self, offset, nBytes, rdnaNull);
 	if (!data) return IntrinsicResult::Null;
+	Value dataWrapper = self.Lookup(_handle);
+	RawDataHandleStorage *storage = (RawDataHandleStorage*)dataWrapper.data.ref;
+	if (storage->dataSize == 0) return IntrinsicResult::Null;
 	String result(data, nBytes);
 	return IntrinsicResult(result);
 }
