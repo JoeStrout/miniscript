@@ -172,8 +172,8 @@ public:
 #endif
 	}
 
-	// isValid: Returns true if the socket is still open.
-	bool isValid() {
+	// isOpen: Returns true if the socket is still open.
+	bool isOpen() {
 		return initedOk and sockfd >= 0;
 	}
 
@@ -200,7 +200,7 @@ public:
 		initedOk = true;
 	}
 	bool attemptConnect() {
-		if (!isValid()) return false;
+		if (!isOpen()) return false;
 		int rc = connect(sockfd, (struct sockaddr *)&addr, sizeof(addr));
 #if WINDOWS
 		return rc == 0 or (rc < 0 and WSAGetLastError() == WSAEISCONN);
@@ -209,14 +209,18 @@ public:
 #endif
 	}
 	long receiveBuf(char *buf, size_t nBytes) {
-		if (!isValid()) return 0;
+		if (!isOpen()) return 0;
 		long nReceived = recv(sockfd, buf, nBytes, 0);
 		if (nReceived == 0) cleanup();
 		return nReceived;
 	}
 	long sendBuf(const char *buf, size_t nBytes) {
-		if (!isValid()) return 0;
-		return send(sockfd, buf, nBytes, 0);
+		if (!isOpen()) return 0;
+		int flags = 0;
+#ifdef MSG_NOSIGNAL
+		flags |= MSG_NOSIGNAL;
+#endif
+		return send(sockfd, buf, nBytes, flags);
 	}
 };
 
@@ -237,13 +241,13 @@ public:
 		initedOk = true;
 	}
 	UdsConnectionHandleStorage *acceptConnection() {
-		if (!isValid()) return nullptr;
+		if (!isOpen()) return nullptr;
 		struct sockaddr_un peer;
 		socklen_t peerSize = sizeof(peer);
 		int cfd = accept(sockfd, (struct sockaddr *)&peer, &peerSize);
 		if (cfd < 0) return nullptr;
 		UdsConnectionHandleStorage *connStorage = new UdsConnectionHandleStorage(cfd, peer);
-		if (!connStorage->isValid()) return nullptr;
+		if (!connStorage->isOpen()) return nullptr;
 		return connStorage;
 	}
 };
@@ -295,12 +299,12 @@ Intrinsic *i_rawDataSetDouble = nullptr;
 Intrinsic *i_rawDataUtf8 = nullptr;
 Intrinsic *i_rawDataSetUtf8 = nullptr;
 Intrinsic *i_udsConnect = nullptr;
-Intrinsic *i_udsConnectionIsValid = nullptr;
+Intrinsic *i_udsConnectionIsOpen = nullptr;
 Intrinsic *i_udsConnectionClose = nullptr;
 Intrinsic *i_udsConnectionReceive = nullptr;
 Intrinsic *i_udsConnectionSend = nullptr;
 Intrinsic *i_udsCreateServer = nullptr;
-Intrinsic *i_udsServerIsValid = nullptr;
+Intrinsic *i_udsServerIsOpen = nullptr;
 Intrinsic *i_udsServerAccept = nullptr;
 
 // Copy a file.  Return 0 on success, or some value < 0 on error.
@@ -1433,7 +1437,7 @@ static IntrinsicResult intrinsic_udsConnect(Context *context, IntrinsicResult pa
 		// This is the initial entry into `uds.connect`. Initialize the storage.
 		String sockPath = context->GetVar("sockPath").ToString();
 		UdsConnectionHandleStorage *storage = new UdsConnectionHandleStorage(sockPath.c_str());
-		if (!storage->isValid()) return IntrinsicResult::Null;
+		if (!storage->isOpen()) return IntrinsicResult::Null;
 		// Calculate the final time and end the current invokation.
 		double timeout = context->GetVar("timeout").DoubleValue();
 		double finalTime = context->vm->RunTime() + timeout;
@@ -1460,12 +1464,12 @@ static IntrinsicResult intrinsic_udsConnect(Context *context, IntrinsicResult pa
 	return IntrinsicResult(data, false);
 }
 
-static IntrinsicResult intrinsic_udsConnectionIsValid(Context *context, IntrinsicResult partialResult) {
+static IntrinsicResult intrinsic_udsConnectionIsOpen(Context *context, IntrinsicResult partialResult) {
 	Value self = context->GetVar("self");
 	Value connWrapper = self.Lookup(_handle);
 	if (connWrapper.IsNull() or connWrapper.type != ValueType::Handle) return IntrinsicResult(Value::Truth(false));
 	UdsConnectionHandleStorage *storage = (UdsConnectionHandleStorage*)connWrapper.data.ref;
-	return IntrinsicResult(Value::Truth(storage->isValid()));
+	return IntrinsicResult(Value::Truth(storage->isOpen()));
 }
 
 static IntrinsicResult intrinsic_udsConnectionClose(Context *context, IntrinsicResult partialResult) {
@@ -1487,7 +1491,7 @@ static IntrinsicResult intrinsic_udsConnectionReceive(Context *context, Intrinsi
 		Value connWrapper = self.Lookup(_handle);
 		if (connWrapper.IsNull() or connWrapper.type != ValueType::Handle) RuntimeException("bad UDS connection, no handle").raise();
 		UdsConnectionHandleStorage *storage = (UdsConnectionHandleStorage*)connWrapper.data.ref;
-		if (!storage->isValid()) RuntimeException("bad UDS connection, perhaps closed socket").raise();
+		if (!storage->isOpen()) RuntimeException("bad UDS connection, closed socket").raise();
 		// Calculate the final time and end the current invokation.
 		double timeout = context->GetVar("timeout").DoubleValue();
 		double finalTime = context->vm->RunTime() + timeout;
@@ -1558,20 +1562,22 @@ static IntrinsicResult intrinsic_udsConnectionSend(Context *context, IntrinsicRe
 	Value connWrapper = self.Lookup(_handle);
 	if (connWrapper.IsNull() or connWrapper.type != ValueType::Handle) RuntimeException("bad UDS connection, no handle").raise();
 	UdsConnectionHandleStorage *storage = (UdsConnectionHandleStorage*)connWrapper.data.ref;
-	if (!storage->isValid()) RuntimeException("bad UDS connection, perhaps closed socket").raise();
+	if (!storage->isOpen()) RuntimeException("bad UDS connection, closed socket").raise();
 	Value rawData = context->GetVar("rawData");
-	long nSent;
+	int32_t offset = context->GetVar("offset").IntValue();
+	if (offset < 0) offset = 0;
+	long nSent = 0;
 	if (rawData.type == ValueType::String) {
 		String s = rawData.GetString();
-		if (s.LengthB() == 0) RuntimeException("message length cannot be 0").raise();
-		nSent = storage->sendBuf(s.c_str(), s.LengthB());
+		size_t len = s.LengthB();
+		if (offset < len) nSent = storage->sendBuf(s.c_str() + offset, len - offset);
 	} else if (rawData.type == ValueType::Map) {
 		if (!rawData.IsA(RawDataType(), context->vm)) RuntimeException("message must be RawData or string").raise();
 		Value dataWrapper = rawData.Lookup(_handle);
 		if (dataWrapper.IsNull() or dataWrapper.type != ValueType::Handle) RuntimeException("bad RawData, no handle or length 0").raise();
 		RawDataHandleStorage *dataStorage = (RawDataHandleStorage*)dataWrapper.data.ref;
-		if (dataStorage->dataSize == 0) RuntimeException("message length cannot be 0").raise();
-		nSent = storage->sendBuf((const char *)dataStorage->data, dataStorage->dataSize);
+		size_t len = dataStorage->dataSize;
+		if (offset < len) nSent = storage->sendBuf((const char *)dataStorage->data + offset, len - offset);
 	} else {
 		RuntimeException("message must be RawData or string").raise();
 	}
@@ -1584,7 +1590,7 @@ static IntrinsicResult intrinsic_udsCreateServer(Context *context, IntrinsicResu
 	int32_t backlog = context->GetVar("backlog").IntValue();
 	if (backlog <= 0) backlog = UDS_DEFAULT_BACKLOG;
 	UdsServerHandleStorage *storage = new UdsServerHandleStorage(sockPath.c_str(), backlog);
-	if (!storage->isValid()) return IntrinsicResult::Null;
+	if (!storage->isOpen()) return IntrinsicResult::Null;
 	ValueDict instance;
 	instance.SetValue(Value::magicIsA, UdsServerType());
 	instance.SetValue(_handle, Value::NewHandle(storage));
@@ -1592,12 +1598,12 @@ static IntrinsicResult intrinsic_udsCreateServer(Context *context, IntrinsicResu
 	return IntrinsicResult(result);
 }
 
-static IntrinsicResult intrinsic_udsServerIsValid(Context *context, IntrinsicResult partialResult) {
+static IntrinsicResult intrinsic_udsServerIsOpen(Context *context, IntrinsicResult partialResult) {
 	Value self = context->GetVar("self");
 	Value serverWrapper = self.Lookup(_handle);
 	if (serverWrapper.IsNull() or serverWrapper.type != ValueType::Handle) return IntrinsicResult(Value::Truth(false));
 	UdsServerHandleStorage *storage = (UdsServerHandleStorage*)serverWrapper.data.ref;
-	return IntrinsicResult(Value::Truth(storage->isValid()));
+	return IntrinsicResult(Value::Truth(storage->isOpen()));
 }
 
 static IntrinsicResult intrinsic_udsServerAccept(Context *context, IntrinsicResult partialResult) {
@@ -1607,7 +1613,7 @@ static IntrinsicResult intrinsic_udsServerAccept(Context *context, IntrinsicResu
 		Value serverWrapper = self.Lookup(_handle);
 		if (serverWrapper.IsNull() or serverWrapper.type != ValueType::Handle) RuntimeException("bad UDS server, no handle").raise();
 		UdsServerHandleStorage *storage = (UdsServerHandleStorage*)serverWrapper.data.ref;
-		if (!storage->isValid()) RuntimeException("bad UDS server, perhaps closed socket").raise();
+		if (!storage->isOpen()) RuntimeException("bad UDS server, closed socket").raise();
 		// Calculate the final time and end the current invokation.
 		double timeout = context->GetVar("timeout").DoubleValue();
 		double finalTime = context->vm->RunTime() + timeout;
@@ -1719,7 +1725,7 @@ static IntrinsicResult intrinsic_RawData(Context *context, IntrinsicResult parti
 static ValueDict& UdsConnectionType() {
 	static ValueDict result;
 	if (result.Count() == 0) {
-		result.SetValue("isValid", i_udsConnectionIsValid->GetFunc());
+		result.SetValue("isOpen", i_udsConnectionIsOpen->GetFunc());
 		result.SetValue("close", i_udsConnectionClose->GetFunc());
 		result.SetValue("receive", i_udsConnectionReceive->GetFunc());
 		result.SetValue("send", i_udsConnectionSend->GetFunc());
@@ -1731,7 +1737,7 @@ static ValueDict& UdsConnectionType() {
 static ValueDict& UdsServerType() {
 	static ValueDict result;
 	if (result.Count() == 0) {
-		result.SetValue("isValid", i_udsServerIsValid->GetFunc());
+		result.SetValue("isOpen", i_udsServerIsOpen->GetFunc());
 		result.SetValue("accept", i_udsServerAccept->GetFunc());
 	}
 	
@@ -2161,9 +2167,9 @@ void AddShellIntrinsics() {
 	i_udsConnect->AddParam("timeout", 30);
 	i_udsConnect->code = &intrinsic_udsConnect;
 	
-	i_udsConnectionIsValid = Intrinsic::Create("");
-	i_udsConnectionIsValid->AddParam("self");
-	i_udsConnectionIsValid->code = &intrinsic_udsConnectionIsValid;
+	i_udsConnectionIsOpen = Intrinsic::Create("");
+	i_udsConnectionIsOpen->AddParam("self");
+	i_udsConnectionIsOpen->code = &intrinsic_udsConnectionIsOpen;
 	
 	i_udsConnectionClose = Intrinsic::Create("");
 	i_udsConnectionClose->AddParam("self");
@@ -2178,6 +2184,7 @@ void AddShellIntrinsics() {
 	i_udsConnectionSend = Intrinsic::Create("");
 	i_udsConnectionSend->AddParam("self");
 	i_udsConnectionSend->AddParam("rawData");
+	i_udsConnectionSend->AddParam("offset", 0);
 	i_udsConnectionSend->code = &intrinsic_udsConnectionSend;
 	
 	i_udsCreateServer = Intrinsic::Create("");
@@ -2185,9 +2192,9 @@ void AddShellIntrinsics() {
 	i_udsCreateServer->AddParam("backlog", UDS_DEFAULT_BACKLOG);
 	i_udsCreateServer->code = &intrinsic_udsCreateServer;
 	
-	i_udsServerIsValid = Intrinsic::Create("");
-	i_udsServerIsValid->AddParam("self");
-	i_udsServerIsValid->code = &intrinsic_udsServerIsValid;
+	i_udsServerIsOpen = Intrinsic::Create("");
+	i_udsServerIsOpen->AddParam("self");
+	i_udsServerIsOpen->code = &intrinsic_udsServerIsOpen;
 	
 	i_udsServerAccept = Intrinsic::Create("");
 	i_udsServerAccept->AddParam("self");
