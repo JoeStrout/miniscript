@@ -71,6 +71,7 @@
 	#include <sys/socket.h>
 	#include <sys/un.h>     // for sockaddr_un
 #endif
+#include <limits>
 #define UDS_DEFAULT_BACKLOG (20)
 
 extern "C" {
@@ -1440,6 +1441,7 @@ static IntrinsicResult intrinsic_udsConnect(Context *context, IntrinsicResult pa
 		if (!storage->isOpen()) return IntrinsicResult::Null;
 		// Calculate the final time and end the current invokation.
 		double timeout = context->GetVar("timeout").DoubleValue();
+		if (timeout < 0) timeout = std::numeric_limits<double>::infinity();
 		double finalTime = context->vm->RunTime() + timeout;
 		ValueDict data;
 		data.SetValue("wrapper", Value::NewHandle(storage));
@@ -1494,6 +1496,7 @@ static IntrinsicResult intrinsic_udsConnectionReceive(Context *context, Intrinsi
 		if (!storage->isOpen()) RuntimeException("bad UDS connection, closed socket").raise();
 		// Calculate the final time and end the current invokation.
 		double timeout = context->GetVar("timeout").DoubleValue();
+		if (timeout < 0) timeout = std::numeric_limits<double>::infinity();
 		double finalTime = context->vm->RunTime() + timeout;
 		// Initialize a RawData result.  We do not need the whole RawData object rn, a simple handle is enough.
 		Value dataWrapper = Value::NewHandle(new RawDataHandleStorage());
@@ -1616,6 +1619,7 @@ static IntrinsicResult intrinsic_udsServerAccept(Context *context, IntrinsicResu
 		if (!storage->isOpen()) RuntimeException("bad UDS server, closed socket").raise();
 		// Calculate the final time and end the current invokation.
 		double timeout = context->GetVar("timeout").DoubleValue();
+		if (timeout < 0) timeout = std::numeric_limits<double>::infinity();
 		double finalTime = context->vm->RunTime() + timeout;
 		ValueDict data;
 		data.SetValue("wrapper", serverWrapper);
