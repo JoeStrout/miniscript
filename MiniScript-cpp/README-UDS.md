@@ -48,7 +48,7 @@ c.close
 
 ## API - Creating client and server
 
-#### uds.connect()
+#### Function uds.connect()
 
 `uds.connect(sockPath, timeout=30) -> uds.Connection or null`
 
@@ -63,7 +63,7 @@ If successful, a connection object is returned (an instance of `uds.Connection`)
 Otherwise, the result is `null`.
 
 
-#### uds.createServer()
+#### Function uds.createServer()
 
 `uds.createServer(sockPath, backlog=20) -> uds.Server or null`
 
@@ -84,19 +84,19 @@ Otherwise, the result is `null`.
 
 ## API - Connection
 
-#### connection.isOpen()
+#### Function connection.isOpen()
 
 `connection.isOpen() -> true or false`
 
 Returns whether the underlying socket is still open.
 
-#### connection.close()
+#### Function connection.close()
 
-`connection.isOpen() -> true or false`
+`connection.close()`
 
-Closes the underlying socket. (In C++ it calls *close()* in a unix or *closesocket()* in Windows.)
+Closes the underlying socket. (In C++ it calls *close()* in unixes or *closesocket()* in Windows.)
 
-#### connection.send()
+#### Function connection.send()
 
 `connection.send(rawData, offset=0) -> nBytes`
 
@@ -104,11 +104,11 @@ Sends a message over a socket. (In C++ it calls *send()*.)
 
 The `rawData` parameter can either be a `RawData` object or a string.
 
-The optional `offset` parameter tells from which byte to start.
+The optional `offset` parameter tells from which byte in `rawData` to start.
 
 It returns the number of successfully sent bytes or `-1` (basically, the result of C++'s *send()*).
 
-#### connection.receive()
+#### Function connection.receive()
 
 `connection.receive(bytes=-1, timeout=30) -> RawData or null`
 
@@ -125,13 +125,13 @@ Otherwise, the result is `null`.
 
 ## API - Server
 
-#### server.isOpen()
+#### Function server.isOpen()
 
 `server.isOpen() -> true or false`
 
 Returns whether the underlying socket is still open.
 
-#### server.accept()
+#### Function server.accept()
 
 `server.accept(timeout=30) -> Connection`
 
