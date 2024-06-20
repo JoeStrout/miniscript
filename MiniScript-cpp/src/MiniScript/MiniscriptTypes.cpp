@@ -15,7 +15,6 @@
 
 #include <iostream>
 #include <math.h>
-#include <bit>
 
 namespace MiniScript {
 
