@@ -727,7 +727,7 @@ static IntrinsicResult intrinsic_readLines(Context *context, IntrinsicResult par
 					partialLine = "";
 				}
 				list.Add(line);
-				if (buf[i] == '\n' && i+1 < bytesRead && buf[i+1] == '\r') i++;
+				if (buf[i] == '\r' && i+1 < bytesRead && buf[i+1] == '\n') i++;
 				if (i+1 < bytesRead && buf[i+1] == 0) i++;
 				lineStart = i + 1;
 			}
