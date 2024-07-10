@@ -736,6 +736,7 @@ static IntrinsicResult intrinsic_readLines(Context *context, IntrinsicResult par
 			partialLine = String(&buf[lineStart], bytesRead - lineStart);
 		}
 	}
+	if (!partialLine.empty()) list.Add(partialLine);
 	fclose(handle);
 	return IntrinsicResult(list);
 }
