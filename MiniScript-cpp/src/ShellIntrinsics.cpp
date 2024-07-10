@@ -337,8 +337,12 @@ static IntrinsicResult intrinsic_basename(Context *context, IntrinsicResult part
 		char extBuf[256];
 		_splitpath_s(pathStr.c_str(), driveBuf, sizeof(driveBuf), nullptr, 0, nameBuf, sizeof(nameBuf), extBuf, sizeof(extBuf));
 		String result = String(nameBuf) + String(extBuf);
-    #else
+	#elif defined(__APPLE__) || defined(__FreeBSD__)
 		String result(basename((char*)pathStr.c_str()));
+	#else
+		char *duplicate = strdup((char*)pathStr.c_str());
+		String result(basename(duplicate));
+		free(duplicate);
 	#endif
 	return IntrinsicResult(result);
 }
