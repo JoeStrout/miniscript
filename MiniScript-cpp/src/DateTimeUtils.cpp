@@ -32,6 +32,7 @@ static bool Match(const String s, size_t *posB, const String match) {
 String FormatDate(time_t t, String formatSpec) {
 	tm dateTime;
 	localtime_r(&t, &dateTime);
+	if (errno == EOVERFLOW) return "";  // arg t too large
 	
 	const int BUFSIZE = 128;
 	char buffer[BUFSIZE];
