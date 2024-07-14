@@ -34,7 +34,7 @@ static bool Match(const String s, size_t *posB, const String match) {
 String FormatDate(time_t t, String formatSpec) {
 	tm dateTime;
 	struct tm *newtime = localtime_r(&t, &dateTime);
-	if (errno or newtime == nullptr) return "";  // arg t too large
+	if (newtime == nullptr) return "";  // arg t too large
 	
 	const int BUFSIZE = 128;
 	char buffer[BUFSIZE];
