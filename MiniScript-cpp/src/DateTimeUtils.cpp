@@ -304,6 +304,7 @@ time_t ParseDate(const String dateStr) {
 		dateTime.tm_mon = now.tm_mon;
 		dateTime.tm_mday = now.tm_mday;
 	}
+	dateTime.tm_isdst = -1;
 	return mktime(&dateTime);
 }
 
