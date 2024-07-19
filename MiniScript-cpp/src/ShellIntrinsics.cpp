@@ -6,6 +6,8 @@
 //  Copyright © 2021 Joe Strout. All rights reserved.
 //
 
+
+
 #include "ShellIntrinsics.h"
 #include <iostream>
 #include <fstream>
@@ -52,6 +54,7 @@
 	#include <unistd.h>
 	#include <dirent.h>		// for readdir
 	#include <libgen.h>		// for basename and dirname
+	#include <termios.h>	// for tcgetattr and tcsetattr
 	#include <sys/stat.h>	// for stat
 	#include <stdlib.h>		// for realpath
 	#if defined(__APPLE__) || defined(__FreeBSD__)
@@ -62,6 +65,7 @@
 	#define PATHSEP '/'
 	#include <unistd.h>
 	#include <sys/wait.h>
+	#include <sys/select.h>
 #endif
 
 extern "C" {
@@ -1288,6 +1292,79 @@ static IntrinsicResult intrinsic_exec(Context *context, IntrinsicResult partialR
 }
 #endif
 
+// kbGet: Like MiniMicro's `key.get` but in a console.
+// Never blocks, returns `null` if no keys were pressed.
+static IntrinsicResult intrinsic_kbGet(Context *context, IntrinsicResult partialResult) {
+#if WINDOWS
+	
+	// ...
+	return IntrinsicResult::Null;
+	
+#else
+	
+	// Our steps:
+	// * For a short time make terminal "raw" to process keys without waiting for [Return]
+	// * Check if there's input and read the data (1 or more bytes depending on the type of the key)
+	// * Immediately restore terminal back to normal mode
+	// * Return the collected bytes (if any) as a string, or null if no key was pressed
+	
+	struct termios ttystate;
+	if (tcgetattr(STDIN_FILENO, &ttystate) < 0) return IntrinsicResult::Null;
+	ttystate.c_lflag &= ~ICANON;
+	ttystate.c_cc[VMIN] = 1;
+	if (tcsetattr(STDIN_FILENO, TCSANOW, &ttystate) < 0) return IntrinsicResult::Null;
+	ValueList bytes;
+	while (true) {
+		fd_set fds;
+		FD_ZERO(&fds);
+		FD_SET(STDIN_FILENO, &fds);
+		struct timeval tv;
+		tv.tv_sec = 0;
+		tv.tv_usec = 0;
+		if (select(STDIN_FILENO + 1, &fds, nullptr, nullptr, &tv) < 0) break;
+		if (!FD_ISSET(STDIN_FILENO, &fds)) break;
+		char c;
+		if (read(STDIN_FILENO, &c, 1) < 1) break;
+		Value v(c);
+		bytes.Add(v);
+	}
+	if (tcgetattr(STDIN_FILENO, &ttystate) < 0) return IntrinsicResult::Null;
+	ttystate.c_lflag |= ICANON;
+	if (tcsetattr(STDIN_FILENO, TCSANOW, &ttystate) < 0) return IntrinsicResult::Null;
+	int nBytes = bytes.Count();
+	if (nBytes == 0) return IntrinsicResult::Null;
+	char *buf = (char *)malloc(nBytes);
+	if (buf == nullptr) return IntrinsicResult::Null;
+	for (int i=0; i<nBytes; i++) {
+		buf[i] = bytes[i].UIntValue();
+	}
+	String s(buf, nBytes);
+	free(buf);
+	return IntrinsicResult(s);
+#endif
+}
+
+// kbEcho: Toggles console's echo on or off.
+static IntrinsicResult intrinsic_kbEcho(Context *context, IntrinsicResult partialResult) {
+	bool on = context->GetVar("on").BoolValue();
+#if WINDOWS
+	
+	// ...
+	return IntrinsicResult::Null;
+	
+#else
+	struct termios ttystate;
+	if (tcgetattr(STDIN_FILENO, &ttystate) < 0) return IntrinsicResult::Null;
+	if (on) {
+		ttystate.c_lflag |= ECHO;
+	} else {
+		ttystate.c_lflag &= ~ECHO;
+	}
+	tcsetattr(STDIN_FILENO, TCSANOW, &ttystate);
+	return IntrinsicResult::Null;
+#endif
+}
+
 static bool disallowAssignment(ValueDict& dict, Value key, Value value) {
 	return true;
 }
@@ -1648,6 +1725,13 @@ void AddShellIntrinsics() {
 	
 	f = Intrinsic::Create("RawData");
 	f->code = &intrinsic_RawData;
+	
+	f = Intrinsic::Create("kbGet");
+	f->code = &intrinsic_kbGet;
+	
+	f = Intrinsic::Create("kbEcho");
+	f->AddParam("on");
+	f->code = &intrinsic_kbEcho;
 	
 	
 	// RawData methods
