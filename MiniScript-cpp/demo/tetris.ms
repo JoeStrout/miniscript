@@ -1,4 +1,5 @@
-// This demo uses non-standard `kbGet()` and `kbEcho()`
+// TETRIS
+// This demo uses `key.available()` and `key.get()`
 
 import "vt"
 
@@ -8,10 +9,10 @@ fieldHeight = 20
 fieldWidth = 10
 fieldLeft = 20
 fieldColor = vt.color.black
-kUp = char(27) + "[A"
-kDown = char(27) + "[B"
-kRight = char(27) + "[C"
-kLeft = char(27) + "[D"
+kUp = char(19)
+kDown = char(20)
+kRight = char(18)
+kLeft = char(17)
 anchorRow = fieldHeight + 2
 gameOverFG = vt.color.white
 gameOverBG = vt.color.teal
@@ -20,9 +21,9 @@ cell = {}
 cell.empty = null
 cell.I = vt.color.aqua
 cell.O = vt.color.yellow
-cell.T = vt.color.purple
+cell.T = vt.color.fuchsia
 cell.L = vt.color.orange
-cell.J = vt.color.navy
+cell.J = vt.color.blue
 cell.S = vt.color.lime
 cell.Z = vt.color.red
 _cell = cell
@@ -272,7 +273,7 @@ end function
 
 initField
 drawField
-kbEcho false
+key._echo = false
 t = time
 while true
 	yield
@@ -281,7 +282,7 @@ while true
 		shape = initShape
 		if shape == null then
 			drawGameOver
-			kbEcho true
+			key._echo = true
 			exit
 		end if
 		drawShape shape
@@ -289,19 +290,19 @@ while true
 	
 	s = shape
 	moved = null
-	k = kbGet
-	k3 = k[:3]
-	if k3 == kUp then
-		moved = rotate(s)
-	else if k3 == kDown then
-		moved = fall(s)
-	else if k3 == kLeft then
-		moved = moveLeft(s)
-	else if k3 == kRight then
-		moved = moveRight(s)
-	end if
-	
-	if moved != null then s = moved
+	while key.available
+		k = key.get
+		if k == kUp then
+			moved = rotate(s)
+		else if k == kDown then
+			moved = fall(s)
+		else if k == kLeft then
+			moved = moveLeft(s)
+		else if k == kRight then
+			moved = moveRight(s)
+		end if
+		if moved != null then s = moved
+	end while
 	
 	if time > t then
 		t = time + delay
