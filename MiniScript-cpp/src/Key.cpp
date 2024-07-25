@@ -3,9 +3,7 @@
 
 #if _WIN32 || _WIN64
 	#define WINDOWS 1
-	
-	// ...
-	
+	#include <conio.h>
 #else
 	#include <termios.h>
 	#include <unistd.h>
@@ -21,9 +19,13 @@ ValueDict& KeyDefaultScanMap() {
 	static ValueDict scanMap;
 	if (scanMap.Count() == 0) {
 		#if WINDOWS
-			
-			// ...
-			
+			scanMap.SetValue(83, "\x7F");   // delete
+			scanMap.SetValue(72, "\x13");   // up
+			scanMap.SetValue(80, "\x14");   // down
+			scanMap.SetValue(77, "\x12");   // right
+			scanMap.SetValue(75, "\x11");   // left
+			scanMap.SetValue(71, "\x01");   // home
+			scanMap.SetValue(79, "\x05");   // end
 		#else
 			scanMap.SetValue("\x7F", "\x08");     // backspace
 			scanMap.SetValue("\x1B[3~", "\x7F");  // delete
@@ -73,11 +75,17 @@ void KeyOptimizeScanMap(ValueDict& scanMap) {
 
 // Helper function to read all available characters from STDIN into the global input buffer.
 void slurpStdin() {
-	struct InputBufferEntry e = {0, 0};
-	
 	#if WINDOWS
 	
-	// ...
+	while (_kbhit()) {
+		struct InputBufferEntry e = {0, 0};
+		e.c = _getwch();
+		if (e.c == 0 || e.c == 0xE0) {
+			e.c = 0;
+			e.scanCode = _getwch();
+		}
+		inputBuffer.push_back(e);
+	}
 	
 	#else
 	
@@ -106,6 +114,7 @@ void slurpStdin() {
 			
 			// Nothing's left to slurp ; save to the input buffer a current unsaved character
 			if (p > buf) {
+				struct InputBufferEntry e = {0, 0};
 				e.c = UTF8Decode(buf);
 				inputBuffer.push_back(e);
 			}
@@ -117,6 +126,7 @@ void slurpStdin() {
 		if (p > buf && !IsUTF8IntraChar(*p)) {
 			
 			// A new character has begun under `p`, save the previous one to the input buffer and continue slurping
+			struct InputBufferEntry e = {0, 0};
 			e.c = UTF8Decode(buf);
 			inputBuffer.push_back(e);
 			buf[0] = *p;
@@ -166,13 +176,14 @@ Value KeyGet(ValueDict& scanMap) {
 			break;	// malformed scan map
 		}
 	}
+	String s;
 	if (initialE.c == 0) {
-		Value v(initialE.scanCode);
-		return v;
+		s = "<" + String::Format(initialE.scanCode, "%d") + ">";
+	} else {
+		unsigned char buf[5] = {0, 0, 0, 0, 0};
+		long nBytes = UTF8Encode(initialE.c, buf);
+		s = String((char *)buf, nBytes);
 	}
-	unsigned char buf[5] = {0, 0, 0, 0, 0};
-	long nBytes = UTF8Encode(initialE.c, buf);
-	String s((char *)buf, nBytes);
 	Value v(s);
 	return v;
 }
@@ -213,7 +224,6 @@ void KeyClear() {
 bool KeyGetEcho() {
 	#if WINDOWS
 	
-	// ...
 	return false;
 	
 	#else
@@ -228,7 +238,7 @@ bool KeyGetEcho() {
 void KeySetEcho(bool on) {
 	#if WINDOWS
 	
-	// ...
+	// no op
 	
 	#else
 	
