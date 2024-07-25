@@ -6,8 +6,6 @@
 //  Copyright © 2021 Joe Strout. All rights reserved.
 //
 
-
-
 #include "ShellIntrinsics.h"
 #include <iostream>
 #include <fstream>
