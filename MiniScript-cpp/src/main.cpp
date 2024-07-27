@@ -9,6 +9,8 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <chrono>
+#include <thread>
 #include "MiniScript/SimpleString.h"
 #include "MiniScript/UnicodeUtil.h"
 #include "MiniScript/UnitTest.h"
@@ -21,6 +23,9 @@
 #include "MiniScript/SplitJoin.h"
 #include "ShellIntrinsics.h"
 #include "DateTimeUtils.h"	// TEMP for initial testing
+
+// YIELD_NANOSECONDS: How many nano-seconds to sleep when yielding.
+#define YIELD_NANOSECONDS 10000000
 
 using namespace MiniScript;
 
@@ -127,6 +132,7 @@ static int DoCommand(Interpreter &interp, String cmd) {
 	while (!interp.Done()) {
 		try {
 			interp.RunUntilDone();
+			std::this_thread::sleep_for(std::chrono::nanoseconds(YIELD_NANOSECONDS));
 		} catch (MiniscriptException& mse) {
 			std::cerr << "Runtime Exception: " << mse.message << std::endl;
 			interp.vm->Stop();
