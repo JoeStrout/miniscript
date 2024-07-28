@@ -22,6 +22,7 @@
 #include "whereami/whereami.h"
 #include "DateTimeUtils.h"
 #include "ShellExec.h"
+#include "Key.h"
 
 #include <cstdlib>
 #include <sstream>
@@ -49,7 +50,6 @@
 #else
 	#include <fcntl.h>
 	#include <unistd.h>
-	#include <unistd.h>
 	#include <dirent.h>		// for readdir
 	#include <libgen.h>		// for basename and dirname
 	#include <sys/stat.h>	// for stat
@@ -60,7 +60,6 @@
 		#include <sys/sendfile.h>
 	#endif
 	#define PATHSEP '/'
-	#include <unistd.h>
 	#include <sys/wait.h>
 #endif
 
@@ -104,15 +103,16 @@ public:
 	}
 	virtual ~RawDataHandleStorage() { free(data); }
 	void resize(size_t newSize) {
-		if (data) {
+		if (newSize == 0) {
+			free(data);
+			data = nullptr;
+			dataSize = 0;
+		} else {
 			void *newData = realloc(data, newSize);
 			if (newData) {
 				data = newData;
 				dataSize = newSize;
 			}
-		} else {
-			data = malloc(newSize);
-			if (data) dataSize = newSize;
 		}
 	}
 
@@ -146,6 +146,7 @@ Intrinsic *i_fread = nullptr;
 Intrinsic *i_freadLine = nullptr;
 Intrinsic *i_fposition = nullptr;
 Intrinsic *i_feof = nullptr;
+
 Intrinsic *i_rawDataLen = nullptr;
 Intrinsic *i_rawDataResize = nullptr;
 Intrinsic *i_rawDataByte = nullptr;
@@ -166,6 +167,16 @@ Intrinsic *i_rawDataDouble = nullptr;
 Intrinsic *i_rawDataSetDouble = nullptr;
 Intrinsic *i_rawDataUtf8 = nullptr;
 Intrinsic *i_rawDataSetUtf8 = nullptr;
+
+Intrinsic *i_keyAvailable = nullptr;
+Intrinsic *i_keyGet = nullptr;
+Intrinsic *i_keyPut = nullptr;
+Intrinsic *i_keyClear = nullptr;
+Intrinsic *i_keyPressed = nullptr;
+Intrinsic *i_keyKeyNames = nullptr;
+Intrinsic *i_keyAxis = nullptr;
+Intrinsic *i_keyPutInFront = nullptr;
+Intrinsic *i_keyEcho = nullptr;
 
 // Copy a file.  Return 0 on success, or some value < 0 on error.
 static int UnixishCopyFile(const char* source, const char* destination) {
@@ -247,6 +258,7 @@ static String ExpandVariables(String path) {
 
 static ValueDict& FileHandleClass();
 static ValueDict& RawDataType();
+static ValueDict& KeyModule();
 
 static IntrinsicResult intrinsic_input(Context *context, IntrinsicResult partialResult) {
 	Value prompt = context->GetVar("prompt");
@@ -337,8 +349,12 @@ static IntrinsicResult intrinsic_basename(Context *context, IntrinsicResult part
 		char extBuf[256];
 		_splitpath_s(pathStr.c_str(), driveBuf, sizeof(driveBuf), nullptr, 0, nameBuf, sizeof(nameBuf), extBuf, sizeof(extBuf));
 		String result = String(nameBuf) + String(extBuf);
-    #else
+	#elif defined(__APPLE__) || defined(__FreeBSD__)
 		String result(basename((char*)pathStr.c_str()));
+	#else
+		char *duplicate = strdup((char*)pathStr.c_str());
+		String result(basename(duplicate));
+		free(duplicate);
 	#endif
 	return IntrinsicResult(result);
 }
@@ -727,7 +743,7 @@ static IntrinsicResult intrinsic_readLines(Context *context, IntrinsicResult par
 					partialLine = "";
 				}
 				list.Add(line);
-				if (buf[i] == '\n' && i+1 < bytesRead && buf[i+1] == '\r') i++;
+				if (buf[i] == '\r' && i+1 < bytesRead && buf[i+1] == '\n') i++;
 				if (i+1 < bytesRead && buf[i+1] == 0) i++;
 				lineStart = i + 1;
 			}
@@ -736,6 +752,7 @@ static IntrinsicResult intrinsic_readLines(Context *context, IntrinsicResult par
 			partialLine = String(&buf[lineStart], bytesRead - lineStart);
 		}
 	}
+	if (!partialLine.empty()) list.Add(partialLine);
 	fclose(handle);
 	return IntrinsicResult(list);
 }
@@ -1126,6 +1143,68 @@ static IntrinsicResult intrinsic_rawDataSetUtf8(Context *context, IntrinsicResul
 	return IntrinsicResult(nBytes);
 }
 
+static IntrinsicResult intrinsic_keyAvailable(Context *context, IntrinsicResult partialResult) {
+	return IntrinsicResult(KeyAvailable());
+}
+
+static IntrinsicResult intrinsic_keyGet(Context *context, IntrinsicResult partialResult) {
+	if (!KeyAvailable().BoolValue()) return IntrinsicResult(Value::null, false);
+	ValueDict keyModule = KeyModule();
+	Value scanMapV = keyModule.Lookup("_scanMap", Value::null);
+	if (scanMapV.type != ValueType::Map) keyModule.ApplyAssignOverride("_scanMap", KeyDefaultScanMap());
+	ValueDict scanMap = keyModule.Lookup("_scanMap", Value::null).GetDict();
+	return IntrinsicResult(KeyGet(scanMap));
+}
+
+static IntrinsicResult intrinsic_keyPut(Context *context, IntrinsicResult partialResult) {
+	Value keyChar = context->GetVar("keyChar");
+	if (keyChar.type == ValueType::Number) {
+		KeyPutCodepoint(keyChar.UIntValue());
+	} else if (keyChar.type == ValueType::String) {
+		KeyPutString(keyChar.ToString());
+	} else {
+		TypeException("string or number required for keyChar").raise();
+	}
+	return IntrinsicResult::Null;
+}
+
+static IntrinsicResult intrinsic_keyPutInFront(Context *context, IntrinsicResult partialResult) {
+	Value keyChar = context->GetVar("keyChar");
+	if (keyChar.type == ValueType::Number) {
+		KeyPutCodepoint(keyChar.UIntValue(), true);
+	} else if (keyChar.type == ValueType::String) {
+		KeyPutString(keyChar.ToString(), true);
+	} else {
+		TypeException("string or number required for keyChar").raise();
+	}
+	return IntrinsicResult::Null;
+}
+
+static IntrinsicResult intrinsic_keyClear(Context *context, IntrinsicResult partialResult) {
+	KeyClear();
+	return IntrinsicResult::Null;
+}
+
+static IntrinsicResult intrinsic_keyPressed(Context *context, IntrinsicResult partialResult) {
+	RuntimeException("`key.pressed` is not implemented").raise();
+	return IntrinsicResult::Null;
+}
+
+static IntrinsicResult intrinsic_keyKeyNames(Context *context, IntrinsicResult partialResult) {
+	RuntimeException("`key.keyNames` is not implemented").raise();
+	return IntrinsicResult::Null;
+}
+
+static IntrinsicResult intrinsic_keyAxis(Context *context, IntrinsicResult partialResult) {
+	RuntimeException("`key.axis` is not implemented").raise();
+	return IntrinsicResult::Null;
+}
+
+static IntrinsicResult intrinsic_keyEcho(Context *context, IntrinsicResult partialResult) {
+	return IntrinsicResult(KeyGetEcho());
+}
+
+
 #if WINDOWS
 // timeout : The time to wait in milliseconds before killing the child process.
 bool CreateChildProcess(const String& cmd, String& out, String& err, DWORD& returnCode, DWORD timeout) {
@@ -1254,7 +1333,6 @@ static IntrinsicResult intrinsic_exec(Context* context, IntrinsicResult partialR
 }
 #else
 
-
 static IntrinsicResult intrinsic_exec(Context *context, IntrinsicResult partialResult) {
 	double now = context->vm->RunTime();
 	if (partialResult.Done()) {
@@ -1286,7 +1364,6 @@ static IntrinsicResult intrinsic_exec(Context *context, IntrinsicResult partialR
 		return IntrinsicResult(data, false);
 	}
 }
-#endif
 
 static bool disallowAssignment(ValueDict& dict, Value key, Value value) {
 	return true;
@@ -1335,6 +1412,47 @@ static ValueDict& FileHandleClass() {
 	
 	return result;
 }
+
+
+static bool assignKey(ValueDict& dict, Value key, Value value) {
+	if (key.ToString() == "_scanMap") {
+		if (value.type != ValueType::Map) return true;	// silently fail because of wrong type.
+		ValueDict scanMap = value.GetDict();
+		KeyOptimizeScanMap(scanMap);
+		dict.SetValue("_scanMap", value);
+		return true;
+	}
+	if (key.ToString() == "_echo") {
+		KeySetEcho(value.BoolValue());
+		return true;
+	}
+	return false;	// allow standard assignment to also apply.
+}
+
+static ValueDict& KeyModule() {
+	static ValueDict keyModule;
+	
+	if (keyModule.Count() == 0) {
+		keyModule.SetValue("available", i_keyAvailable->GetFunc());
+		keyModule.SetValue("get", i_keyGet->GetFunc());
+		keyModule.SetValue("put", i_keyPut->GetFunc());
+		keyModule.SetValue("clear", i_keyClear->GetFunc());
+		keyModule.SetValue("pressed", i_keyPressed->GetFunc());
+		keyModule.SetValue("keyNames", i_keyKeyNames->GetFunc());
+		keyModule.SetValue("axis", i_keyAxis->GetFunc());
+		keyModule.SetValue("_putInFront", i_keyPutInFront->GetFunc());
+		keyModule.SetValue("_echo", i_keyEcho->GetFunc());
+		keyModule.SetAssignOverride(assignKey);
+		keyModule.ApplyAssignOverride("_scanMap", KeyDefaultScanMap());
+	}
+	
+	return keyModule;
+}
+
+static IntrinsicResult intrinsic_Key(Context *context, IntrinsicResult partialResult) {
+	return IntrinsicResult(KeyModule());
+}
+
 
 static ValueDict& RawDataType() {
 	static ValueDict result;
@@ -1649,6 +1767,9 @@ void AddShellIntrinsics() {
 	f = Intrinsic::Create("RawData");
 	f->code = &intrinsic_RawData;
 	
+	f = Intrinsic::Create("key");
+	f->code = &intrinsic_Key;
+	
 	
 	// RawData methods
 	
@@ -1760,5 +1881,41 @@ void AddShellIntrinsics() {
 	i_rawDataSetUtf8->code = &intrinsic_rawDataSetUtf8;
 	
 	// END RawData methods
+	
+	
+	// key.* methods
+	
+	i_keyAvailable = Intrinsic::Create("");
+	i_keyAvailable->code = &intrinsic_keyAvailable;
+	
+	i_keyGet = Intrinsic::Create("");
+	i_keyGet->code = &intrinsic_keyGet;
+	
+	i_keyPut = Intrinsic::Create("");
+	i_keyPut->AddParam("keyChar");
+	i_keyPut->code = &intrinsic_keyPut;
+	
+	i_keyClear = Intrinsic::Create("");
+	i_keyClear->code = &intrinsic_keyClear;
+	
+	i_keyPressed = Intrinsic::Create("");
+	i_keyPressed->AddParam("keyName", "space");
+	i_keyPressed->code = &intrinsic_keyPressed;
+	
+	i_keyKeyNames = Intrinsic::Create("");
+	i_keyKeyNames->code = &intrinsic_keyKeyNames;
+	
+	i_keyAxis = Intrinsic::Create("");
+	i_keyAxis->AddParam("axis", "Horizontal");
+	i_keyAxis->code = &intrinsic_keyAxis;
+	
+	i_keyPutInFront = Intrinsic::Create("");
+	i_keyPutInFront->AddParam("keyChar");
+	i_keyPutInFront->code = &intrinsic_keyPutInFront;
+	
+	i_keyEcho = Intrinsic::Create("");
+	i_keyEcho->code = &intrinsic_keyEcho;
+	
+	// END key.* methods
 	
 }

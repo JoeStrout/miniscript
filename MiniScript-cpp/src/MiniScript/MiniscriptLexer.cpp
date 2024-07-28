@@ -37,7 +37,7 @@ namespace MiniScript {
 			case Token::Type::OpLesser: 		result = "OpLesser"; 		break;
 			case Token::Type::OpLessEqual: 		result = "OpLessEqual"; 	break;
 			case Token::Type::OpAssignPlus:		result = "OpAssignPlus";	break;
-			case Token::Type::OpAssignMinus:	result = "OpAssignPMinus";	break;
+			case Token::Type::OpAssignMinus:	result = "OpAssignMinus";	break;
 			case Token::Type::OpAssignTimes:	result = "OpAssignTimes";	break;
 			case Token::Type::OpAssignDivide:	result = "OpAssignDivide";	break;
 			case Token::Type::OpAssignMod:		result = "OpAssignMod";		break;
