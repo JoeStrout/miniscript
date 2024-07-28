@@ -251,7 +251,6 @@ rotate = function(s)
 end function
 
 deleteRows = function
-	redrawP = false
 	for i in range(0, fieldHeight - 1, 1)
 		nNulls = 0
 		for cell in field[i]
@@ -264,10 +263,8 @@ deleteRows = function
 			end for
 			outer.field = [emptyRow] + field[:i] + field[i + 1:]
 			outer.delay -= delaySub
-			redrawP = true
 		end if
 	end for
-	if redrawP then drawField
 end function
 
 
@@ -310,6 +307,7 @@ while true
 		if moved == null then
 			absorbShape s
 			deleteRows
+			drawField
 			shape = null
 			s = null
 		else
