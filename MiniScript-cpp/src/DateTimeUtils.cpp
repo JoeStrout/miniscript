@@ -13,7 +13,9 @@
 
 #if _WIN32 || _WIN64
 struct tm *localtime_r( const time_t *timer, struct tm *buf ) {
-	*buf = *_localtime64(timer);
+	struct tm *newtime = _localtime64(timer);
+	if (newtime == nullptr) return nullptr;
+	*buf = *newtime;
 	return buf;
 }
 #endif
@@ -31,7 +33,8 @@ static bool Match(const String s, size_t *posB, const String match) {
 
 String FormatDate(time_t t, String formatSpec) {
 	tm dateTime;
-	localtime_r(&t, &dateTime);
+	struct tm *newtime = localtime_r(&t, &dateTime);
+	if (newtime == nullptr) return "";  // arg t too large
 	
 	const int BUFSIZE = 128;
 	char buffer[BUFSIZE];
@@ -304,6 +307,7 @@ time_t ParseDate(const String dateStr) {
 		dateTime.tm_mon = now.tm_mon;
 		dateTime.tm_mday = now.tm_mday;
 	}
+	dateTime.tm_isdst = -1;
 	return mktime(&dateTime);
 }
 

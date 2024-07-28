@@ -50,7 +50,6 @@
 #else
 	#include <fcntl.h>
 	#include <unistd.h>
-	#include <unistd.h>
 	#include <dirent.h>		// for readdir
 	#include <libgen.h>		// for basename and dirname
 	#include <sys/stat.h>	// for stat
@@ -61,7 +60,6 @@
 		#include <sys/sendfile.h>
 	#endif
 	#define PATHSEP '/'
-	#include <unistd.h>
 	#include <sys/wait.h>
 #endif
 
@@ -105,15 +103,16 @@ public:
 	}
 	virtual ~RawDataHandleStorage() { free(data); }
 	void resize(size_t newSize) {
-		if (data) {
+		if (newSize == 0) {
+			free(data);
+			data = nullptr;
+			dataSize = 0;
+		} else {
 			void *newData = realloc(data, newSize);
 			if (newData) {
 				data = newData;
 				dataSize = newSize;
 			}
-		} else {
-			data = malloc(newSize);
-			if (data) dataSize = newSize;
 		}
 	}
 
@@ -350,8 +349,12 @@ static IntrinsicResult intrinsic_basename(Context *context, IntrinsicResult part
 		char extBuf[256];
 		_splitpath_s(pathStr.c_str(), driveBuf, sizeof(driveBuf), nullptr, 0, nameBuf, sizeof(nameBuf), extBuf, sizeof(extBuf));
 		String result = String(nameBuf) + String(extBuf);
-    #else
+	#elif defined(__APPLE__) || defined(__FreeBSD__)
 		String result(basename((char*)pathStr.c_str()));
+	#else
+		char *duplicate = strdup((char*)pathStr.c_str());
+		String result(basename(duplicate));
+		free(duplicate);
 	#endif
 	return IntrinsicResult(result);
 }
@@ -740,7 +743,7 @@ static IntrinsicResult intrinsic_readLines(Context *context, IntrinsicResult par
 					partialLine = "";
 				}
 				list.Add(line);
-				if (buf[i] == '\n' && i+1 < bytesRead && buf[i+1] == '\r') i++;
+				if (buf[i] == '\r' && i+1 < bytesRead && buf[i+1] == '\n') i++;
 				if (i+1 < bytesRead && buf[i+1] == 0) i++;
 				lineStart = i + 1;
 			}
@@ -749,6 +752,7 @@ static IntrinsicResult intrinsic_readLines(Context *context, IntrinsicResult par
 			partialLine = String(&buf[lineStart], bytesRead - lineStart);
 		}
 	}
+	if (!partialLine.empty()) list.Add(partialLine);
 	fclose(handle);
 	return IntrinsicResult(list);
 }
@@ -1139,7 +1143,6 @@ static IntrinsicResult intrinsic_rawDataSetUtf8(Context *context, IntrinsicResul
 	return IntrinsicResult(nBytes);
 }
 
-
 static IntrinsicResult intrinsic_keyAvailable(Context *context, IntrinsicResult partialResult) {
 	return IntrinsicResult(KeyAvailable());
 }
@@ -1330,7 +1333,6 @@ static IntrinsicResult intrinsic_exec(Context* context, IntrinsicResult partialR
 }
 #else
 
-
 static IntrinsicResult intrinsic_exec(Context *context, IntrinsicResult partialResult) {
 	double now = context->vm->RunTime();
 	if (partialResult.Done()) {
@@ -1362,7 +1364,6 @@ static IntrinsicResult intrinsic_exec(Context *context, IntrinsicResult partialR
 		return IntrinsicResult(data, false);
 	}
 }
-#endif
 
 static bool disallowAssignment(ValueDict& dict, Value key, Value value) {
 	return true;
