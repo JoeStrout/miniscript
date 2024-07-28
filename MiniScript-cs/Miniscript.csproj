@@ -4,9 +4,9 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>Miniscript</RootNamespace>
     <AssemblyName>Miniscript</AssemblyName>
-    <TargetFrameworks>net45;net5.0;net7.0</TargetFrameworks>
+    <TargetFrameworks>net6.0</TargetFrameworks>
     <PackageId>org.miniscript.MiniScript</PackageId>
-    <VersionPrefix>1.6.1</VersionPrefix>
+    <VersionPrefix>1.6.2</VersionPrefix>
     <Authors>Joe Strout</Authors>
     <Title>MiniScript</Title>
     <Description>C# implementation of the MiniScript scripting language</Description>
