@@ -14,8 +14,6 @@
 #include <cmath>
 #include <ctime>
 #include <algorithm>
-#include <chrono>
-#include <thread>
 
 namespace MiniScript {
 
@@ -857,10 +855,16 @@ namespace MiniScript {
 	}
 	
 	static IntrinsicResult intrinsic_wait(Context *context, IntrinsicResult partialResult) {
-		double seconds = context->GetVar("seconds").DoubleValue();
-		long nanoseconds = seconds * 1000000000;
-		std::this_thread::sleep_for(std::chrono::nanoseconds(nanoseconds));
-		return IntrinsicResult::Null;
+		double now = context->vm->RunTime();
+		if (partialResult.Done()) {
+			// Just starting our wait; calculate end time and return as partial result
+			double interval = context->GetVar("seconds").DoubleValue();
+			return IntrinsicResult(Value(now + interval), false);
+		} else {
+			// Continue until current time exceeds the time in the partial result
+			if (now > partialResult.Result().DoubleValue()) return IntrinsicResult::Null;
+			return partialResult;
+		}
 	}
 
 	static IntrinsicResult intrinsic_yield(Context *context, IntrinsicResult partialResult) {
