@@ -336,8 +336,12 @@ static IntrinsicResult intrinsic_basename(Context *context, IntrinsicResult part
 		char extBuf[256];
 		_splitpath_s(pathStr.c_str(), driveBuf, sizeof(driveBuf), nullptr, 0, nameBuf, sizeof(nameBuf), extBuf, sizeof(extBuf));
 		String result = String(nameBuf) + String(extBuf);
-    #else
+	#elif defined(__APPLE__) || defined(__FreeBSD__)
 		String result(basename((char*)pathStr.c_str()));
+	#else
+		char *duplicate = strdup((char*)pathStr.c_str());
+		String result(basename(duplicate));
+		free(duplicate);
 	#endif
 	return IntrinsicResult(result);
 }
@@ -726,7 +730,7 @@ static IntrinsicResult intrinsic_readLines(Context *context, IntrinsicResult par
 					partialLine = "";
 				}
 				list.Add(line);
-				if (buf[i] == '\n' && i+1 < bytesRead && buf[i+1] == '\r') i++;
+				if (buf[i] == '\r' && i+1 < bytesRead && buf[i+1] == '\n') i++;
 				if (i+1 < bytesRead && buf[i+1] == 0) i++;
 				lineStart = i + 1;
 			}
@@ -735,6 +739,7 @@ static IntrinsicResult intrinsic_readLines(Context *context, IntrinsicResult par
 			partialLine = String(&buf[lineStart], bytesRead - lineStart);
 		}
 	}
+	if (!partialLine.empty()) list.Add(partialLine);
 	fclose(handle);
 	return IntrinsicResult(list);
 }
