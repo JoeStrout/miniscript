@@ -52,6 +52,7 @@ set(MINISCRIPT_HEADERS
 
 set(MINICMD_HEADERS
 	MiniScript-cpp/src/DateTimeUtils.h
+	MiniScript-cpp/src/Key.h
 	MiniScript-cpp/src/OstreamSupport.h
 	MiniScript-cpp/src/ShellExec.h
 	MiniScript-cpp/src/ShellIntrinsics.h
@@ -92,6 +93,7 @@ endif()
 add_executable(minicmd
 	MiniScript-cpp/src/main.cpp
 	MiniScript-cpp/src/DateTimeUtils.cpp
+	MiniScript-cpp/src/Key.cpp
 	MiniScript-cpp/src/OstreamSupport.cpp
 	MiniScript-cpp/src/ShellIntrinsics.cpp
 	MiniScript-cpp/src/ShellExec.cpp
