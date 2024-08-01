@@ -221,7 +221,9 @@ public:
 #ifdef MSG_NOSIGNAL
 		flags |= MSG_NOSIGNAL;
 #endif
-		return send(sockfd, buf, nBytes, flags);
+		ssize_t nSent = send(sockfd, buf, nBytes, flags);
+		if (nSent < 0 && errno == EPIPE) cleanup();
+		return nSent;
 	}
 };
 
