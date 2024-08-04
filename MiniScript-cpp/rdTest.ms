@@ -60,9 +60,43 @@ testRawData = function
 	qa.assertEqual r.utf8(0, 5), "hello"
 	qa.assertEqual r.utf8(-10, 5), "hello"
 	qa.assertEqual r.utf8(1, 3), "ell"
+	qa.assertEqual r.utf8(1, 100), null
 	
 	r.resize 7
 	r.setUtf8 0, "hello world"
 	qa.assertEqual r.utf8(0), "hello w"
 	
+	// _sub()
+	qa.assertEqual r._sub.utf8, "hello w"
+	qa.assertEqual r._sub(0).utf8, "hello w"
+	qa.assertEqual r._sub(2).utf8, "llo w"
+	qa.assertEqual r._sub(2, 3).utf8, "llo"
+	qa.assertEqual r._sub(2, 100), null
+	qa.assertEqual r._sub(-5, 3).utf8, "llo"
+	
+	// _setSub()
+	r2 = new RawData
+	r2.resize 2
+	r2.setUtf8 0, "xx"
+	r._setSub 0, r2
+	qa.assertEqual r.utf8, "xxllo w"
+	r._setSub 3, r2
+	qa.assertEqual r.utf8, "xxlxx w"
+	r._setSub 6, r2
+	qa.assertEqual r.utf8, "xxlxx x"
+	
+	// _concat()
+	qa.assertEqual RawData._concat([]).len, 0
+	r1 = new RawData
+	r1.resize 4
+	r1.setUtf8 0, "hell"
+	r2 = new RawData
+	r2.resize 4
+	r2.setUtf8 0, "o wo"
+	r3 = new RawData
+	r3.resize 3
+	r3.setUtf8 0, "rld"
+	qa.assertEqual RawData._concat([r1, r2, r3]).utf8, "hello world"
 end function
+
+if refEquals(locals, globals) then testRawData
