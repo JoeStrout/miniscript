@@ -904,7 +904,7 @@ static unsigned char *rawDataGetBytes(Value& rawData, long& offset, long& nBytes
 			case rdnaNull:
 				return nullptr;
 			case rdnaRaise: case rdnaAdjust:
-				IndexException(String("Index Error (index out of range)")).raise();
+				IndexException(String("Index Error (index out of range)")).raise();  // [sic in Mini Micro]
 		}
 	}
 	RawDataHandleStorage *storage = (RawDataHandleStorage*)dataWrapper.data.ref;
@@ -930,6 +930,9 @@ static Value rawDataGetInteger(Context *context, long nBytes, bool isSigned) {
 	Value self = context->GetVar("self");
 	long offset = context->GetVar("offset").IntValue();
 	bool isLittleEndian = self.Lookup("littleEndian").BoolValue();
+	if (!self.IsA(RawDataType(), context->vm)) {
+		IndexException(String("Index Error (index out of range)")).raise();  // [sic in Mini Micro]
+	}
 	unsigned char *data = rawDataGetBytes(self, offset, nBytes);
 	uint64_t word = bufReadWord(data, nBytes, isLittleEndian);
 	if (!isSigned) return Value(word);
@@ -969,6 +972,9 @@ static void rawDataSetInteger(Context *context, long nBytes, bool isSigned) {
 	Value self = context->GetVar("self");
 	long offset = context->GetVar("offset").IntValue();
 	bool littleEndian = self.Lookup("littleEndian").BoolValue();
+	if (!self.IsA(RawDataType(), context->vm)) {
+		IndexException(String("Index Error (index out of range)")).raise();  // [sic in Mini Micro]
+	}
 	unsigned char *data = rawDataGetBytes(self, offset, nBytes);
 	union {
 		uint64_t u;
@@ -986,6 +992,9 @@ static Value rawDataGetReal(Context *context, long nBytes) {
 	Value self = context->GetVar("self");
 	long offset = context->GetVar("offset").IntValue();
 	bool isLittleEndian = self.Lookup("littleEndian").BoolValue();
+	if (!self.IsA(RawDataType(), context->vm)) {
+		IndexException(String("Index Error (index out of range)")).raise();  // [sic in Mini Micro]
+	}
 	unsigned char *data = rawDataGetBytes(self, offset, nBytes);
 	uint64_t word = bufReadWord(data, nBytes, isLittleEndian);
 	switch (nBytes) {
@@ -1015,6 +1024,9 @@ static void rawDataSetReal(Context *context, long nBytes) {
 	Value self = context->GetVar("self");
 	long offset = context->GetVar("offset").IntValue();
 	bool littleEndian = self.Lookup("littleEndian").BoolValue();
+	if (!self.IsA(RawDataType(), context->vm)) {
+		IndexException(String("Index Error (index out of range)")).raise();  // [sic in Mini Micro]
+	}
 	unsigned char *data = rawDataGetBytes(self, offset, nBytes);
 	switch (nBytes) {
 		case 4:
@@ -1126,6 +1138,9 @@ static IntrinsicResult intrinsic_rawDataUtf8(Context *context, IntrinsicResult p
 	Value self = context->GetVar("self");
 	long offset = context->GetVar("offset").IntValue();
 	long nBytes = context->GetVar("bytes").IntValue();
+	if (!self.IsA(RawDataType(), context->vm)) {
+		IndexException(String("Index Error (index out of range)")).raise();  // [sic in Mini Micro]
+	}
 	const char *data = (const char *)rawDataGetBytes(self, offset, nBytes, rdnaNull);
 	if (!data) return IntrinsicResult::Null;
 	String result(data, nBytes);
@@ -1137,6 +1152,9 @@ static IntrinsicResult intrinsic_rawDataSetUtf8(Context *context, IntrinsicResul
 	long offset = context->GetVar("offset").IntValue();
 	String value = context->GetVar("value").GetString();
 	long nBytes = value.LengthB();
+	if (!self.IsA(RawDataType(), context->vm)) {
+		IndexException(String("Index Error (index out of range)")).raise();  // [sic in Mini Micro]
+	}
 	unsigned char *data = rawDataGetBytes(self, offset, nBytes, rdnaAdjust);
 	if (!data) return IntrinsicResult::Null;
 	memcpy(data, value.c_str(), nBytes);
