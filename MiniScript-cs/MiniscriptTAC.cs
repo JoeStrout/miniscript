@@ -992,6 +992,7 @@ namespace Miniscript {
 				Value self = null;	// "self" is always null for a manually pushed call
 				
 				Context nextContext = context.NextCallContext(func.function, argCount, self != null, null);
+				nextContext.outerVars = func.outerVars;
 				if (self != null) nextContext.self = self;
 				nextContext.resultStorage = resultStorage;
 				stack.Push(nextContext);				
