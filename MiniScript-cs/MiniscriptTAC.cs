@@ -623,7 +623,7 @@ namespace Miniscript {
 			}
 
 			public Value GetTemp(int tempNum) {
-				return temps == null ? null : temps[tempNum];
+				return temps == null || temps.Count <= tempNum ? null : temps[tempNum];
 			}
 
 			public Value GetTemp(int tempNum, Value defaultValue) {
