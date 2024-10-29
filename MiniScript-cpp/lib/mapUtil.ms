@@ -1,1 +1,1 @@
-/Users/jstrout/svnrepo/minimicro-sysdisk/sys/lib/mapUtil.ms
+../../../minimicro-sysdisk/sys/lib/mapUtil.ms

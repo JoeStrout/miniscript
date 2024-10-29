@@ -1,1 +1,1 @@
-/Users/jstrout/svnrepo/minimicro-sysdisk/sys/lib/matrixUtil.ms
+../../../minimicro-sysdisk/sys/lib/matrixUtil.ms

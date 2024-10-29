@@ -1,1 +1,1 @@
-/Users/jstrout/svnrepo/minimicro-sysdisk/sys/lib/mathUtil.ms
+../../../minimicro-sysdisk/sys/lib/mathUtil.ms

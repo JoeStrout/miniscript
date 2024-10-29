@@ -1,1 +1,1 @@
-/Users/jstrout/svnrepo/minimicro-sysdisk/sys/lib/qa.ms
+../../../minimicro-sysdisk/sys/lib/qa.ms
