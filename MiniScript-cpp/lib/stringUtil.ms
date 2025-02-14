@@ -1,1 +1,1 @@
-/Users/jstrout/svnrepo/minimicro-sysdisk/sys/lib/stringUtil.ms
+../../../minimicro-sysdisk/sys/lib/stringUtil.ms
