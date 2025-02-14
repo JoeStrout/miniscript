@@ -178,7 +178,7 @@ Value KeyGet(ValueDict& scanMap) {
 	}
 	String s;
 	if (initialE.c == 0) {
-		s = "<" + String::Format(initialE.scanCode, "%d") + ">";
+		s = "<" + String::Format((int)initialE.scanCode, "%d") + ">";
 	} else {
 		unsigned char buf[5] = {0, 0, 0, 0, 0};
 		long nBytes = UTF8Encode(initialE.c, buf);
