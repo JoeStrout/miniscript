@@ -1037,7 +1037,7 @@ namespace Miniscript {
 		}
 		public ValFunction(Function function, ValMap outerVars) {
 			this.function = function;
-            this.outerVars = outerVars;
+            		this.outerVars = outerVars;
 		}
 
 		public override string ToString(TAC.Machine vm) {
@@ -1065,9 +1065,9 @@ namespace Miniscript {
 			return function == other.function ? 1 : 0;
 		}
 
-        public ValFunction BindAndCopy(ValMap contextVariables) {
-            return new ValFunction(function, contextVariables);
-        }
+	        public virtual ValFunction BindAndCopy(ValMap contextVariables) {
+	        	return new ValFunction(function, contextVariables);
+	        }
 
 	}
 
