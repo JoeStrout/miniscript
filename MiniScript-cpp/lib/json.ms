@@ -1,1 +1,1 @@
-/Users/jstrout/svnrepo/minimicro-sysdisk/sys/lib/json.ms
+../../../minimicro-sysdisk/sys/lib/json.ms

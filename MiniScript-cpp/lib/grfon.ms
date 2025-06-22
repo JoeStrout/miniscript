@@ -1,1 +1,1 @@
-/Users/jstrout/svnrepo/minimicro-sysdisk/sys/lib/grfon.ms
+../../../minimicro-sysdisk/sys/lib/grfon.ms

@@ -6,13 +6,15 @@ This folder contains the source code of the C++ implementation of the [MiniScrip
 
 MiniScript is built with [CMake](https://cmake.org/). You can generate your desired flavour of build files as usual from either the CMake GUI or using `cmake` on the command line. If you are unfamiliar with CMake and want to build right now, use the GUI, or follow the command-line steps below.
 
-1. Create a directory in this (MiniScript-cpp) folder called `build`.  (Don't worry, it will be ignored by git.)
+1. Clone [minimicro-sysdisk](https://github.com/JoeStrout/minimicro-sysdisk) in the same directory as this repository (so minimicro-sysdisk and miniscript should be folders next to each other, with this directory (MiniScript-cpp) in miniscript). We use a lot of the same libraries as Mini Micro, so having both of them next to each other lets us avoid having 2 copies of the same library.
 
-2. `cd build` to change to that build directory.
+2. Create a directory in this (MiniScript-cpp) folder called `build`.  (Don't worry, it will be ignored by git.)
 
-3. `cmake ../..` (or on Windows, `cmake ..\..`) to generate a makefile and related files in the build directory.
+3. `cd build` to change to that build directory.
 
-4. `cmake --build . --config Release` to actually do the build.
+4. `cmake ../..` (or on Windows, `cmake ..\..`) to generate a makefile and related files in the build directory.
+
+5. `cmake --build . --config Release` to actually do the build.
 
 If successful, you should find an executable called `miniscript` (or `miniscript.exe` on Windows) which you can install (see **Installation**, below).  You'll also find a shared library (libminiscript-cpp.a, miniscript-cpp.lib, or similar) for you to link to in your own projects if you like.  You can even `include()` the CMakeLists.txt of this project inside your own for clean dependency management.
 

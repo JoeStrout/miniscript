@@ -1,1 +1,1 @@
-/Users/jstrout/svnrepo/minimicro-sysdisk/sys/lib/listUtil.ms
+../../../minimicro-sysdisk/sys/lib/listUtil.ms
