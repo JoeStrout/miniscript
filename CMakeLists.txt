@@ -133,4 +133,15 @@ if(MINISCRIPT_BUILD_TESTING)
 	endif()
 endif()
 
-install(TARGETS miniscript-cpp minicmd)
+include(GNUInstallDirs)
+install(
+    TARGETS miniscript-cpp minicmd
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
+
+install(
+	FILES ${MINISCRIPT_HEADERS}
+	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/MiniScript
+)
