@@ -639,7 +639,7 @@ namespace MiniScript {
 //
 //	}
 	
-	Machine::Machine(Context *root, TextOutputMethod output) : stack(16), storeImplicit(false), standardOutput(output), startTime(0), yielding(false) {
+	Machine::Machine(Context *root, TextOutputMethod output) : standardOutput(output), storeImplicit(false), yielding(false), stack(16), startTime(0) {
 		// Note: this constructor adopts the given context, and destroys it later.
 		root->vm = this;
 		stack.Add(root);
