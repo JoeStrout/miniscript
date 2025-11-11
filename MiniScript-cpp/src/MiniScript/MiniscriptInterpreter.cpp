@@ -12,18 +12,18 @@
 
 namespace MiniScript {
 	
-	Interpreter::Interpreter() : standardOutput(nullptr), errorOutput(nullptr), implicitOutput(nullptr),
-								parser(nullptr), vm(nullptr), hostData(nullptr) {
+	Interpreter::Interpreter() : standardOutput(nullptr), implicitOutput(nullptr), errorOutput(nullptr),
+								hostData(nullptr), vm(nullptr), parser(nullptr) {
 		
 	}
 
-	Interpreter::Interpreter(String source) : standardOutput(nullptr), errorOutput(nullptr), implicitOutput(nullptr),
-	parser(nullptr), vm(nullptr), hostData(nullptr) {
+	Interpreter::Interpreter(String source) : standardOutput(nullptr), implicitOutput(nullptr), errorOutput(nullptr),
+									hostData(nullptr), vm(nullptr), parser(nullptr) {
 		Reset(source);
 	}
 	
-	Interpreter::Interpreter(List<String> source) : standardOutput(nullptr), errorOutput(nullptr), implicitOutput(nullptr),
-	parser(nullptr), vm(nullptr), hostData(nullptr) {
+	Interpreter::Interpreter(List<String> source) : standardOutput(nullptr), implicitOutput(nullptr), errorOutput(nullptr),
+										hostData(nullptr), vm(nullptr), parser(nullptr) {
 		Reset(source);
 	}
 
