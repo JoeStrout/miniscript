@@ -38,6 +38,7 @@
 #include <time.h>
 #if _WIN32 || _WIN64
 	#define WINDOWS 1
+	#define WIN32_LEAN_AND_MEAN
 	#include <windows.h>
 	#include <Shlwapi.h>
 	#include <Fileapi.h>
@@ -47,6 +48,10 @@
 	#define getcwd _getcwd
 	#define setenv _setenv
 	#define PATHSEP '\\'
+	#include <winsock2.h>
+	#include <afunix.h>
+	#pragma comment(lib, "ws2_32.lib")
+	#define socklen_t int
 #else
 	#include <fcntl.h>
 	#include <unistd.h>
@@ -61,7 +66,12 @@
 	#endif
 	#define PATHSEP '/'
 	#include <sys/wait.h>
+	#include <sys/types.h>
+	#include <sys/socket.h>
+	#include <sys/un.h>     // for sockaddr_un
 #endif
+#include <limits>
+#define UDS_DEFAULT_BACKLOG (20)
 
 extern "C" {
 	// list of environment variables provided by C standard library:
@@ -120,6 +130,131 @@ public:
 	size_t dataSize;
 };
 
+// RefCountedStorage base class for uds.Connection and uds.Server storages (since they declare similar data).
+//
+//   +----------------------+
+//   | UdsBaseHandleStorage |
+//   +----------------------+
+//              |          +----------------------------+
+//              +--------->| UdsConnectionHandleStorage |
+//              |          +----------------------------+
+//              |          +------------------------+
+//              +--------->| UdsServerHandleStorage |
+//                         +------------------------+
+//
+class UdsBaseHandleStorage : public RefCountedStorage {
+public:
+	UdsBaseHandleStorage() : initedOk(false), sockfd(-1) {
+		memset(&addr, 0, sizeof(addr));
+		addr.sun_family = AF_UNIX;
+	}
+	virtual ~UdsBaseHandleStorage() { cleanup(); }
+
+	// cleanup: Closes the socket.  Called from uds.Server::close and uds.Connection::close, and in destructors.
+	void cleanup() {
+		if (sockfd < 0) return;
+#if WINDOWS
+		closesocket(sockfd);
+#else
+		close(sockfd);
+#endif
+		sockfd = -1;
+	}
+
+	// unblock: Makes the socket nonblocking.  Called in constructors.
+	bool unblock() {
+#if WINDOWS
+		unsigned long mode = 1;
+		return ioctlsocket(sockfd, FIONBIO, &mode) == 0;
+#else
+		int flags = fcntl(sockfd, F_GETFL, 0);
+		flags |= O_NONBLOCK;
+		return fcntl(sockfd, F_SETFL, flags) == 0;
+#endif
+	}
+
+	// isOpen: Returns true if the socket is still open.
+	bool isOpen() {
+		return initedOk and sockfd >= 0;
+	}
+
+	bool initedOk;
+	int sockfd;
+	struct sockaddr_un addr;
+};
+
+// RefCountedStorage class to wrap a unix domain socket connection data.
+// sockfd of this class is used for send/recv.
+class UdsConnectionHandleStorage : public UdsBaseHandleStorage {
+public:
+	UdsConnectionHandleStorage(const char *sockPath) {
+		sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
+		if (sockfd < 0) return;
+		if (!unblock()) return;
+		strncpy(addr.sun_path, sockPath, sizeof(addr.sun_path) - 1);
+		initedOk = true;
+	}
+	UdsConnectionHandleStorage(int sockfd, sockaddr_un addr) {
+		this->sockfd = sockfd;
+		this->addr = addr;
+		if (!unblock()) return;
+		initedOk = true;
+	}
+	bool attemptConnect() {
+		if (!isOpen()) return false;
+		int rc = connect(sockfd, (struct sockaddr *)&addr, sizeof(addr));
+#if WINDOWS
+		return rc == 0 or (rc < 0 and WSAGetLastError() == WSAEISCONN);
+#else
+		return rc == 0;
+#endif
+	}
+	long receiveBuf(char *buf, size_t nBytes) {
+		if (!isOpen()) return 0;
+		long nReceived = recv(sockfd, buf, nBytes, 0);
+		if (nReceived == 0) cleanup();
+		return nReceived;
+	}
+	long sendBuf(const char *buf, size_t nBytes) {
+		if (!isOpen()) return 0;
+		int flags = 0;
+#ifdef MSG_NOSIGNAL
+		flags |= MSG_NOSIGNAL;
+#endif
+		ssize_t nSent = send(sockfd, buf, nBytes, flags);
+		if (nSent < 0 && errno == EPIPE) cleanup();
+		return nSent;
+	}
+};
+
+// RefCountedStorage class to wrap a unix domain socket server data.
+// sockfd of this class is used for listen/accept.
+class UdsServerHandleStorage : public UdsBaseHandleStorage {
+public:
+	UdsServerHandleStorage(const char *sockPath, int backlog) {
+		sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
+		if (sockfd < 0) return;
+		if (!unblock()) return;
+		memset(&addr, 0, sizeof(addr));
+		addr.sun_family = AF_UNIX;
+		strncpy(addr.sun_path, sockPath, sizeof(addr.sun_path) - 1);
+		unlink(addr.sun_path);
+		if (bind(sockfd, (struct sockaddr *)&addr, sizeof(addr)) < 0) return;
+		if (listen(sockfd, backlog) < 0) return;
+		initedOk = true;
+	}
+	UdsConnectionHandleStorage *acceptConnection() {
+		if (!isOpen()) return nullptr;
+		struct sockaddr_un peer;
+		socklen_t peerSize = sizeof(peer);
+		int cfd = accept(sockfd, (struct sockaddr *)&peer, &peerSize);
+		if (cfd < 0) return nullptr;
+		UdsConnectionHandleStorage *connStorage = new UdsConnectionHandleStorage(cfd, peer);
+		if (!connStorage->isOpen()) return nullptr;
+		return connStorage;
+	}
+};
+
 // hidden (unnamed) intrinsics, only accessible via other methods (such as the File module)
 Intrinsic *i_getcwd = nullptr;
 Intrinsic *i_chdir = nullptr;
@@ -167,6 +302,14 @@ Intrinsic *i_rawDataDouble = nullptr;
 Intrinsic *i_rawDataSetDouble = nullptr;
 Intrinsic *i_rawDataUtf8 = nullptr;
 Intrinsic *i_rawDataSetUtf8 = nullptr;
+Intrinsic *i_udsConnect = nullptr;
+Intrinsic *i_udsConnectionIsOpen = nullptr;
+Intrinsic *i_udsConnectionClose = nullptr;
+Intrinsic *i_udsConnectionReceive = nullptr;
+Intrinsic *i_udsConnectionSend = nullptr;
+Intrinsic *i_udsCreateServer = nullptr;
+Intrinsic *i_udsServerIsOpen = nullptr;
+Intrinsic *i_udsServerAccept = nullptr;
 
 Intrinsic *i_keyAvailable = nullptr;
 Intrinsic *i_keyGet = nullptr;
@@ -258,6 +401,8 @@ static String ExpandVariables(String path) {
 
 static ValueDict& FileHandleClass();
 static ValueDict& RawDataType();
+static ValueDict& UdsConnectionType();
+static ValueDict& UdsServerType();
 static ValueDict& KeyModule();
 
 static IntrinsicResult intrinsic_input(Context *context, IntrinsicResult partialResult) {
@@ -1237,6 +1382,220 @@ static IntrinsicResult intrinsic_exec(Context *context, IntrinsicResult partialR
 	}
 }
 
+// uds.*
+
+static IntrinsicResult intrinsic_udsConnect(Context *context, IntrinsicResult partialResult) {
+	if (partialResult.Done()) {
+		// This is the initial entry into `uds.connect`. Initialize the storage.
+		String sockPath = context->GetVar("sockPath").ToString();
+		UdsConnectionHandleStorage *storage = new UdsConnectionHandleStorage(sockPath.c_str());
+		if (!storage->isOpen()) return IntrinsicResult::Null;
+		// Calculate the final time and end the current invokation.
+		double timeout = context->GetVar("timeout").DoubleValue();
+		if (timeout < 0) timeout = std::numeric_limits<double>::infinity();
+		double finalTime = context->vm->RunTime() + timeout;
+		ValueDict data;
+		data.SetValue("wrapper", Value::NewHandle(storage));
+		data.SetValue("finalTime", finalTime);
+		return IntrinsicResult(data, false);
+	}
+	ValueDict data = partialResult.Result().GetDict();
+	// Try to connect to a listening server, if any.
+	Value connWrapper = data.Lookup("wrapper", Value::null);
+	UdsConnectionHandleStorage *storage = (UdsConnectionHandleStorage*)connWrapper.data.ref;
+	if (storage->attemptConnect()) {
+		ValueDict instance;
+		instance.SetValue(Value::magicIsA, UdsConnectionType());
+		instance.SetValue(_handle, connWrapper);
+		Value result(instance);
+		return IntrinsicResult(result);
+	}
+	// Check that the final time hasn't been reached yet.
+	double finalTime = data.Lookup("finalTime", Value::zero).DoubleValue();
+	if (context->vm->RunTime() > finalTime) return IntrinsicResult::Null;
+	// No listening servers, no timeout.  Continue waiting.
+	return IntrinsicResult(data, false);
+}
+
+static IntrinsicResult intrinsic_udsConnectionIsOpen(Context *context, IntrinsicResult partialResult) {
+	Value self = context->GetVar("self");
+	Value connWrapper = self.Lookup(_handle);
+	if (connWrapper.IsNull() or connWrapper.type != ValueType::Handle) return IntrinsicResult(Value::Truth(false));
+	UdsConnectionHandleStorage *storage = (UdsConnectionHandleStorage*)connWrapper.data.ref;
+	return IntrinsicResult(Value::Truth(storage->isOpen()));
+}
+
+static IntrinsicResult intrinsic_udsConnectionClose(Context *context, IntrinsicResult partialResult) {
+	Value self = context->GetVar("self");
+	Value connWrapper = self.Lookup(_handle);
+	if (connWrapper.IsNull() or connWrapper.type != ValueType::Handle) RuntimeException("bad UDS connection, no handle").raise();
+	UdsConnectionHandleStorage *storage = (UdsConnectionHandleStorage*)connWrapper.data.ref;
+	storage->cleanup();
+	return IntrinsicResult::Null;
+}
+
+static IntrinsicResult intrinsic_udsConnectionReceive(Context *context, IntrinsicResult partialResult) {
+	if (partialResult.Done()) {
+		// This is the initial entry into `uds.Connection::receive`.  Check if `bytes` param makes sense.
+		long nBytes = context->GetVar("bytes").IntValue();
+		if (nBytes == 0) RuntimeException("bytes parameter must be nonzero (positive or -1)").raise();
+		// Check we're having a valid connection object.
+		Value self = context->GetVar("self");
+		Value connWrapper = self.Lookup(_handle);
+		if (connWrapper.IsNull() or connWrapper.type != ValueType::Handle) RuntimeException("bad UDS connection, no handle").raise();
+		UdsConnectionHandleStorage *storage = (UdsConnectionHandleStorage*)connWrapper.data.ref;
+		if (!storage->isOpen()) RuntimeException("bad UDS connection, closed socket").raise();
+		// Calculate the final time and end the current invokation.
+		double timeout = context->GetVar("timeout").DoubleValue();
+		if (timeout < 0) timeout = std::numeric_limits<double>::infinity();
+		double finalTime = context->vm->RunTime() + timeout;
+		// Initialize a RawData result.  We do not need the whole RawData object rn, a simple handle is enough.
+		Value dataWrapper = Value::NewHandle(new RawDataHandleStorage());
+		ValueDict data;
+		data.SetValue("wrapper", connWrapper);
+		data.SetValue("nBytes", nBytes);
+		data.SetValue("finalTime", finalTime);
+		data.SetValue("rawDataWrapper", dataWrapper);
+		return IntrinsicResult(data, false);
+	}
+	bool retNow = false;
+	ValueDict data = partialResult.Result().GetDict();
+	// Load received data to buffer, if available.
+	long nBytes = data.Lookup("nBytes", -1.0).IntValue();
+	Value connWrapper = data.Lookup("wrapper", Value::null);
+	UdsConnectionHandleStorage *storage = (UdsConnectionHandleStorage*)connWrapper.data.ref;
+	Value dataWrapper = data.Lookup("rawDataWrapper", Value::null);
+	RawDataHandleStorage *dataStorage = (RawDataHandleStorage*)dataWrapper.data.ref;
+	char buf[1000];
+	long nWanted = (nBytes < 0 or nBytes > sizeof(buf)) ? sizeof(buf) : nBytes;
+	long nReceived = storage->receiveBuf(buf, nWanted);
+	// If "received" exactly 0 bytes, the connection was closed on the other end.  No matter how many bytes we received up till now, return immediately.
+	if (nReceived == 0) retNow = true;
+	if (nReceived > 0) {
+		size_t prevSize = dataStorage->dataSize;
+		dataStorage->resize(dataStorage->dataSize + nReceived);
+		if (dataStorage->dataSize == prevSize) {
+			// Realloc wasn't successfull...
+			if (dataStorage->dataSize == 0) return IntrinsicResult::Null;
+			retNow = true;
+		} else {
+			// Successfully resized.  Copy received data into storage.
+			unsigned char *d = (unsigned char *)dataStorage->data;
+			d += prevSize;
+			memcpy((void *)d, buf, nReceived);
+			// Decrement nBytes
+			nBytes -= nReceived;
+			if (nBytes == 0) {
+				retNow = true;  // we received exactly as many bytes as we wanted...
+			} else {
+				data.SetValue("nBytes", nBytes);
+			}
+		}
+	} else if (dataStorage->dataSize > 0) {
+		retNow = true;  // we received nothing but there were previous data...
+	}
+	// Check that the final time hasn't been reached yet.
+	double finalTime = data.Lookup("finalTime", Value::zero).DoubleValue();
+	if (context->vm->RunTime() > finalTime) {
+		if (dataStorage->dataSize == 0) return IntrinsicResult::Null;
+		retNow = true;
+	}
+	if (retNow) {
+		ValueDict rawData;
+		rawData.SetValue(Value::magicIsA, RawDataType());
+		rawData.SetValue(_handle, dataWrapper);
+		Value result(rawData);
+		return IntrinsicResult(result);
+	}
+	// No data received, no timeout.  Continue waiting.
+	return IntrinsicResult(data, false);
+}
+
+static IntrinsicResult intrinsic_udsConnectionSend(Context *context, IntrinsicResult partialResult) {
+	Value self = context->GetVar("self");
+	Value connWrapper = self.Lookup(_handle);
+	if (connWrapper.IsNull() or connWrapper.type != ValueType::Handle) RuntimeException("bad UDS connection, no handle").raise();
+	UdsConnectionHandleStorage *storage = (UdsConnectionHandleStorage*)connWrapper.data.ref;
+	if (!storage->isOpen()) RuntimeException("bad UDS connection, closed socket").raise();
+	Value rawData = context->GetVar("rawData");
+	int32_t offset = context->GetVar("offset").IntValue();
+	if (offset < 0) offset = 0;
+	long nSent = 0;
+	if (rawData.type == ValueType::String) {
+		String s = rawData.GetString();
+		size_t len = s.LengthB();
+		if (offset < len) nSent = storage->sendBuf(s.c_str() + offset, len - offset);
+	} else if (rawData.type == ValueType::Map) {
+		if (!rawData.IsA(RawDataType(), context->vm)) RuntimeException("message must be RawData or string").raise();
+		Value dataWrapper = rawData.Lookup(_handle);
+		if (dataWrapper.IsNull() or dataWrapper.type != ValueType::Handle) RuntimeException("bad RawData, no handle or length 0").raise();
+		RawDataHandleStorage *dataStorage = (RawDataHandleStorage*)dataWrapper.data.ref;
+		size_t len = dataStorage->dataSize;
+		if (offset < len) nSent = storage->sendBuf((const char *)dataStorage->data + offset, len - offset);
+	} else {
+		RuntimeException("message must be RawData or string").raise();
+	}
+	Value result(nSent);
+	return IntrinsicResult(result);
+}
+
+static IntrinsicResult intrinsic_udsCreateServer(Context *context, IntrinsicResult partialResult) {
+	String sockPath = context->GetVar("sockPath").ToString();
+	int32_t backlog = context->GetVar("backlog").IntValue();
+	if (backlog <= 0) backlog = UDS_DEFAULT_BACKLOG;
+	UdsServerHandleStorage *storage = new UdsServerHandleStorage(sockPath.c_str(), backlog);
+	if (!storage->isOpen()) return IntrinsicResult::Null;
+	ValueDict instance;
+	instance.SetValue(Value::magicIsA, UdsServerType());
+	instance.SetValue(_handle, Value::NewHandle(storage));
+	Value result(instance);
+	return IntrinsicResult(result);
+}
+
+static IntrinsicResult intrinsic_udsServerIsOpen(Context *context, IntrinsicResult partialResult) {
+	Value self = context->GetVar("self");
+	Value serverWrapper = self.Lookup(_handle);
+	if (serverWrapper.IsNull() or serverWrapper.type != ValueType::Handle) return IntrinsicResult(Value::Truth(false));
+	UdsServerHandleStorage *storage = (UdsServerHandleStorage*)serverWrapper.data.ref;
+	return IntrinsicResult(Value::Truth(storage->isOpen()));
+}
+
+static IntrinsicResult intrinsic_udsServerAccept(Context *context, IntrinsicResult partialResult) {
+	if (partialResult.Done()) {
+		// This is the initial entry into `uds.Server::accept`.  Check we're having a valid server object.
+		Value self = context->GetVar("self");
+		Value serverWrapper = self.Lookup(_handle);
+		if (serverWrapper.IsNull() or serverWrapper.type != ValueType::Handle) RuntimeException("bad UDS server, no handle").raise();
+		UdsServerHandleStorage *storage = (UdsServerHandleStorage*)serverWrapper.data.ref;
+		if (!storage->isOpen()) RuntimeException("bad UDS server, closed socket").raise();
+		// Calculate the final time and end the current invokation.
+		double timeout = context->GetVar("timeout").DoubleValue();
+		if (timeout < 0) timeout = std::numeric_limits<double>::infinity();
+		double finalTime = context->vm->RunTime() + timeout;
+		ValueDict data;
+		data.SetValue("wrapper", serverWrapper);
+		data.SetValue("finalTime", finalTime);
+		return IntrinsicResult(data, false);
+	}
+	ValueDict data = partialResult.Result().GetDict();
+	// Accept an existing connection request, if any.
+	Value serverWrapper = data.Lookup("wrapper", Value::null);
+	UdsServerHandleStorage *storage = (UdsServerHandleStorage*)serverWrapper.data.ref;
+	UdsConnectionHandleStorage *connStorage = storage->acceptConnection();
+	if (connStorage) {
+		ValueDict connection;
+		connection.SetValue(Value::magicIsA, UdsConnectionType());
+		connection.SetValue(_handle, Value::NewHandle(connStorage));
+		Value result(connection);
+		return IntrinsicResult(result);
+	}
+	// Check that the final time hasn't been reached yet.
+	double finalTime = data.Lookup("finalTime", Value::zero).DoubleValue();
+	if (context->vm->RunTime() > finalTime) return IntrinsicResult::Null;
+	// No connection requests, no timeout.  Continue waiting.
+	return IntrinsicResult(data, false);
+}
+
 static bool disallowAssignment(ValueDict& dict, Value key, Value value) {
 	return true;
 }
@@ -1357,6 +1716,42 @@ static ValueDict& RawDataType() {
 
 static IntrinsicResult intrinsic_RawData(Context *context, IntrinsicResult partialResult) {
 	return IntrinsicResult(RawDataType());
+}
+
+static ValueDict& UdsConnectionType() {
+	static ValueDict result;
+	if (result.Count() == 0) {
+		result.SetValue("isOpen", i_udsConnectionIsOpen->GetFunc());
+		result.SetValue("close", i_udsConnectionClose->GetFunc());
+		result.SetValue("receive", i_udsConnectionReceive->GetFunc());
+		result.SetValue("send", i_udsConnectionSend->GetFunc());
+	}
+	
+	return result;
+}
+
+static ValueDict& UdsServerType() {
+	static ValueDict result;
+	if (result.Count() == 0) {
+		result.SetValue("isOpen", i_udsServerIsOpen->GetFunc());
+		result.SetValue("accept", i_udsServerAccept->GetFunc());
+	}
+	
+	return result;
+}
+
+static IntrinsicResult intrinsic_Uds(Context *context, IntrinsicResult partialResult) {
+	static ValueDict udsModule;
+	
+	if (udsModule.Count() == 0) {
+		udsModule.SetValue("Connection", UdsConnectionType());
+		udsModule.SetValue("Server", UdsServerType());
+		udsModule.SetValue("connect", i_udsConnect->GetFunc());
+		udsModule.SetValue("createServer", i_udsCreateServer->GetFunc());
+		udsModule.SetAssignOverride(disallowAssignment);
+	}
+	
+	return IntrinsicResult(udsModule);
 }
 
 static void setEnvVar(const char* key, const char* value) {
@@ -1753,6 +2148,60 @@ void AddShellIntrinsics() {
 	i_rawDataSetUtf8->code = &intrinsic_rawDataSetUtf8;
 	
 	// END RawData methods
+	
+	
+	// uds (unix domain sockets)
+	
+#if WINDOWS
+	WSADATA wsaData;
+	if (WSAStartup(MAKEWORD(2,2), &wsaData) != 0) {
+		printf("WSAStartup failed, sockets will not work\n");
+	}
+#endif
+	
+	f = Intrinsic::Create("uds");
+	f->code = &intrinsic_Uds;
+	
+	i_udsConnect = Intrinsic::Create("");
+	i_udsConnect->AddParam("sockPath");
+	i_udsConnect->AddParam("timeout", 30);
+	i_udsConnect->code = &intrinsic_udsConnect;
+	
+	i_udsConnectionIsOpen = Intrinsic::Create("");
+	i_udsConnectionIsOpen->AddParam("self");
+	i_udsConnectionIsOpen->code = &intrinsic_udsConnectionIsOpen;
+	
+	i_udsConnectionClose = Intrinsic::Create("");
+	i_udsConnectionClose->AddParam("self");
+	i_udsConnectionClose->code = &intrinsic_udsConnectionClose;
+	
+	i_udsConnectionReceive = Intrinsic::Create("");
+	i_udsConnectionReceive->AddParam("self");
+	i_udsConnectionReceive->AddParam("bytes", -1);
+	i_udsConnectionReceive->AddParam("timeout", 30);
+	i_udsConnectionReceive->code = &intrinsic_udsConnectionReceive;
+	
+	i_udsConnectionSend = Intrinsic::Create("");
+	i_udsConnectionSend->AddParam("self");
+	i_udsConnectionSend->AddParam("rawData");
+	i_udsConnectionSend->AddParam("offset", 0);
+	i_udsConnectionSend->code = &intrinsic_udsConnectionSend;
+	
+	i_udsCreateServer = Intrinsic::Create("");
+	i_udsCreateServer->AddParam("sockPath");
+	i_udsCreateServer->AddParam("backlog", UDS_DEFAULT_BACKLOG);
+	i_udsCreateServer->code = &intrinsic_udsCreateServer;
+	
+	i_udsServerIsOpen = Intrinsic::Create("");
+	i_udsServerIsOpen->AddParam("self");
+	i_udsServerIsOpen->code = &intrinsic_udsServerIsOpen;
+	
+	i_udsServerAccept = Intrinsic::Create("");
+	i_udsServerAccept->AddParam("self");
+	i_udsServerAccept->AddParam("timeout", 30);
+	i_udsServerAccept->code = &intrinsic_udsServerAccept;
+	
+	// END uds
 	
 	
 	// key.* methods
