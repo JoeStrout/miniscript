@@ -1,7 +1,8 @@
 # MiniScript
 
-This project contains the source code of both C# and C++ implementations of the [MiniScript scripting language](http://miniscript.org).
+This project contains the source code of both C# and C++ implementations of the [MiniScript scripting language](http://miniscript.org), version 1.x.
 
+For MiniScript 2.0 (a from-the-ground-up rewrite), see [here](https://github.com/JoeStrout/miniscript2/).
 
 
 ## Sponsor Me!
