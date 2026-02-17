@@ -137,7 +137,7 @@ Create a function with `function`, including parameters with optional default va
 
 ```basic
 triple = function(n=1)
-    return n\*3
+    return n*3
 end function
 
 print triple      // 3
@@ -162,7 +162,7 @@ Functions invoked via dot syntax get a `self` variable that refers to the object
 
 ```basic
 Shape.degrees = function()
-    return 180\*(self.sides-2)
+    return 180*(self.sides-2)
 end function
 
 x.degrees   // 360
