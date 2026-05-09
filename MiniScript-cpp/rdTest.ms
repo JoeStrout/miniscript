@@ -65,4 +65,11 @@ testRawData = function
 	r.setUtf8 0, "hello world"
 	qa.assertEqual r.utf8(0), "hello w"
 	
+	r = new RawData
+	qa.assertEqual r.utf8, null
+	r.resize 0
+	qa.assertEqual r.utf8, null
+	r.resize
+	r.resize 0
+	qa.assertEqual r.utf8, null
 end function
