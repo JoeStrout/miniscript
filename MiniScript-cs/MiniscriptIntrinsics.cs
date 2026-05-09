@@ -675,7 +675,6 @@ namespace Miniscript {
 				intrinsicsMap = new ValMap();
 				intrinsicsMap.assignOverride = (k,v) => {
 					throw new RuntimeException("Assignment to protected map");
-					return true;
 				};
 		
 				foreach (var intrinsic in Intrinsic.all) {
