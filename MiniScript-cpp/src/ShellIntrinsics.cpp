@@ -101,6 +101,13 @@ public:
 			fread(data, 1, dataSize, f);
 		}
 	}
+	RawDataHandleStorage(const char *buf, long nBytes) {
+		data = nullptr;
+		resize(nBytes);
+		if (nBytes > 0) {
+			memcpy(data, buf, nBytes);
+		}
+	}
 	virtual ~RawDataHandleStorage() { free(data); }
 	void resize(size_t newSize) {
 		if (newSize == 0) {
@@ -114,6 +121,16 @@ public:
 				dataSize = newSize;
 			}
 		}
+	}
+	void copyFromOther(RawDataHandleStorage& other, long offset, long maxBytes, long otherOffset, long otherBytes) {
+		if (offset >= dataSize || otherOffset >= other.dataSize) return;
+		if (maxBytes < 0 || offset + maxBytes > dataSize) maxBytes = dataSize - offset;
+		if (maxBytes < 1) return;
+		if (otherBytes < 0 || otherOffset + otherBytes > other.dataSize) otherBytes = other.dataSize - otherOffset;
+		if (otherBytes < 1) return;
+		if (otherBytes > maxBytes) otherBytes = maxBytes;
+		char *dst = (char *)data + offset;
+		memcpy(dst, other.data, otherBytes);
 	}
 
 	void *data;
@@ -167,6 +184,9 @@ Intrinsic *i_rawDataDouble = nullptr;
 Intrinsic *i_rawDataSetDouble = nullptr;
 Intrinsic *i_rawDataUtf8 = nullptr;
 Intrinsic *i_rawDataSetUtf8 = nullptr;
+Intrinsic *i_rawDataSub = nullptr;
+Intrinsic *i_rawDataSetSub = nullptr;
+Intrinsic *i_rawDataConcat = nullptr;
 
 Intrinsic *i_keyAvailable = nullptr;
 Intrinsic *i_keyGet = nullptr;
@@ -1143,6 +1163,77 @@ static IntrinsicResult intrinsic_rawDataSetUtf8(Context *context, IntrinsicResul
 	return IntrinsicResult(nBytes);
 }
 
+// _sub: Returns a fragment of RawData as another RawData object.
+static IntrinsicResult intrinsic_rawDataSub(Context *context, IntrinsicResult partialResult) {
+	Value self = context->GetVar("self");
+	long offset = context->GetVar("offset").IntValue();
+	long nBytes = context->GetVar("bytes").IntValue();
+	const char *data = (const char *)rawDataGetBytes(self, offset, nBytes, rdnaNull);
+	if (!data) return IntrinsicResult::Null;
+	Value dataWrapper = Value::NewHandle(new RawDataHandleStorage(data, nBytes));
+	ValueDict instance;
+	instance.SetValue(Value::magicIsA, RawDataType());
+	instance.SetValue(_handle, dataWrapper);
+	Value result(instance);
+	return IntrinsicResult(result);
+}
+
+// _setSub: Rewrites a frament of RawData with another RawData.
+static IntrinsicResult intrinsic_rawDataSetSub(Context *context, IntrinsicResult partialResult) {
+	Value self = context->GetVar("self");
+	long offset = context->GetVar("offset").IntValue();
+	Value other = context->GetVar("rawData");
+	if (!self.IsA(RawDataType(), context->vm)) TypeException("RawData parameter is required").raise();
+	if (!other.IsA(RawDataType(), context->vm)) TypeException("RawData parameter is required").raise();
+	Value selfDataWrapper = self.Lookup(_handle);
+	if (selfDataWrapper.IsNull() or selfDataWrapper.type != ValueType::Handle) return IntrinsicResult::Null;
+	Value otherDataWrapper = other.Lookup(_handle);
+	if (otherDataWrapper.IsNull() or otherDataWrapper.type != ValueType::Handle) return IntrinsicResult::Null;
+	if (Value::Equality(selfDataWrapper, otherDataWrapper)) RuntimeException("cannot copy RawData into itself").raise();
+	RawDataHandleStorage *selfStorage = (RawDataHandleStorage*)selfDataWrapper.data.ref;
+	RawDataHandleStorage *otherStorage = (RawDataHandleStorage*)otherDataWrapper.data.ref;
+	selfStorage->copyFromOther(*otherStorage, offset, -1, 0, -1);
+	return IntrinsicResult::Null;
+}
+
+// _concat: Joins several RawData objects into a single one.
+static IntrinsicResult intrinsic_rawDataConcat(Context *context, IntrinsicResult partialResult) {
+	Value rawDataListV = context->GetVar("rawDataList");
+	if (rawDataListV.type != ValueType::List) TypeException("List parameter is required").raise();
+	ValueList rawDataList = rawDataListV.GetList();
+	ValueList wrappers;
+	ValueList offsets;
+	long totalBytes = 0;
+	for (int i=0; i<rawDataList.Count(); i++) {
+		Value elem = rawDataList[i];
+		if (!elem.IsA(RawDataType(), context->vm)) {
+			TypeException(String("element ") + String::Format(i, "%d") + " should be a RawData object").raise();
+		}
+		Value elemDataWrapper = elem.Lookup(_handle);
+		if (elemDataWrapper.IsNull() or elemDataWrapper.type != ValueType::Handle) continue;
+		RawDataHandleStorage *elemStorage = (RawDataHandleStorage*)elemDataWrapper.data.ref;
+		if (elemStorage->dataSize > 0) {
+			wrappers.Add(elemDataWrapper);
+			offsets.Add(totalBytes);
+			totalBytes += elemStorage->dataSize;
+		}
+	}
+	RawDataHandleStorage *storage = new RawDataHandleStorage();
+	storage->resize(totalBytes);
+	for (int i=0; i<wrappers.Count(); i++) {
+		Value elemDataWrapper = wrappers[i];
+		long offset = offsets[i].IntValue();
+		RawDataHandleStorage *elemStorage = (RawDataHandleStorage*)elemDataWrapper.data.ref;
+		storage->copyFromOther(*elemStorage, offset, -1, 0, -1);
+	}
+	Value dataWrapper = Value::NewHandle(storage);
+	ValueDict instance;
+	instance.SetValue(Value::magicIsA, RawDataType());
+	instance.SetValue(_handle, dataWrapper);
+	Value result(instance);
+	return IntrinsicResult(result);
+}
+
 static IntrinsicResult intrinsic_keyAvailable(Context *context, IntrinsicResult partialResult) {
 	return IntrinsicResult(KeyAvailable());
 }
@@ -1350,6 +1441,9 @@ static ValueDict& RawDataType() {
 		result.SetValue("setDouble", i_rawDataSetDouble->GetFunc());
 		result.SetValue("utf8", i_rawDataUtf8->GetFunc());
 		result.SetValue("setUtf8", i_rawDataSetUtf8->GetFunc());
+		result.SetValue("_sub", i_rawDataSub->GetFunc());
+		result.SetValue("_setSub", i_rawDataSetSub->GetFunc());
+		result.SetValue("_concat", i_rawDataConcat->GetFunc());
 	}
 	
 	return result;
@@ -1751,6 +1845,22 @@ void AddShellIntrinsics() {
 	i_rawDataSetUtf8->AddParam("offset", 0);
 	i_rawDataSetUtf8->AddParam("value", "");
 	i_rawDataSetUtf8->code = &intrinsic_rawDataSetUtf8;
+	
+	i_rawDataSub = Intrinsic::Create("");
+	i_rawDataSub->AddParam("self");
+	i_rawDataSub->AddParam("offset", 0);
+	i_rawDataSub->AddParam("bytes", -1);
+	i_rawDataSub->code = &intrinsic_rawDataSub;
+	
+	i_rawDataSetSub = Intrinsic::Create("");
+	i_rawDataSetSub->AddParam("self");
+	i_rawDataSetSub->AddParam("offset", 0);
+	i_rawDataSetSub->AddParam("rawData");
+	i_rawDataSetSub->code = &intrinsic_rawDataSetSub;
+	
+	i_rawDataConcat = Intrinsic::Create("");
+	i_rawDataConcat->AddParam("rawDataList");
+	i_rawDataConcat->code = &intrinsic_rawDataConcat;
 	
 	// END RawData methods
 	
