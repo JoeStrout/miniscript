@@ -213,7 +213,7 @@ namespace MiniScript {
 				} else {
 					CompilerException* e = new CompilerException("'end function' without matching block starter");
 					e->location = location;
-					throw;
+					throw *e;
 				}
 				continue;
 			}
